@@ -13,3 +13,14 @@
 - [interesting articles](https://idea.popcount.org/)
 - [Tcp server with kqueue](https://dev.to/frosnerd/writing-a-simple-tcp-server-using-kqueue-cah)
 - [I/O guide](https://habr.com/ru/articles/600123/)
+
+## Roadmap:
+
+- Config parsing
+- One kqueue for all servers (Poller class?). Contains servers, routes requests to correspongding server.
+- Server class. Contains server-specific setting and request handler instance.
+- Request base class. Exec, instantiate. Headers, 
+- Get / Post / Delete etc request subclasses.
+- Response class.
+- Request handler (gets request, returns response).
+- CGI
