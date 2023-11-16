@@ -12,6 +12,7 @@ class Worker
 		Worker(const Worker &other);
 		Worker &operator=(const Worker &other);
 		void	_parse_config(std::ifstream &conf);
+		int	parse_server(std::string &server);
 	public:
 		~Worker();
 		Worker(char *path_to_conf);

@@ -20,11 +20,10 @@ Worker::Worker(char *path_to_conf)
 	this->_parse_config(conf);
 }
 
-void Worker::_parse_config(std::ifstream &conf)
+std::string createFile(std::ifstream &conf)
 {
 	std::string	line;
 	std::string	server;
-	//int		scope;
 
 	while (conf.good())
 	{
@@ -32,7 +31,151 @@ void Worker::_parse_config(std::ifstream &conf)
 		server.append(line);
 		server.append("\n");
 	}
-	std::cout << server << std::endl;
+	return server;
+}
+
+bool checkBrackets(std::string server)
+{
+	int		scope;
+	int		i;
+
+	scope = 0;
+	i = 0;
+	while (server[i])
+	{
+		if (server[i] == '{')
+			scope++;
+		else if (server[i] == '}')
+			scope--;
+		if (scope < 0)
+			return false;
+		i++;
+	}
+	return !scope;
+}
+
+std::string getServerContent(std::stringstream &ss, std::string &line, int scope)
+{
+	std::string	server;
+	if (line.compare("server") == 0 && ss >> line && line.compare("{") == 0)
+	{
+		scope++;
+		while (ss >> line)
+		{
+			if (line.compare("}") == 0)
+				--scope;
+			else if (line.compare("{") == 0)
+				++scope;
+			if (scope == 0)
+				break;
+			server += line;
+			server += " ";
+		}
+	}
+	else
+		throw std::runtime_error("Config file is not valid!");
+	if (scope != 0)
+		throw std::runtime_error("Config file is not valid!");
+	return server;
+}
+
+int	Worker::parse_server(std::string &server)
+{
+	std::stringstream ss(server);
+	std::string	line;
+
+	while (ss >> line)
+	{
+		if (line.compare("listen") == 0)
+		{
+			if (!(ss >> line))
+				return 1;
+			std::cout << "listen: " << line << std::endl;
+		}
+		else if (line.compare("server_name") == 0)
+		{
+			if (!(ss >> line))
+				return 1;
+			std::cout << "server_name: " << line << std::endl;
+		}
+		else if (line.compare("error_page") == 0)
+		{
+			if (!(ss >> line))
+				return 1;
+			std::cout << "error_page: " << line << std::endl;
+		}
+		else if (line.compare("root") == 0)
+		{
+			if (!(ss >> line))
+				return 1;
+			std::cout << "root: " << line << std::endl;
+		}
+		else if (line.compare("location") == 0)
+		{
+			if (!(ss >> line))
+				return 1;
+			std::cout << "location: " << line << std::endl;
+		}
+		else if (line.compare("autoindex") == 0)
+		{
+			if (!(ss >> line))
+				return 1;
+			std::cout << "autoindex: " << line << std::endl;
+		}
+		else if (line.compare("index") == 0)
+		{
+			if (!(ss >> line))
+				return 1;
+			std::cout << "index: " << line << std::endl;
+		}
+		else if (line.compare("client_max_body_size") == 0)
+		{
+			if (!(ss >> line))
+				return 1;
+			std::cout << "client_max_body_size: " << line << std::endl;
+		}
+		else if (line.compare("cgi") == 0)
+		{
+			if (!(ss >> line))
+				return 1;
+			std::cout << "cgi: " << line << std::endl;
+		}
+		else if (line.compare("upload") == 0)
+		{
+			if (!(ss >> line))
+				return 1;
+			std::cout << "upload: " << line << std::endl;
+		}
+		else if (line.compare("return") == 0)
+		{
+			if (!(ss >> line))
+				return 1;
+			std::cout << "return: " << line << std::endl;
+		}
+	}
+	return 0;
+}
+
+void Worker::_parse_config(std::ifstream &conf)
+{
+	std::string	line;
+	std::string	server;
+
+	server = createFile(conf);
+	if (checkBrackets(server) == false)
+		throw std::runtime_error("Config file is not valid!");
+	std::stringstream	ss(server);
+	line.clear();
+	server.clear();
+	while (ss >> line)
+	{
+		server = getServerContent(ss, line, 0);
+		if (server.empty())
+			throw std::runtime_error("Config file is not valid!");
+		if (this->parse_server(server))
+			throw std::runtime_error("Config file is not valid!");
+		std::cout << "\n\n\n\n";
+	}
 }
 
 void Worker::loop()
