@@ -1,4 +1,6 @@
 #include "Worker.hpp"
+#include <iostream>
+#include <sstream>
 
 Worker &Worker::operator=(const Worker &other)
 {
@@ -20,11 +22,17 @@ Worker::Worker(char *path_to_conf)
 
 void Worker::_parse_config(std::ifstream &conf)
 {
-	conf.close();
-	Server serv;
-	this->servers.push_back(serv);
-	Route	route;
-	this->servers[0].setRoute("test_route", route);
+	std::string	line;
+	std::string	server;
+	//int		scope;
+
+	while (conf.good())
+	{
+		getline(conf, line);
+		server.append(line);
+		server.append("\n");
+	}
+	std::cout << server << std::endl;
 }
 
 void Worker::loop()
