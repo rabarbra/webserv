@@ -1,0 +1,6 @@
+webserv
+*.o
+build
+.vscode
+.env
+.idea
