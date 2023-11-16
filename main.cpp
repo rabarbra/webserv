@@ -11,7 +11,7 @@ int	main(int ac, char **av)
 	try
 	{
 		Worker	worker(av[1]);
-		worker.loop();
+		worker.loop("127.0.0.1", "8000");
 	}
 	catch(const std::exception& e)
 	{
