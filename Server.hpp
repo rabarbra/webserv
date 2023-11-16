@@ -7,5 +7,7 @@ class Server
 {
 	private:
 		std::map<std::string, Route> routes;
+	public:
+		void	setRoute(std::string path, const Route &route);
 };
 #endif
