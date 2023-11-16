@@ -4,3 +4,4 @@ build
 .vscode
 .env
 .idea
+*.dSYM
