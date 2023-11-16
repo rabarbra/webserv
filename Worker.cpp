@@ -216,4 +216,5 @@ void Worker::_create_conn_socket(std::string host, std::string port)
 void Worker::loop(std::string host, std::string port)
 {
 	this->_create_conn_socket(host, port);
+	
 }
