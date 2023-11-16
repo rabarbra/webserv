@@ -20,7 +20,9 @@ Route::Route(const Route &other)
 Route &Route::operator=(const Route &other)
 {
 	if (this != &other)
-	{}
+	{
+		this->cgi = other.cgi;
+	}
 	return *this;
 }
 
