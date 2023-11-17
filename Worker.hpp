@@ -12,9 +12,6 @@
 # include <sys/time.h>
 # include <netdb.h>
 # include <unistd.h>
-# ifdef __APPLE__
-#  include <sys/event.h>
-# endif
 // ==
 # include "Server.hpp"
 class Worker
