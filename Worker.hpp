@@ -21,7 +21,6 @@ class Worker
 		std::map<int, int>	conn_socks;
 		std::map<int, int>	conn_map;
 		int					_penging_connections_count;
-		std::vector<int>	connections;
 		Worker();
 		Worker(const Worker &other);
 		Worker &operator=(const Worker &other);
