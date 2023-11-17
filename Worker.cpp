@@ -184,6 +184,12 @@ void Worker::_create_conn_socket(std::string host, std::string port)
 	struct addrinfo *addr;
     struct addrinfo hints;
 	memset(&hints, 0, sizeof hints);
+	hints.ai_addr = 0;
+	hints.ai_addrlen = 0;
+	hints.ai_canonname = 0;
+	hints.ai_flags = 0;
+	hints.ai_next = 0;
+	hints.ai_protocol = 0;
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
     int error = getaddrinfo(host.c_str(), port.c_str(), &hints, &addr);
