@@ -6,7 +6,7 @@
 # include <sys/types.h>
 # include <sys/time.h>
 # include <netdb.h>
-# include <stdio.h>
+# include <cstring>
 # ifdef __APPLE__
 #  include <sys/event.h>
 # endif

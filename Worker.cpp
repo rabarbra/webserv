@@ -183,7 +183,6 @@ void Worker::_create_conn_socket(std::string host, std::string port)
 {
 	struct addrinfo *addr;
     struct addrinfo hints;
-	memset(&hints, 0, sizeof hints);
 	hints.ai_addr = 0;
 	hints.ai_addrlen = 0;
 	hints.ai_canonname = 0;
