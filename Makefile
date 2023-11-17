@@ -5,7 +5,7 @@ CXXFLAGS =	-std=c++98 -Wall -Wextra -Werror
 
 OBJ_DIR =	build
 
-SRC =		main Worker Server Route
+SRC =		main Worker Server Route worker_loop_darwin worker_loop_linux
 OBJ =		$(addprefix $(OBJ_DIR)/, $(addsuffix .o, $(SRC)))
 
 all: $(NAME)

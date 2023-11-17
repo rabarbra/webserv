@@ -10,7 +10,10 @@ Worker &Worker::operator=(const Worker &other)
 }
 
 Worker::~Worker()
-{}
+{
+	for (std::map<int, int>::iterator i = this->conn_socks.begin(); i != this->conn_socks.end(); i++)
+		close((*i).first);
+}
 
 Worker::Worker(char *path_to_conf)
 {
@@ -179,8 +182,9 @@ void Worker::_parse_config(std::ifstream &conf)
 	}
 }
 
-void Worker::_create_conn_socket(std::string host, std::string port)
+int Worker::_create_conn_socket(std::string host, std::string port)
 {
+	int sock;
 	struct addrinfo *addr;
     struct addrinfo hints;
 	hints.ai_addr = 0;
@@ -194,26 +198,29 @@ void Worker::_create_conn_socket(std::string host, std::string port)
     int error = getaddrinfo(host.c_str(), port.c_str(), &hints, &addr);
 	if (error)
 		throw std::runtime_error("Wrong address: " + std::string(gai_strerror(error)));
-    this->conn_sock = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
-	if (this->conn_sock < 0)
+    sock = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+	if (sock < 0)
 	{
 		freeaddrinfo(addr);
 		throw std::runtime_error("Error creating connection socket: " + std::string(strerror(errno)));
 	}
-    if (bind(this->conn_sock, addr->ai_addr, addr->ai_addrlen))
+    if (bind(sock, addr->ai_addr, addr->ai_addrlen))
 	{
 		freeaddrinfo(addr);
 		throw std::runtime_error("Error binding: " + std::string(strerror(errno)));
 	}
-    if (listen(this->conn_sock, this->_penging_connections_count))
+    if (listen(sock, this->_penging_connections_count))
 	{
 		freeaddrinfo(addr);
 		throw std::runtime_error("Error listening: " + std::string(strerror(errno)));
 	}
 	freeaddrinfo(addr);
+	return sock;
 }
 
-void Worker::loop(std::string host, std::string port)
+void Worker::_handle_request(int conn_fd)
 {
-	this->_create_conn_socket(host, port);
+	int conn_sock = this->conn_map[conn_fd];
+	int server_num = this->conn_socks[conn_sock];
+	this->servers[server_num].handle_request(conn_fd);
 }
