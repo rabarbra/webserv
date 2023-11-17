@@ -18,15 +18,17 @@ class Worker
 		std::vector<Server>	servers;
 		int					conn_sock;
 		int					_penging_connections_count;
+		std::vector<int>	connections;
 		Worker();
 		Worker(const Worker &other);
 		Worker &operator=(const Worker &other);
 		void	_parse_config(std::ifstream &conf);
 		int		parse_server(std::string &server);
 		void	_create_conn_socket(std::string host, std::string port);
+		void	_loop(int kq, std::vector<struct kevent> evList);
 	public:
 		~Worker();
 		Worker(char *path_to_conf);
-		void	loop(std::string host, std::string port);
+		void	run(std::string host, std::string port);
 };
 #endif

@@ -213,7 +213,62 @@ void Worker::_create_conn_socket(std::string host, std::string port)
 	freeaddrinfo(addr);
 }
 
-void Worker::loop(std::string host, std::string port)
+void Worker::_loop(int kq, std::vector<struct kevent> evList)
 {
+	struct kevent			evSet;
+    struct sockaddr_storage	addr;
+    socklen_t socklen = sizeof(addr);
+
+    while (1) {
+        int num_events = kevent(kq, NULL, 0, evList.data(), evList.size(), NULL);
+        for (int i = 0; i < num_events; i++)
+		{
+            if (evList[i].ident == static_cast<unsigned long>(this->conn_sock))
+			{
+                int fd = accept(evList[i].ident, (struct sockaddr *) &addr, &socklen);
+				this->connections.push_back(fd);
+                EV_SET(&evSet, fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
+                kevent(kq, &evSet, 1, NULL, 0, NULL);
+				evList.push_back(evSet);
+				send(fd, "HTTP/1.1 200 OK\nContent-Length: 13\nConnection: close\nContent-Type: text/html\n\nHello world!\n", 92, 0);
+				std::cout << "[" << this->connections.size() - 1 << "]: connected\n";
+            }
+            else if (evList[i].flags & EV_EOF)
+			{
+                int fd = evList[i].ident;
+                EV_SET(&evSet, fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+                kevent(kq, &evSet, 1, NULL, 0, NULL);
+				evList.erase(evList.begin() + i);
+				std::vector<int>::iterator it = std::find(this->connections.begin(), this->connections.end(), fd);
+				this->connections.erase(it);
+				std::cout << "[" << it - this->connections.begin() << "]: disconnected\n";
+            }
+            else if (evList[i].filter == EVFILT_READ)
+			{
+				char buf[1024];
+				int fd = evList[i].ident;
+    			int bytes_read = recv(fd, buf, sizeof(buf) - 1, 0);
+    			buf[bytes_read] = 0;
+    			fflush(stdout);
+				std::vector<int>::iterator it = std::find(this->connections.begin(), this->connections.end(), fd);
+				std::cout << "[" << it - this->connections.begin() << "]: " << buf;
+            }
+        }
+    }
+}
+
+void Worker::run(std::string host, std::string port)
+{
+	std::vector<struct kevent> evList;
+    struct kevent evSet;
 	this->_create_conn_socket(host, port);
+	std::cout << "Listening " << host << ":" << port << "\n";
+	int kq = kqueue();
+	if (kq < 0)
+		throw std::runtime_error("Error creating kqueue: " + std::string(strerror(errno)));
+    EV_SET(&evSet, this->conn_sock, EVFILT_READ, EV_ADD, 0, 0, NULL);
+    if (kevent(kq, &evSet, 1, NULL, 0, NULL) < 0)
+		throw std::runtime_error("Error adding connection socket to kqueue: " + std::string(strerror(errno)));
+	evList.push_back(evSet);
+	this->_loop(kq, evList);
 }
