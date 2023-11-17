@@ -4,9 +4,11 @@
 # include <fstream>
 # include <sys/socket.h>
 # include <sys/types.h>
-# include <sys/event.h>
 # include <sys/time.h>
 # include <netdb.h>
+# ifdef __APPLE__
+#  include <sys/event.h>
+# endif
 # include "Server.hpp"
 class Worker
 {
