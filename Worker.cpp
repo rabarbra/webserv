@@ -10,7 +10,10 @@ Worker &Worker::operator=(const Worker &other)
 }
 
 Worker::~Worker()
-{}
+{
+	for (std::map<int, int>::iterator i = this->conn_socks.begin(); i != this->conn_socks.end(); i++)
+		close((*i).first);
+}
 
 Worker::Worker(char *path_to_conf)
 {
@@ -179,8 +182,9 @@ void Worker::_parse_config(std::ifstream &conf)
 	}
 }
 
-void Worker::_create_conn_socket(std::string host, std::string port)
+int Worker::_create_conn_socket(std::string host, std::string port)
 {
+	int sock;
 	struct addrinfo *addr;
     struct addrinfo hints;
 	hints.ai_addr = 0;
@@ -194,81 +198,92 @@ void Worker::_create_conn_socket(std::string host, std::string port)
     int error = getaddrinfo(host.c_str(), port.c_str(), &hints, &addr);
 	if (error)
 		throw std::runtime_error("Wrong address: " + std::string(gai_strerror(error)));
-    this->conn_sock = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
-	if (this->conn_sock < 0)
+    sock = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+	if (sock < 0)
 	{
 		freeaddrinfo(addr);
 		throw std::runtime_error("Error creating connection socket: " + std::string(strerror(errno)));
 	}
-    if (bind(this->conn_sock, addr->ai_addr, addr->ai_addrlen))
+    if (bind(sock, addr->ai_addr, addr->ai_addrlen))
 	{
 		freeaddrinfo(addr);
 		throw std::runtime_error("Error binding: " + std::string(strerror(errno)));
 	}
-    if (listen(this->conn_sock, this->_penging_connections_count))
+    if (listen(sock, this->_penging_connections_count))
 	{
 		freeaddrinfo(addr);
 		throw std::runtime_error("Error listening: " + std::string(strerror(errno)));
 	}
 	freeaddrinfo(addr);
+	return sock;
+}
+
+void Worker::_handle_request(int conn_fd)
+{
+	int conn_sock = this->conn_map[conn_fd];
+	int server_num = this->conn_socks[conn_sock];
+	this->servers[server_num].handle_request(conn_fd);
 }
 
 void Worker::_loop(int kq, std::vector<struct kevent> evList)
 {
 	struct kevent			evSet;
     struct sockaddr_storage	addr;
+	int						conn_fd;
+	int						num_events;
     socklen_t socklen = sizeof(addr);
 
     while (1) {
-        int num_events = kevent(kq, NULL, 0, evList.data(), evList.size(), NULL);
+        num_events = kevent(kq, NULL, 0, evList.data(), evList.size(), NULL);
         for (int i = 0; i < num_events; i++)
 		{
-            if (evList[i].ident == static_cast<unsigned long>(this->conn_sock))
+            if (this->conn_socks.find(static_cast<int>(evList[i].ident)) != this->conn_socks.end())
 			{
-                int fd = accept(evList[i].ident, (struct sockaddr *) &addr, &socklen);
-				this->connections.push_back(fd);
-                EV_SET(&evSet, fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
+                conn_fd = accept(evList[i].ident, (struct sockaddr *) &addr, &socklen);
+                EV_SET(&evSet, conn_fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
                 kevent(kq, &evSet, 1, NULL, 0, NULL);
 				evList.push_back(evSet);
-				send(fd, "HTTP/1.1 200 OK\nContent-Length: 13\nConnection: close\nContent-Type: text/html\n\nHello world!\n", 92, 0);
-				std::cout << "[" << this->connections.size() - 1 << "]: connected\n";
+				std::cout << "[" << conn_fd << "]: connected\n";
+				this->conn_map[conn_fd] = evList[i].ident;
             }
             else if (evList[i].flags & EV_EOF)
 			{
-                int fd = evList[i].ident;
-                EV_SET(&evSet, fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+                conn_fd = evList[i].ident;
+                EV_SET(&evSet, conn_fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
                 kevent(kq, &evSet, 1, NULL, 0, NULL);
 				evList.erase(evList.begin() + i);
-				std::vector<int>::iterator it = std::find(this->connections.begin(), this->connections.end(), fd);
-				this->connections.erase(it);
-				std::cout << "[" << it - this->connections.begin() << "]: disconnected\n";
+				std::cout << "[" << conn_fd << "]: disconnected\n";
+				this->conn_map.erase(conn_fd);
+				close(conn_fd);
             }
             else if (evList[i].filter == EVFILT_READ)
-			{
-				char buf[1024];
-				int fd = evList[i].ident;
-    			int bytes_read = recv(fd, buf, sizeof(buf) - 1, 0);
-    			buf[bytes_read] = 0;
-    			fflush(stdout);
-				std::vector<int>::iterator it = std::find(this->connections.begin(), this->connections.end(), fd);
-				std::cout << "[" << it - this->connections.begin() << "]: " << buf;
-            }
+				this->_handle_request(evList[i].ident);
         }
     }
 }
 
-void Worker::run(std::string host, std::string port)
+void Worker::run()
 {
 	std::vector<struct kevent> evList;
-    struct kevent evSet;
-	this->_create_conn_socket(host, port);
-	std::cout << "Listening " << host << ":" << port << "\n";
 	int kq = kqueue();
 	if (kq < 0)
 		throw std::runtime_error("Error creating kqueue: " + std::string(strerror(errno)));
-    EV_SET(&evSet, this->conn_sock, EVFILT_READ, EV_ADD, 0, 0, NULL);
-    if (kevent(kq, &evSet, 1, NULL, 0, NULL) < 0)
-		throw std::runtime_error("Error adding connection socket to kqueue: " + std::string(strerror(errno)));
-	evList.push_back(evSet);
+	// For testing
+	Server server;
+	server.setHost("localhost");
+	server.setPort("8000");
+	this->servers.push_back(server);
+	// For testing
+	for (size_t i = 0; i < servers.size(); i++)
+	{
+		int sock = _create_conn_socket(server.getHost(), server.getPort());
+		std::cout << "Listening " << server.getHost() << ":" << server.getPort() << "\n";
+    	struct kevent evSet;
+    	EV_SET(&evSet, sock, EVFILT_READ, EV_ADD, 0, 0, NULL);
+    	if (kevent(kq, &evSet, 1, NULL, 0, NULL) < 0)
+			throw std::runtime_error("Error adding connection socket to kqueue: " + std::string(strerror(errno)));
+		this->conn_socks[sock] = i;
+		evList.push_back(evSet);
+	}
 	this->_loop(kq, evList);
 }

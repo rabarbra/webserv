@@ -11,7 +11,7 @@ int	main(int ac, char **av)
 	try
 	{
 		Worker	worker(av[1]);
-		worker.run("localhost", "8000");
+		worker.run();
 	}
 	catch(const std::exception& e)
 	{
