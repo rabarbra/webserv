@@ -15,7 +15,7 @@ jobs:
     - uses: actions/checkout@v3
     - name: make
       run: make
-    - name: install valgrind libkqueue-dev
+    - name: install valgrind
       run:  sudo apt install valgrind
     - name: init worker
       run: valgrind ./webserv webserv.conf &
