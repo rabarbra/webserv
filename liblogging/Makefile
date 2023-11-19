@@ -14,12 +14,16 @@ SRC =		logging
 OBJ =		$(addprefix $(OBJ_DIR)/, $(addsuffix .o, $(SRC)))
 
 LIB_PATH =	$(HOME)/.local/lib
+FLAGS = -shared
+
+ifeq ($(UNAME_S),Darwin)
+	FLAGS += -Qunused-arguments -install_name @rpath/$(NAME)
+endif
 
 all: $(NAME)
 
 $(NAME): $(OBJ)
-	$(CXX) $(CXXFLAGS) -Qunused-arguments -shared \
-		-install_name @rpath/$(NAME) $(OBJ) -o $(NAME)
+	$(CXX) $(CXXFLAGS) $(FLAGS) $(OBJ) -o $(NAME)
 	@mkdir -p $(LIB_PATH)
 	@cp $(NAME) $(LIB_PATH)/
 
