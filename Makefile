@@ -17,9 +17,9 @@ LIBS =			-L./$(LIBLOGGING) -llogging
 
 UNAME_S =		$(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
-	LIBS += -rpath $(LIB_PATH)
+	LIBS +=		-rpath $(LIB_PATH)
 else
-	LIBS += -Wl,-R$(LIB_PATH)
+	LIBS +=		-Wl,-R$(LIB_PATH)
 endif
 
 all: $(NAME)

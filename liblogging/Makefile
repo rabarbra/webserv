@@ -5,19 +5,19 @@ else
 	NAME =		liblogging.so
 endif
 
-CXX =		c++
-CXXFLAGS =	-std=c++98 -Wall -Wextra -Werror
+CXX =			c++
+CXXFLAGS =		-std=c++98 -Wall -Wextra -Werror
 
-OBJ_DIR =	build
+OBJ_DIR =		build
 
-SRC =		logging
-OBJ =		$(addprefix $(OBJ_DIR)/, $(addsuffix .o, $(SRC)))
+SRC =			logging
+OBJ =			$(addprefix $(OBJ_DIR)/, $(addsuffix .o, $(SRC)))
 
-LIB_PATH =	$(HOME)/.local/lib
-FLAGS = -shared
+LIB_PATH =		$(HOME)/.local/lib
+FLAGS = 		-shared
 
 ifeq ($(UNAME_S),Darwin)
-	FLAGS += -Qunused-arguments -install_name @rpath/$(NAME)
+	FLAGS +=	-Qunused-arguments -install_name @rpath/$(NAME)
 endif
 
 all: $(NAME)
