@@ -13,7 +13,12 @@ OBJ =			$(addprefix $(OBJ_DIR)/, $(addsuffix .o, $(SRC)))
 
 LIBLOGGING =	liblogging
 LIB_PATH =		$(HOME)/.local/lib/
-LIBS =			-L./$(LIBLOGGING) -llogging -rpath $(LIB_PATH)
+LIBS =			-L./$(LIBLOGGING) -llogging 
+
+UNAME_S =		$(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+	LIBS += -rpath $(LIB_PATH)
+endif
 
 all: $(NAME)
 
