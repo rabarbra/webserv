@@ -19,7 +19,7 @@ UNAME_S =		$(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
 	LIBS += -rpath $(LIB_PATH)
 else
-	export LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):$(LIB_PATH)
+	$(shell export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(LIB_PATH))
 endif
 
 all: $(NAME)
