@@ -94,7 +94,7 @@ CliHandler::CliHandler(t_lvl lvl, t_lvl limit)
 CliHandler::~CliHandler()
 {}
 
-CliHandler::CliHandler(const CliHandler &other)
+CliHandler::CliHandler(const CliHandler &other): BaseHandler(other)
 {
 	*this = other;
 }
