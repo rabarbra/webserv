@@ -14,7 +14,7 @@
 # include <unistd.h>
 // ==
 # include "Server.hpp"
-# include "../liblogging/logging.hpp"
+# include "../liblogging/Logger.hpp"
 class Worker
 {
 	private:

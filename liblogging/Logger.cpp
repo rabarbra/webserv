@@ -1,4 +1,4 @@
-#include "logging.hpp"
+#include "Logger.hpp"
 
 Logger::Logger(): lvl(_INFO)
 {

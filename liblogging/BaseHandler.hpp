@@ -6,9 +6,11 @@
 class BaseHandler
 {
 	protected:
-		t_lvl	lvl;
-		t_lvl	limit;
-		bool	filter();
+		t_lvl		lvl;
+		t_lvl		limit;
+		bool		filter();
+		bool		first;
+		std::string	returnLevel();
 	public:
 		BaseHandler();
 		BaseHandler(t_lvl lvl, t_lvl limit);

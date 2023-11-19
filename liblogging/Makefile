@@ -10,7 +10,7 @@ CXXFLAGS =		-std=c++98 -Wall -Wextra -Werror
 
 OBJ_DIR =		build
 
-SRC =			logging BaseHandler CliHandler
+SRC =			Logger BaseHandler CliHandler
 OBJ =			$(addprefix $(OBJ_DIR)/, $(addsuffix .o, $(SRC)))
 
 LIB_PATH =		$(HOME)/.local/lib
