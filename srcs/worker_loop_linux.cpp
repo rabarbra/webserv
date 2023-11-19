@@ -1,6 +1,6 @@
 #ifdef __linux__
 # include <sys/epoll.h>
-# include "Worker.hpp"
+# include "../includes/Worker.hpp"
 
 void Worker::run()
 {

@@ -1,4 +1,4 @@
-#include "Route.hpp"
+#include "../includes/Route.hpp"
 
 Route::Route():
 	type(PATH_), allowed_methods(std::vector<Method>()),
