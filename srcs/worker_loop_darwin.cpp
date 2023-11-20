@@ -70,7 +70,7 @@ void Worker::run()
 {
 	std::vector<struct kevent>	evList;
 	struct kevent 				evSet;
-	int							sock;
+	std::set<int>				server_socks;
 
 	int kq = kqueue();
 	if (kq < 0)
@@ -80,21 +80,23 @@ void Worker::run()
 			std::string(strerror(errno))
 		);
 	}
-	//for (size_t i = 0; i < servers.size(); i++)
-	//{
-		sock = _create_conn_socket("127.0.0.1", "8000");
-		this->_log.INFO << "Listening 127.0.0.1:8000";
-    	EV_SET(&evSet, sock, EVFILT_READ, EV_ADD, 0, 0, NULL);
-    	if (kevent(kq, &evSet, 1, NULL, 0, NULL) < 0)
+	for (size_t i = 0; i < servers.size(); i++)
+	{
+		server_socks = servers[i].create_conn_sockets();
+		for (std::set<int>::iterator sock = server_socks.begin(); sock != server_socks.end(); sock++)
 		{
-			throw std::runtime_error(
-				"Error adding connection socket to kqueue: " +
-				std::string(strerror(errno))
-			);
+    		EV_SET(&evSet, *sock, EVFILT_READ, EV_ADD, 0, 0, NULL);
+    		if (kevent(kq, &evSet, 1, NULL, 0, NULL) < 0)
+			{
+				throw std::runtime_error(
+					"Error adding connection socket to kqueue: " +
+					std::string(strerror(errno))
+				);
+			}
+			this->conn_socks[*sock] = i;
+			evList.push_back(evSet);
 		}
-		this->conn_socks[sock] = 0;
-		evList.push_back(evSet);
-	//}
+	}
 	this->_loop(kq, evList);
 }
 #endif

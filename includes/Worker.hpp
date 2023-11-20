@@ -27,9 +27,9 @@ class Worker
 		Worker(const Worker &other);
 		Worker &operator=(const Worker &other);
 		void	_parse_config(std::ifstream &conf);
-		int	parse_server(std::string &server);
+		int		parse_server(std::string &server);
 		void	parse_param(std::string param, Server &server);
-		int	_create_conn_socket(std::string host, std::string port);
+		int		_create_conn_socket(std::string host, std::string port);
 		void	_handle_request(int conn_fd);
 		void	_loop(int kq, std::vector<struct kevent> evList);
 	public:

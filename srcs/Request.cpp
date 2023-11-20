@@ -5,6 +5,7 @@ Request::Request(int fd): _fd(fd)
 {
 	this->receive();
 	this->log.INFO << "Received: " << this->plain;
+	this->parse();
 }
 
 Request::~Request()

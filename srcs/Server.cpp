@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <string>
 
-Server::Server(): routes(), hosts(), server_names(), error_pages(), max_body_size(-1), log(Logger(_INFO, "Server"))
+Server::Server(): routes(), hosts(), server_names(), error_pages(), max_body_size(-1), log(Logger(_INFO, "Server")), _penging_connections_count(5)
 {}
 
 Server::~Server()
@@ -26,12 +26,11 @@ Server &Server::operator=(const Server &other)
 		this->server_names = other.server_names;
 		this->error_pages = other.error_pages;
 		this->max_body_size = other.max_body_size;
+		this->_penging_connections_count = other._penging_connections_count;
 		this->log = other.log;
 	}
 	return (*this);
 }
-
-
 
 void Server::setRoute(std::string path, Route &route)
 {
@@ -197,6 +196,61 @@ void	Server::parseErrorPage(std::stringstream &ss)
 
 void Server::handle_request(int fd)
 {
-	Request	req(fd);
-	send(fd, "HTTP/1.1 200 OK\nContent-Length: 13\nConnection: close\nContent-Type: text/html\n\nHello world!\n", 92, 0);
+	Request				req(fd);
+	std::stringstream	ss;
+
+	std::string body = "Hello world from " + this->hosts.begin()->first + ":" + this->hosts.begin()->second + "\n";
+	ss << body.size();
+	std::string resp = ("HTTP/1.1 200 OK\nContent-Length: " + ss.str() + "\nConnection: close\nContent-Type: text/html\n\n" + body);
+	send(fd, resp.c_str(), resp.size(), 0);
+}
+
+int Server::_create_conn_socket(std::string host, std::string port)
+{
+	int				sock;
+	struct addrinfo	*addr;
+    struct addrinfo	hints;
+	int				error;
+
+	hints.ai_addr = 0;
+	hints.ai_addrlen = 0;
+	hints.ai_canonname = 0;
+	hints.ai_flags = 0;
+	hints.ai_next = 0;
+	hints.ai_protocol = 0;
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+    error = getaddrinfo(host.c_str(), port.c_str(), &hints, &addr);
+	if (error)
+		throw std::runtime_error("Wrong address: " + std::string(gai_strerror(error)));
+    sock = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+	if (sock < 0)
+	{
+		freeaddrinfo(addr);
+		throw std::runtime_error("Error creating connection socket: " + std::string(strerror(errno)));
+	}
+    if (bind(sock, addr->ai_addr, addr->ai_addrlen))
+	{
+		freeaddrinfo(addr);
+		throw std::runtime_error("Error binding: " + std::string(strerror(errno)));
+	}
+    if (listen(sock, this->_penging_connections_count))
+	{
+		freeaddrinfo(addr);
+		throw std::runtime_error("Error listening: " + std::string(strerror(errno)));
+	}
+	freeaddrinfo(addr);
+	return sock;
+}
+
+std::set<int> Server::create_conn_sockets()
+{
+	std::set<int> res;
+
+	for (std::multimap<std::string, std::string>::iterator i = this->hosts.begin(); i != this->hosts.end(); i++)
+	{
+		res.insert(this->_create_conn_socket(i->first, i->second));
+		this->log.INFO << "Listening " << i->first << ":" << i->second;
+	}
+	return res;
 }
