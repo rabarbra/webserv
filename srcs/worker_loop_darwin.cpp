@@ -80,11 +80,10 @@ void Worker::run()
 			std::string(strerror(errno))
 		);
 	}
-	// For testing
-	// For testing
-	for (size_t i = 0; i < servers.size(); i++)
-	{
-		sock = _create_conn_socket("localhost", "8080");
+	//for (size_t i = 0; i < servers.size(); i++)
+	//{
+		sock = _create_conn_socket("127.0.0.1", "8000");
+		this->_log.INFO << "Listening 127.0.0.1:8000";
     	EV_SET(&evSet, sock, EVFILT_READ, EV_ADD, 0, 0, NULL);
     	if (kevent(kq, &evSet, 1, NULL, 0, NULL) < 0)
 		{
@@ -93,9 +92,9 @@ void Worker::run()
 				std::string(strerror(errno))
 			);
 		}
-		this->conn_socks[sock] = i;
+		this->conn_socks[sock] = 0;
 		evList.push_back(evSet);
-	}
+	//}
 	this->_loop(kq, evList);
 }
 #endif
