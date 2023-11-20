@@ -58,9 +58,17 @@ bool checkBrackets(std::string server)
 	while (server[i])
 	{
 		if (server[i] == '{')
+		{
 			scope++;
+			if (scope % 2 == 1 && server[i] != '{')
+				return false;
+		}
 		else if (server[i] == '}')
+		{
 			scope--;
+			if (scope % 2 == 0 && server[i] != '}')
+				return false;
+		}
 		if (scope < 0)
 			return false;
 		i++;
@@ -87,87 +95,58 @@ std::string getServerContent(std::stringstream &ss, std::string &line, int scope
 		}
 	}
 	else
-		throw std::runtime_error("Config file is not valid!");
+		throw std::runtime_error("Wrong brackets in file");
 	if (scope != 0)
-		throw std::runtime_error("Config file is not valid!");
+		throw std::runtime_error("Wrong brackets in file");
 	return server;
 }
 
 int	Worker::parse_server(std::string &server)
 {
-	std::stringstream ss(server);
-	std::string	line;
+	std::string delimiter = ";";
+	Server new_server;
+	size_t pos = 0;
+	std::string param;
 
-	while (ss >> line)
-	{
-		if (line.compare("listen") == 0)
+	while ((pos = server.find(delimiter)) != std::string::npos) {
+		param = server.substr(0, pos);
+		if (param.find("location") != std::string::npos)
 		{
-			if (!(ss >> line))
-				return 1;
-			std::cout << "listen: " << line << std::endl;
+			if ((pos = server.find("}")) != std::string::npos) 
+				param = server.substr(0, pos + 1);
+			server.erase(0, pos + 1);
 		}
-		else if (line.compare("server_name") == 0)
+		else 
 		{
-			if (!(ss >> line))
-				return 1;
-			std::cout << "server_name: " << line << std::endl;
-		}
-		else if (line.compare("error_page") == 0)
-		{
-			if (!(ss >> line))
-				return 1;
-			std::cout << "error_page: " << line << std::endl;
-		}
-		else if (line.compare("root") == 0)
-		{
-			if (!(ss >> line))
-				return 1;
-			std::cout << "root: " << line << std::endl;
-		}
-		else if (line.compare("location") == 0)
-		{
-			if (!(ss >> line))
-				return 1;
-			std::cout << "location: " << line << std::endl;
-		}
-		else if (line.compare("autoindex") == 0)
-		{
-			if (!(ss >> line))
-				return 1;
-			std::cout << "autoindex: " << line << std::endl;
-		}
-		else if (line.compare("index") == 0)
-		{
-			if (!(ss >> line))
-				return 1;
-			std::cout << "index: " << line << std::endl;
-		}
-		else if (line.compare("client_max_body_size") == 0)
-		{
-			if (!(ss >> line))
-				return 1;
-			std::cout << "client_max_body_size: " << line << std::endl;
-		}
-		else if (line.compare("cgi") == 0)
-		{
-			if (!(ss >> line))
-				return 1;
-			std::cout << "cgi: " << line << std::endl;
-		}
-		else if (line.compare("upload") == 0)
-		{
-			if (!(ss >> line))
-				return 1;
-			std::cout << "upload: " << line << std::endl;
-		}
-		else if (line.compare("return") == 0)
-		{
-			if (!(ss >> line))
-				return 1;
-			std::cout << "return: " << line << std::endl;
+			server.erase(0, pos + delimiter.length());
+			parse_param(param, new_server);
 		}
 	}
+	this->servers.insert(this->servers.end(), new_server);
 	return 0;
+
+}
+
+void	Worker::parse_param(std::string param, Server &server)
+{
+	std::stringstream ss(param);
+	std::string word;
+
+	while (ss >> word)
+	{
+		if (!word.compare("server_names")) {
+			if (server.getServerNames().empty())
+				server.setServerNames(ss);
+			else
+				throw std::runtime_error("Double server names");
+		}
+		else if (!word.compare("listen")) 
+			server.parseListen(ss);	
+		else if (!word.compare("client_max_body_size"))
+			server.parseBodySize(ss);
+		else if (!word.compare("error_page"))
+			server.parseErrorPage(ss);
+	}
 }
 
 void Worker::_parse_config(std::ifstream &conf)
@@ -177,7 +156,7 @@ void Worker::_parse_config(std::ifstream &conf)
 
 	server = createFile(conf);
 	if (checkBrackets(server) == false)
-		throw std::runtime_error("Config file is not valid!");
+		throw std::runtime_error("Invalid Brackets");
 	std::stringstream	ss(server);
 	line.clear();
 	server.clear();
@@ -185,12 +164,13 @@ void Worker::_parse_config(std::ifstream &conf)
 	{
 		server = getServerContent(ss, line, 0);
 		if (server.empty())
-			throw std::runtime_error("Config file is not valid!");
+			throw std::runtime_error("Empty Server Block");
 		if (this->parse_server(server))
-			throw std::runtime_error("Config file is not valid!");
-		std::cout << "\n\n\n\n";
+			throw std::runtime_error("Failed parsing server");
 	}
-}
+	for(long unsigned int i=0; i < this->servers.size(); i++){
+		this->servers[i].printServer();
+}}
 
 int Worker::_create_conn_socket(std::string host, std::string port)
 {

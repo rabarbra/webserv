@@ -81,20 +81,10 @@ void Worker::run()
 		);
 	}
 	// For testing
-	Server server;
-	server.setHost("localhost");
-	server.setPort("8000");
-	this->servers.push_back(server);
 	// For testing
 	for (size_t i = 0; i < servers.size(); i++)
 	{
-		sock = _create_conn_socket(server.getHost(), server.getPort());
-		this->_log.INFO
-			<< "Listening "
-			<< server.getHost()
-			<< ":"
-			<< server.getPort()
-			<< "\n";
+		sock = _create_conn_socket("localhost", "8080");
     	EV_SET(&evSet, sock, EVFILT_READ, EV_ADD, 0, 0, NULL);
     	if (kevent(kq, &evSet, 1, NULL, 0, NULL) < 0)
 		{

@@ -12,15 +12,10 @@ void Worker::run()
 	if (epollfd < 0)
 		throw std::runtime_error("Error creating epoll: " + std::string(strerror(errno)));
 	// For testing
-	Server server;
-	server.setHost("localhost");
-	server.setPort("8000");
-	this->servers.push_back(server);
-	// For testing
 	for (size_t i = 0; i < servers.size(); i++)
 	{
-		sock = _create_conn_socket(server.getHost(), server.getPort());
-		this->_log.INFO << "Listening " << server.getHost() << ":" << server.getPort() << "\n";
+		sock = _create_conn_socket("localhost", "8080");
+		this->_log.INFO << "Listening " << "localhost" << ":" << "8080" << "\n";
 		event.events = EPOLLIN | EPOLLET;
 		event.data.fd = sock;
     	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, sock, &event))

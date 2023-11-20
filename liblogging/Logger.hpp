@@ -10,10 +10,12 @@ class Logger
 {
 	private:
 		t_lvl	lvl;
-		Logger(const Logger &other);
-		Logger &operator=(const Logger &other);
+		std::string	loggerName;
 	public:
 		Logger();
+		Logger(t_lvl lvl, std::string loggerName);
+		Logger(const Logger &other);
+		Logger &operator=(const Logger &other);
 		~Logger();
 		BaseHandler	DEBUG;
 		BaseHandler	INFO;
