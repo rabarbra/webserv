@@ -10,6 +10,7 @@
 # include <sys/time.h>
 # include <netdb.h>
 # include "Route.hpp"
+# include "Request.hpp"
 # include "../liblogging/Logger.hpp"
 
 class Server

@@ -40,7 +40,7 @@ void Worker::_loop(int kq, std::vector<struct kevent> evList)
 						throw std::runtime_error("Kevent error: "
 							+ std::string(strerror(errno)));
 					evList.push_back(evSet);
-					this->_log.INFO << "[" << conn_fd << "]: connected\n";
+					this->_log.INFO << "[" << conn_fd << "]: connected";
 					this->conn_map[conn_fd] = evList[i].ident;
         	    }
         	    else if (evList[i].flags & EV_EOF)
@@ -51,7 +51,7 @@ void Worker::_loop(int kq, std::vector<struct kevent> evList)
 						throw std::runtime_error("Kevent error: "
 							+ std::string(strerror(errno)));
 					evList.erase(evList.begin() + i);
-					this->_log.INFO << "[" << conn_fd << "]: disconnected\n";
+					this->_log.INFO << "[" << conn_fd << "]: disconnected";
 					this->conn_map.erase(conn_fd);
 					close(conn_fd);
         	    }

@@ -197,9 +197,6 @@ void	Server::parseErrorPage(std::stringstream &ss)
 
 void Server::handle_request(int fd)
 {
-	char buf[1024];
-    int bytes_read = recv(fd, buf, sizeof(buf) - 1, 0);
-    buf[bytes_read] = 0;
-	std::cout << "[" << fd << "]: " << buf;
+	Request	req(fd);
 	send(fd, "HTTP/1.1 200 OK\nContent-Length: 13\nConnection: close\nContent-Type: text/html\n\nHello world!\n", 92, 0);
 }
