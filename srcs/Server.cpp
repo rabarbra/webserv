@@ -38,8 +38,6 @@ void Server::setRoute(std::string path, Route &route)
 	this->routes[path] = route;
 }
 
-
-
 void Server::setHosts(std::string host, std::string port)
 {
 	this->hosts.insert(std::pair<std::string, std::string>(host, port));

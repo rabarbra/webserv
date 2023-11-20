@@ -149,7 +149,6 @@ void	Worker::parse_param(std::string param, Server &server)
 	}
 }
 
-
 void Worker::_parse_config(std::ifstream &conf)
 {
 	std::string	line;
