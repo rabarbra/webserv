@@ -14,6 +14,7 @@
 # include <unistd.h>
 // ==
 # include "Server.hpp"
+# include "../liblogging/Logger.hpp"
 class Worker
 {
 	private:
@@ -21,6 +22,7 @@ class Worker
 		std::map<int, int>	conn_socks;
 		std::map<int, int>	conn_map;
 		int					_penging_connections_count;
+		Logger				_log;
 		Worker();
 		Worker(const Worker &other);
 		Worker &operator=(const Worker &other);

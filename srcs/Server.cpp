@@ -1,4 +1,4 @@
-#include "Server.hpp"
+#include "../includes/Server.hpp"
 
 Server::Server(): routes(), host(), port(), server_names(), max_body_size(-1)
 {}

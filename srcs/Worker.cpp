@@ -1,4 +1,4 @@
-#include "Worker.hpp"
+#include "../includes/Worker.hpp"
 #include <iostream>
 #include <sstream>
 
@@ -11,7 +11,11 @@ Worker &Worker::operator=(const Worker &other)
 
 Worker::~Worker()
 {
-	for (std::map<int, int>::iterator i = this->conn_socks.begin(); i != this->conn_socks.end(); i++)
+	for (
+		std::map<int, int>::iterator i = this->conn_socks.begin();
+		i != this->conn_socks.end();
+		i++
+	)
 		close((*i).first);
 }
 
@@ -19,7 +23,13 @@ Worker::Worker(char *path_to_conf)
 {
 	std::ifstream	conf(path_to_conf);
 	if (!conf.is_open())
-		throw std::runtime_error( "Config file " + std::string(path_to_conf) + " cannot be open!");
+	{
+		throw std::runtime_error(
+			"Config file " + 
+			std::string(path_to_conf) +
+			" cannot be open!"
+		);
+	}
 	this->_parse_config(conf);
 	this->_penging_connections_count = 5;
 }
@@ -184,9 +194,11 @@ void Worker::_parse_config(std::ifstream &conf)
 
 int Worker::_create_conn_socket(std::string host, std::string port)
 {
-	int sock;
-	struct addrinfo *addr;
-    struct addrinfo hints;
+	int				sock;
+	struct addrinfo	*addr;
+    struct addrinfo	hints;
+	int				error;
+
 	hints.ai_addr = 0;
 	hints.ai_addrlen = 0;
 	hints.ai_canonname = 0;
@@ -195,7 +207,7 @@ int Worker::_create_conn_socket(std::string host, std::string port)
 	hints.ai_protocol = 0;
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
-    int error = getaddrinfo(host.c_str(), port.c_str(), &hints, &addr);
+    error = getaddrinfo(host.c_str(), port.c_str(), &hints, &addr);
 	if (error)
 		throw std::runtime_error("Wrong address: " + std::string(gai_strerror(error)));
     sock = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
