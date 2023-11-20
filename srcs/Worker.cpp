@@ -31,7 +31,6 @@ Worker::Worker(char *path_to_conf)
 		);
 	}
 	this->_parse_config(conf);
-	this->_penging_connections_count = 5;
 }
 
 std::string createFile(std::ifstream &conf)
@@ -171,44 +170,6 @@ void Worker::_parse_config(std::ifstream &conf)
 	for(long unsigned int i=0; i < this->servers.size(); i++){
 		this->servers[i].printServer();
 }}
-
-int Worker::_create_conn_socket(std::string host, std::string port)
-{
-	int				sock;
-	struct addrinfo	*addr;
-    struct addrinfo	hints;
-	int				error;
-
-	hints.ai_addr = 0;
-	hints.ai_addrlen = 0;
-	hints.ai_canonname = 0;
-	hints.ai_flags = 0;
-	hints.ai_next = 0;
-	hints.ai_protocol = 0;
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
-    error = getaddrinfo(host.c_str(), port.c_str(), &hints, &addr);
-	if (error)
-		throw std::runtime_error("Wrong address: " + std::string(gai_strerror(error)));
-    sock = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
-	if (sock < 0)
-	{
-		freeaddrinfo(addr);
-		throw std::runtime_error("Error creating connection socket: " + std::string(strerror(errno)));
-	}
-    if (bind(sock, addr->ai_addr, addr->ai_addrlen))
-	{
-		freeaddrinfo(addr);
-		throw std::runtime_error("Error binding: " + std::string(strerror(errno)));
-	}
-    if (listen(sock, this->_penging_connections_count))
-	{
-		freeaddrinfo(addr);
-		throw std::runtime_error("Error listening: " + std::string(strerror(errno)));
-	}
-	freeaddrinfo(addr);
-	return sock;
-}
 
 void Worker::_handle_request(int conn_fd)
 {
