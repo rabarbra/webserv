@@ -5,3 +5,5 @@ build
 .env
 .idea
 *.dSYM
+*.so
+*.dylib
