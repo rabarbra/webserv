@@ -1,6 +1,7 @@
 #ifndef SERVER_HPP
 # define SERVER_HPP
 # include <map>
+#include <sstream>
 # include <vector>
 # include <string>
 # include <iostream>
@@ -11,7 +12,7 @@
 # include "Route.hpp"
 class Server
 {
-	private:
+	public:
 		std::map<std::string, Route>	routes;
 		std::string						host;
 		std::string						port;
@@ -28,6 +29,10 @@ class Server
 		std::string	getPort();
 		void		setHost(std::string host);
 		void		setPort(std::string port);
+		void		setServerNames(std::stringstream &ss);
+		std::vector<std::string> getServerNames();
+		void		parseListen(std::stringstream &ss);
 		void		handle_request(int fd);
+		void		printServer();
 };
 #endif

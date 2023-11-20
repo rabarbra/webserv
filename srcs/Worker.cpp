@@ -58,9 +58,17 @@ bool checkBrackets(std::string server)
 	while (server[i])
 	{
 		if (server[i] == '{')
+		{
 			scope++;
+			if (scope % 2 == 1 && server[i] != '{')
+				return false;
+		}
 		else if (server[i] == '}')
+		{
 			scope--;
+			if (scope % 2 == 0 && server[i] != '}')
+				return false;
+		}
 		if (scope < 0)
 			return false;
 		i++;
@@ -95,80 +103,49 @@ std::string getServerContent(std::stringstream &ss, std::string &line, int scope
 
 int	Worker::parse_server(std::string &server)
 {
-	std::stringstream ss(server);
-	std::string	line;
+	std::string delimiter = ";";
+	Server new_server;
+	size_t pos = 0;
+	std::string param;
 
-	while (ss >> line)
-	{
-		if (line.compare("listen") == 0)
+	while ((pos = server.find(delimiter)) != std::string::npos) {
+		param = server.substr(0, pos);
+		if (param.find("location") != std::string::npos)
 		{
-			if (!(ss >> line))
-				return 1;
-			std::cout << "listen: " << line << std::endl;
+			if ((pos = server.find("}")) != std::string::npos) 
+				param = server.substr(0, pos + 1);
+			server.erase(0, pos + 1);
 		}
-		else if (line.compare("server_name") == 0)
-		{
-			if (!(ss >> line))
-				return 1;
-			std::cout << "server_name: " << line << std::endl;
-		}
-		else if (line.compare("error_page") == 0)
-		{
-			if (!(ss >> line))
-				return 1;
-			std::cout << "error_page: " << line << std::endl;
-		}
-		else if (line.compare("root") == 0)
-		{
-			if (!(ss >> line))
-				return 1;
-			std::cout << "root: " << line << std::endl;
-		}
-		else if (line.compare("location") == 0)
-		{
-			if (!(ss >> line))
-				return 1;
-			std::cout << "location: " << line << std::endl;
-		}
-		else if (line.compare("autoindex") == 0)
-		{
-			if (!(ss >> line))
-				return 1;
-			std::cout << "autoindex: " << line << std::endl;
-		}
-		else if (line.compare("index") == 0)
-		{
-			if (!(ss >> line))
-				return 1;
-			std::cout << "index: " << line << std::endl;
-		}
-		else if (line.compare("client_max_body_size") == 0)
-		{
-			if (!(ss >> line))
-				return 1;
-			std::cout << "client_max_body_size: " << line << std::endl;
-		}
-		else if (line.compare("cgi") == 0)
-		{
-			if (!(ss >> line))
-				return 1;
-			std::cout << "cgi: " << line << std::endl;
-		}
-		else if (line.compare("upload") == 0)
-		{
-			if (!(ss >> line))
-				return 1;
-			std::cout << "upload: " << line << std::endl;
-		}
-		else if (line.compare("return") == 0)
-		{
-			if (!(ss >> line))
-				return 1;
-			std::cout << "return: " << line << std::endl;
-		}
+		else 		
+			server.erase(0, pos + delimiter.length());
+		parse_param(param, &new_server);
 	}
+	this->servers.insert(this->servers.end(), new_server);
 	return 0;
+
 }
+
+void	Worker::parse_param(std::string param, Server *server)
+{
+	std::stringstream ss(param);
+	std::string word;
+
+	while (ss >> word)
+	{
+		if (!word.compare("server_names")) {
+			if (server->server_names.empty())
+				server->setServerNames(ss);
+			else
+				throw std::runtime_error("Config file is not valid!");
+		}
+		else if (!word.compare("listen")) 
+		{
+			server->parseListen(ss);	
+		}
+
+	}
+}
+
 
 void Worker::_parse_config(std::ifstream &conf)
 {
@@ -188,9 +165,10 @@ void Worker::_parse_config(std::ifstream &conf)
 			throw std::runtime_error("Config file is not valid!");
 		if (this->parse_server(server))
 			throw std::runtime_error("Config file is not valid!");
-		std::cout << "\n\n\n\n";
 	}
-}
+	for(long unsigned int i=0; i < this->servers.size(); i++){
+		this->servers[i].printServer();
+}}
 
 int Worker::_create_conn_socket(std::string host, std::string port)
 {
