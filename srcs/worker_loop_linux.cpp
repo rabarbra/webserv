@@ -1,6 +1,6 @@
 #ifdef __linux__
 # include <sys/epoll.h>
-# include "Worker.hpp"
+# include "../includes/Worker.hpp"
 
 void Worker::run()
 {
@@ -20,7 +20,7 @@ void Worker::run()
 	for (size_t i = 0; i < servers.size(); i++)
 	{
 		sock = _create_conn_socket(server.getHost(), server.getPort());
-		std::cout << "Listening " << server.getHost() << ":" << server.getPort() << "\n";
+		this->_log.INFO << "Listening " << server.getHost() << ":" << server.getPort() << "\n";
 		event.events = EPOLLIN | EPOLLET;
 		event.data.fd = sock;
     	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, sock, &event))
@@ -45,14 +45,14 @@ void Worker::run()
 				event.data.fd = conn_fd;
     			epoll_ctl(epollfd, EPOLL_CTL_ADD, conn_fd, &event);
 				evList.push_back(event);
-				std::cout << "[" << conn_fd << "]: connected\n";
+				this->_log.INFO << "[" << conn_fd << "]: connected\n";
 				this->conn_map[conn_fd] = evList[i].data.fd;
             }
             else if ((evList[i].events & EPOLLERR) || (evList[i].events & EPOLLHUP) || !(evList[i].events & EPOLLIN))
 			{
                 conn_fd = evList[i].data.fd;
 				evList.erase(evList.begin() + i);
-				std::cout << "[" << conn_fd << "]: disconnected\n";
+				this->_log.INFO << "[" << conn_fd << "]: disconnected\n";
 				this->conn_map.erase(conn_fd);
 				close(conn_fd);
             }
