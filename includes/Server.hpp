@@ -6,6 +6,9 @@
 # include <set>
 # include <string>
 # include <iostream>
+# include <cstdlib>
+# include <cstring>
+# include <cstdio>
 # include <sys/socket.h>
 # include <sys/types.h>
 # include <sys/time.h>
