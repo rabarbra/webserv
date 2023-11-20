@@ -9,6 +9,7 @@
 # include <cstdlib>
 # include <cstring>
 # include <cstdio>
+# include <cerrno>
 # include <sys/socket.h>
 # include <sys/types.h>
 # include <sys/time.h>
