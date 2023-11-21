@@ -8,7 +8,7 @@ OBJ_DIR =		build
 SRC_DIR =		srcs
 INC_DIR =		includes
 
-SRC =			main Worker Server Route \
+SRC =			main Worker Server Route Request \
 				worker_loop_darwin worker_loop_linux
 OBJ =			$(addprefix $(OBJ_DIR)/, $(addsuffix .o, $(SRC)))
 
