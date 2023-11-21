@@ -4,6 +4,7 @@
 # include <map>
 # include <string>
 # include <iostream>
+# include <sstream>
 # include <sys/socket.h>
 # include <sys/types.h>
 # include <sys/time.h>
@@ -17,7 +18,7 @@ class Request
 		int									_fd;
 		Method								method;
 		std::string							path;
-		std::map<std::string, std::string>	query;
+		std::string							query;
 		std::string							httpVersion;
 		std::string							host;
 		std::string							port;
@@ -34,5 +35,12 @@ class Request
 		~Request();
 		Request(const Request &other);
 		Request &operator=(const Request &other);
+		std::string	getPath();
+		std::string	getHost();
+		std::string	getPort();
+		std::string	getQuery();
+		std::string	getBody();
+		std::string	getVersion();
+		std::map<std::string, std::string>	getHeaders();
 };
 #endif
