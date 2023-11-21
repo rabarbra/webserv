@@ -5,6 +5,7 @@
 # include <string>
 # include <iostream>
 # include <sstream>
+# include <algorithm>
 # include <sys/socket.h>
 # include <sys/types.h>
 # include <sys/time.h>
