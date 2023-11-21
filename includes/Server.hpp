@@ -16,6 +16,7 @@
 # include <netdb.h>
 # include "Route.hpp"
 # include "Request.hpp"
+# include "Response.hpp"
 # include "../liblogging/Logger.hpp"
 
 class Server
