@@ -4,6 +4,7 @@
 # include <string>
 # include "CGI.hpp"
 # include "Method.hpp"
+# include <iostream>
 
 typedef enum e_route_type {
 	PATH_,
@@ -15,7 +16,9 @@ class Route
 {
 	private:
 		RouteType			type; // Path by default
-		std::vector<Method> allowed_methods; // All methods if not specified
+		std::vector<Method> 		allowed_methods;// All methods if not specified
+		std::string			path; // Empty if not specified
+		std::vector<std::string>	file_extensions; // Empty if not specified
 		std::string			root_directory; // Current directory if not specified
 		std::string			redirect_url; // Empty if not specified
 		bool				dir_listing; // false by default
@@ -29,5 +32,9 @@ class Route
 		Route	&operator=(const Route &other);
 		RouteType	getType();
 		bool		getDirListing();
+		void setPath(std::string path);
+		void setFileExtensions(std::string &allowed_methods);
 };
+
 #endif
+

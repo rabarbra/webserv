@@ -2,6 +2,7 @@
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
+#include <map>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -72,11 +73,11 @@ void Server::parseListen(std::stringstream &ss)
 		if ((pos = word.find(":")) != std::string::npos)
 		{
 			if (both)
-				throw std::runtime_error("Host and port are already set!\n");
+				throw std::runtime_error("Host and port are already set!");
 			host = word.substr(0, pos);
 			port = word.substr(pos + 1, word.length());
 			if (!isNumber(port))
-				throw std::runtime_error("Host and port are already set!\n");
+				throw std::runtime_error("Host and port are already set!");
 			if (host.empty())
 				host = "127.0.0.1";
 			else if (port.empty())
@@ -87,18 +88,49 @@ void Server::parseListen(std::stringstream &ss)
 		else if (isNumber(word))
 		{
 			if (both)
-				throw std::runtime_error("Host and port are already set!\n");
+				throw std::runtime_error("Host and port are already set");
 			this->setHosts("127.0.0.1", word);
 			both = 1;
 		}		
 		else
 		{
 			if (both)
-				throw std::runtime_error("Host and port are already set!\n");
+				throw std::runtime_error("Host and port are already set!");
 			this->setHosts(word, "80");
 			both = 1;
 		}
 	}
+}
+
+void	Server::parseLocation(std::string &location)
+{
+	Route route;
+	std::string word;
+	std::stringstream ss(location);
+	std::vector<std::string> args;
+
+	while (ss >> word && word != "{")
+	{
+		if (word != "location")
+			args.insert(args.end(), word);
+	}
+	if (args.size() == 0)
+		throw std::runtime_error("invalid number of arguments in 'location'");
+	if (args.size() > 2)
+		throw std::runtime_error("invalid number of arguments in 'location'");
+	if (args.size() == 1)
+		route.setPath(args[0]);
+	else
+	{
+		route.setPath(args[0]);
+		route.setFileExtensions(args[1]);
+
+	}
+}
+
+bool Server::hasListenDup() {
+	std::set<std::pair<std::string, std::string> > s(this->hosts.begin(), this->hosts.end());
+	return (s.size() != this->hosts.size());
 }
 
 void Server::parseBodySize(std::stringstream &ss) {
@@ -108,45 +140,45 @@ void Server::parseBodySize(std::stringstream &ss) {
 	int i = 0;
 
 	if (this->max_body_size != -1)
-		throw std::runtime_error("Config file is not valid!");
+		throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
 	while (ss >> size)
 		++i;
 	if (i != 1)
-		throw std::runtime_error("Config file is not valid!");
+		throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
 	if (isNumber(size))
 		number = atoi(size.c_str());
 	else
 	{
 		unit = size.substr(size.find_first_not_of("0123456789"), size.length());
 		size = size.substr(0, size.find_last_of("0123456789") + 1);
-		if (size.compare("18014398510000000") > 0)
-			throw std::runtime_error("Config file is not valid!");
+		if (size.compare("18446744073709551615") > 0)
+			throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
 		if (unit.compare("k") && unit.compare("m") && 
 				unit.compare("g") && unit.compare("K") && 
 				unit.compare("M") && unit.compare("G") && 
 				unit.compare("Kb") && unit.compare("Mb") && 
 				unit.compare("Gb") && unit.compare("KB") && 
 				unit.compare("MB") && unit.compare("GB"))
-			throw std::runtime_error("Config file is not valid!");
+			throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
 		number = atoi(size.c_str());
 		if (number < 0)
-			throw std::runtime_error("Config file is not valid!");
+			throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
 		if (!unit.compare("k") || !unit.compare("K") || !unit.compare("Kb") || !unit.compare("KB"))
 		{
 			if (size.compare("18446744073709551615") > 0)
-				throw std::runtime_error("Config file is not valid!");
+				throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
 			number *= 1024;
 		}
 		else if (!unit.compare("m") || !unit.compare("M") || !unit.compare("Mb") || !unit.compare("MB"))
 		{
 			if (size.compare("17592186044416") > 0)
-				throw std::runtime_error("Config file is not valid!");
+				throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
 			number *= 1024 * 1024;
 		}
 		else if (!unit.compare("g") || !unit.compare("G") || !unit.compare("Gb") || !unit.compare("GB"))
 		{
 			if (size.compare("17179869184") > 0)
-				throw std::runtime_error("Config file is not valid!");
+				throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
 			number *= 1024 * 1024 * 1024;
 		}
 	}
@@ -160,12 +192,13 @@ std::vector<std::string> Server::getServerNames()
 void		Server::printServer() {
 	std::cout << "---------Server-----------\n";
 	for (std::multimap<std::string, std::string>::iterator i = this->hosts.begin(); i != this->hosts.end(); i++)
-		this->log.INFO << "Host: " << i->first << " Port: " << i->second << "\n";
-	std::cout << "Client Max body size : " << this->max_body_size << "\n";
+		this->log.INFO << "Host: " << i->first << " Port: " << i->second;
+	this->log.INFO << "Client Max body size : " << this->max_body_size;
 	for (long unsigned int i = 0; i < this->server_names.size(); i++)
-		this->log.INFO << "Server name [" << i  << "]: " << this->server_names[i] << "\n";
+		this->log.INFO << "Server name [" << i  << "]: " << this->server_names[i];
 	for (std::map<int, std::string>::iterator i = this->error_pages.begin(); i != this->error_pages.end(); i++)
-		this->log.INFO << "Error code path["<< i->first << "]: " << i->second << "\n";
+		this->log.INFO << "Error code path["<< i->first << "]: " << i->second;
+	std::cout << std::endl;
 }
 
 void	Server::parseErrorPage(std::stringstream &ss)
