@@ -6,22 +6,23 @@ void Worker::run()
 {
     struct epoll_event				event;
 	std::vector<struct epoll_event>	evList;
-	int								sock;
+	std::set<int>					server_socks;
 
 	int epollfd = epoll_create(1);
 	if (epollfd < 0)
 		throw std::runtime_error("Error creating epoll: " + std::string(strerror(errno)));
-	// For testing
 	for (size_t i = 0; i < servers.size(); i++)
 	{
-		sock = _create_conn_socket("localhost", "8080");
-		this->_log.INFO << "Listening " << "localhost" << ":" << "8080" << "\n";
-		event.events = EPOLLIN | EPOLLET;
-		event.data.fd = sock;
-    	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, sock, &event))
-			throw std::runtime_error("Error adding connection socket to epoll: " + std::string(strerror(errno)));
-		this->conn_socks[sock] = i;
-		evList.push_back(event);
+		server_socks = servers[i].create_conn_sockets();
+		for (std::set<int>::iterator sock = server_socks.begin(); sock != server_socks.end(); sock++)
+		{
+			event.events = EPOLLIN | EPOLLET;
+			event.data.fd = *sock;
+    		if (epoll_ctl(epollfd, EPOLL_CTL_ADD, *sock, &event))
+				throw std::runtime_error("Error adding connection socket to epoll: " + std::string(strerror(errno)));
+			this->conn_socks[*sock] = i;
+			evList.push_back(event);
+		}
 	}
 
     struct sockaddr_storage	addr;

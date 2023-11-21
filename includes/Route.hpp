@@ -3,12 +3,7 @@
 # include <vector>
 # include <string>
 # include "CGI.hpp"
-
-typedef enum e_meth {
-	GET,
-	POST,
-	DELETE
-}			Method;
+# include "Method.hpp"
 
 typedef enum e_route_type {
 	PATH_,
