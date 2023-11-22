@@ -107,6 +107,7 @@ void	Server::parseLocation(std::string &location)
 	Route route;
 	std::string word;
 	std::stringstream ss(location);
+	std::string path;
 	std::vector<std::string> args;
 
 	while (ss >> word && word != "{")
@@ -119,13 +120,14 @@ void	Server::parseLocation(std::string &location)
 	if (args.size() > 2)
 		throw std::runtime_error("invalid number of arguments in 'location'");
 	if (args.size() == 1)
-		route.setPath(args[0]);
+		path = args[0];
 	else
 	{
-		route.setPath(args[0]);
+		path = args[0];
 		route.setFileExtensions(args[1]);
-
 	}
+	route.parseOptions(ss);
+	this->routes[path] = route;
 }
 
 bool Server::hasListenDup() {
