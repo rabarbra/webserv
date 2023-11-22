@@ -6,6 +6,7 @@
 # include "CGI.hpp"
 # include "Method.hpp"
 # include <iostream>
+#include "../liblogging/Logger.hpp"
 
 typedef enum e_route_type {
 	PATH_,
@@ -25,6 +26,7 @@ class Route
 		std::string			index; // index.html by default
 		std::string			static_dir; // Empty string by default (don't accept files)
 		CGI					*cgi; // NULL by default
+		Logger				logger;
 	public:
 		Route();
 		~Route();
@@ -34,14 +36,17 @@ class Route
 		bool		getDirListing();
 		void setFileExtensions(std::string &allowed_methods);
 		void setAllowedMethods(std::string methods);
-		void setRootDirectory(std::string &root_directory);
-		void setRedirectUrl(std::string &redirect_url);
+		void setRootDirectory(std::string root_directory);
+		void setRedirectUrl(std::string redirect_url);
 		void setDirListing(bool dir_listing);
-		void setIndex(std::string &index);
-		void setStaticDir(std::string &static_dir);
+		void setIndex(std::string index);
+		void setStaticDir(std::string static_dir);
 		void setType(RouteType type);
+		void setCGI(CGI *cgi);
 		void parseOptions(std::stringstream &options);
 		void parseOption(std::string &param);
+		void printRoute();
+		void parseAllowedMethods(std::string &methods);
 };
 
 #endif

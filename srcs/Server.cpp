@@ -127,6 +127,7 @@ void	Server::parseLocation(std::string &location)
 		route.setFileExtensions(args[1]);
 	}
 	route.parseOptions(ss);
+	std::cout << "--------------Second route----------------\n";
 	this->routes[path] = route;
 }
 
@@ -200,6 +201,11 @@ void		Server::printServer() {
 		this->log.INFO << "Server name [" << i  << "]: " << this->server_names[i];
 	for (std::map<int, std::string>::iterator i = this->error_pages.begin(); i != this->error_pages.end(); i++)
 		this->log.INFO << "Error code path["<< i->first << "]: " << i->second;
+	for (std::map<std::string, Route>::iterator i = this->routes.begin(); i != this->routes.end(); i++)
+	{
+		this->log.INFO << "Route path: " << i->first;
+		i->second.printRoute();
+	}
 	std::cout << std::endl;
 }
 
