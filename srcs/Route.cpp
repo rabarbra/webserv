@@ -41,7 +41,6 @@ void	Route::setFileExtensions(std::string &extension)
 	if (pos == std::string::npos)
 	{
 		extension.erase(extension.length() - 1, 1);
-		std::cout << "token 1: " << extension << "\n";
 		this->file_extensions.push_back(extension);
 		return ;
 	}
@@ -50,18 +49,16 @@ void	Route::setFileExtensions(std::string &extension)
 	extension = extension.substr(pos + 3, extension.length() - 2);
 	while ((pos = extension.find("|")) != std::string::npos) {
 		token = extension.substr(0, pos);
-		std::cout << "token 2: " <<token << "\n";
-		if (!token.empty() && ((pos == token.find(".")) == std::string::npos))
+		if (!token.empty() && token[0] != '.')
 		{
-			this->file_extensions.push_back("." + token);
+			this->file_extensions.insert(this->file_extensions.end(), "." + token);
 			extension.erase(0, pos + 1);
 		}
 		else
 			throw std::runtime_error("Wrong file format");
 	}
 	extension = extension.substr(0, extension.find(")"));
-	this->file_extensions.push_back(extension);
-	std::cout << "token 2: " << extension << "\n";
+	this->file_extensions.insert(this->file_extensions.end(), "." + extension);
 }
 
 void Route::setPath(std::string path)

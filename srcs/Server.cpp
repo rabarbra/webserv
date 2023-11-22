@@ -229,13 +229,56 @@ void	Server::parseErrorPage(std::stringstream &ss)
 
 void Server::handle_request(int fd)
 {
-	Request				req(fd);
-	std::stringstream	ss;
+	Request		req(fd);
+	Response	resp;
 
-	std::string body = "Hello world from " + this->hosts.begin()->first + ":" + this->hosts.begin()->second + "\n";
-	ss << body.size();
-	std::string resp = ("HTTP/1.1 200 OK\nContent-Length: " + ss.str() + "\nConnection: close\nContent-Type: text/html\n\n" + body);
-	send(fd, resp.c_str(), resp.size(), 0);
+	std::string body = std::string("<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\">")
+		+ "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+		+ "<title>Webserv</title>"
+		+ "<style>"
+		+ "body{"
+			+ "font-family:Arial,sans-serif;background-color:#000000;text-align:center;padding:50px;"
+		+ "}"
+		+ ".container{"
+			+ "max-width:600px;margin:0 auto;"
+		+ "}"
+		+ "h1{"
+			+ "color:#c31a17;"
+		+ "}"
+		+ "p{"
+			+ "color:#938888;"
+		+ "}"
+		+ "</style>"
+		+ "</head>"
+		+ "<body><div class=\"container\">"
+		+ "<h1>Webserv</h1>"
+		+ "<p>"
+			+ "Hello from <span style=\"color: green;\">"
+			+ this->hosts.begin()->first + ":"
+			+ this->hosts.begin()->second
+			+ "</span> server!"
+		+ "</p>"
+		+ "<p>"
+			+ "Your request:"
+		+ "</p>"
+		+ "<p>"
+			+ "Http version: " + req.getVersion()
+			+ "<br/>"
+			+ "Host: " + req.getHost() + ":" + req.getPort()
+			+ "<br/>"
+			+ "path: " + req.getPath()
+			+ "<br/>"
+			+ "query: " + req.getQuery()
+			+ "<br/>"
+			+ "body: " + req.getBody()
+			+ "<br/>"
+			+ "Headers:</p></div><div style=\"max-width:1200px;margin:0 auto;\"><hr/>";
+		std::map<std::string, std::string> headers = req.getHeaders();
+		for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
+			body += ("<br/><span style=\"color:#44ee33;float:left;\">" + it->first + "</span><span style=\"color:#eeee44;float:right;\">" + it->second + "</span>");
+		body +=	"</div></body></html>";
+	resp.setBody(body);
+	resp.run(fd);
 }
 
 int Server::_create_conn_socket(std::string host, std::string port)

@@ -122,8 +122,6 @@ int	Worker::parse_server(std::string &server)
 			parse_param(param, new_server);
 		}
 	}
-	if (new_server.hasListenDup())
-		throw std::runtime_error("Duplicate listen");
 	this->servers.insert(this->servers.end(), new_server);
 	return 0;
 
@@ -148,8 +146,6 @@ void	Worker::parse_param(std::string param, Server &server)
 			server.parseBodySize(ss);
 		else if (!word.compare("error_page"))
 			server.parseErrorPage(ss);
-		else if (!word.compare("location"))
-			server.parseLocation(param);
 	}
 }
 
