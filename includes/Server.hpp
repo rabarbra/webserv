@@ -21,7 +21,7 @@
 class Server
 {
 	private:
-		std::map<std::string, Route>			routes;
+		std::vector<Route>			routes;
 		std::multimap<std::string, std::string>	hosts;
 		std::vector<std::string>				server_names;
 		std::map<int, std::string>				error_pages; // Key - status code, value - path to error page file for this status code
@@ -35,7 +35,7 @@ class Server
 		~Server();
 		Server(const Server &other);
 		Server				&operator=(const Server &other);
-		void				setRoute(std::string path, Route &route);
+		void				setRoute(Route &route);
 		void				setHosts(std::string host, std::string port);
 		void				setServerNames(std::stringstream &ss);
 		std::vector<std::string> 	getServerNames();

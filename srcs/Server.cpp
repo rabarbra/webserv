@@ -33,9 +33,9 @@ Server &Server::operator=(const Server &other)
 	return (*this);
 }
 
-void Server::setRoute(std::string path, Route &route)
+void Server::setRoute(Route &route)
 {
-	this->routes[path] = route;
+	this->routes.push_back(route);
 }
 
 void Server::setHosts(std::string host, std::string port)
@@ -128,7 +128,8 @@ void	Server::parseLocation(std::string &location)
 		route.setType(CGI_);
 	}
 	route.parseOptions(ss);
-	this->routes[path] = route;
+	route.setPath(path);
+	this->routes.push_back(route);
 }
 
 bool Server::hasListenDup() {
@@ -201,10 +202,10 @@ void		Server::printServer() {
 		this->log.INFO << "Server name [" << i  << "]: " << this->server_names[i];
 	for (std::map<int, std::string>::iterator i = this->error_pages.begin(); i != this->error_pages.end(); i++)
 		this->log.INFO << "Error code path["<< i->first << "]: " << i->second;
-	for (std::map<std::string, Route>::iterator i = this->routes.begin(); i != this->routes.end(); i++)
+	for (std::vector<Route>::iterator i = this->routes.begin(); i != this->routes.end(); i++)
 	{
-		this->log.INFO << "Route path: " << i->first;
-		i->second.printRoute();
+		this->log.INFO << "Route path: " << i->getPath();
+		i->printRoute();
 	}
 	std::cout << std::endl;
 }
@@ -241,7 +242,19 @@ void Server::handle_request(int fd)
 	try
 	{
 		Request		req(fd);
-
+		Route 		r;
+		try
+		{
+			r = this->select_route(req);
+		}
+		catch(const std::exception& e)
+		{
+			resp.setStatusCode("404");
+			resp.setBody("<html><head><title>404</title></head><body style=\"background-color:#000000;text-align:center;color:white;\"><h1>Webserv</h1><p>404 Not Found</p></body></html>");
+			resp.run(fd);
+			return ;
+		}
+		r.handle_request(req, fd);
 		std::string body = std::string("<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\">")
 			+ "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
 			+ "<title>Webserv</title>"
@@ -292,7 +305,6 @@ void Server::handle_request(int fd)
 				+ "</span>");
 			body +=	"</div></body></html>";
 		resp.setBody(body);
-		this->select_route(req);
 		resp.run(fd);
 	}
 	catch(const std::exception& e)
@@ -359,19 +371,24 @@ std::set<int> Server::create_conn_sockets()
 
 Route &Server::select_route(const Request &req)
 {
-	this->routes["test"] = Route();
-	better_string req_path(req.getPath());
-	//for (
-	//	std::map<std::string, Route>::iterator it = this->routes.begin();
-	//	it != this->routes.end();
-	//	it++
-	//)
-	//{
-	//	if (req_path.starts_with(it->first))
-	//	{
-	//		std::cout << "dfg";
-	//	}
-	//}
-	this->log.INFO << req_path << ": " << req_path.starts_with("/test") << " " << req_path.ends_with("abc");
-	return this->routes.begin()->second;
+	size_t		max_size = 0;
+	size_t		curr_size;
+	std::vector<Route>::iterator	res;
+	for (
+		std::vector<Route>::iterator it = this->routes.begin();
+		it != this->routes.end();
+		it++
+	)
+	{
+		curr_size = it->match(req.getPath());
+		if (curr_size > max_size)
+		{
+			max_size = curr_size;
+			res = it;
+		}
+	}
+	if (!max_size)
+		throw std::runtime_error("No matching route!");
+	this->log.INFO << "Selected route: " << res->getPath();
+	return *res;
 }
