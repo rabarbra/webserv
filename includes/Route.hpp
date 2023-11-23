@@ -6,6 +6,7 @@
 # include "CGI.hpp"
 # include "Method.hpp"
 # include <iostream>
+# include <algorithm>
 #include "../liblogging/Logger.hpp"
 
 typedef enum e_route_type {
