@@ -40,7 +40,7 @@ class Route
 		Route();
 		~Route();
 		Route(const Route &other);
-		Route	&operator=(const Route &other);
+		Route		&operator=(const Route &other);
 		RouteType	getType();
 		bool		getDirListing();
 		bool		isRouteValid();

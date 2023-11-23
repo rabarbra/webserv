@@ -11,14 +11,14 @@
 class Response
 {
 	private:
-		std::string	httpVersion;
-		std::string	statusCode;
-		std::string	reason;
+		std::string							httpVersion;
+		std::string							statusCode;
+		std::string							reason;
 		std::map<std::string, std::string>	headers;
-		std::string	body;
-		std::string	_plain;
-		size_t		body_size;
-		void		_build();
+		std::string							body;
+		std::string							_plain;
+		size_t								body_size;
+		void								_build();
 	public:
 		Response();
 		~Response();

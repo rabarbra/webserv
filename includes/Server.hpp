@@ -21,7 +21,7 @@
 class Server
 {
 	private:
-		std::vector<Route>			routes;
+		std::vector<Route>						routes;
 		std::multimap<std::string, std::string>	hosts;
 		std::vector<std::string>				server_names;
 		std::map<int, std::string>				error_pages; // Key - status code, value - path to error page file for this status code
@@ -34,18 +34,18 @@ class Server
 		Server();
 		~Server();
 		Server(const Server &other);
-		Server				&operator=(const Server &other);
-		void				setRoute(Route &route);
-		void				setHosts(std::string host, std::string port);
-		void				setServerNames(std::stringstream &ss);
+		Server						&operator=(const Server &other);
+		void						setRoute(Route &route);
+		void						setHosts(std::string host, std::string port);
+		void						setServerNames(std::stringstream &ss);
 		std::vector<std::string> 	getServerNames();
-		void				parseListen(std::stringstream &ss);
-		void				parseBodySize(std::stringstream &ss);
-		void				parseErrorPage(std::stringstream &ss);
-		void				parseLocation(std::string &location);
-		void				handle_request(int fd);
-		void				printServer();
-		bool				hasListenDup();
-		std::set<int>		create_conn_sockets();
+		void						parseListen(std::stringstream &ss);
+		void						parseBodySize(std::stringstream &ss);
+		void						parseErrorPage(std::stringstream &ss);
+		void						parseLocation(std::string &location);
+		void						handle_request(int fd);
+		void						printServer();
+		bool						hasListenDup();
+		std::set<int>				create_conn_sockets();
 };
 #endif
