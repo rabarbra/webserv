@@ -56,7 +56,7 @@ void Response::setBody(std::string body)
 	this->body = body;
 }
 
-void Response::setStatusCode(std::__1::string code)
+void Response::setStatusCode(std::string code)
 {
 	this->statusCode = code;
 }
