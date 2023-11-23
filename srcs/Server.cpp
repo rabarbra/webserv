@@ -125,9 +125,9 @@ void	Server::parseLocation(std::string &location)
 	{
 		path = args[0];
 		route.setFileExtensions(args[1]);
+		route.setType(CGI_);
 	}
 	route.parseOptions(ss);
-	std::cout << "--------------Second route----------------\n";
 	this->routes[path] = route;
 }
 

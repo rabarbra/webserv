@@ -34,6 +34,7 @@ class Route
 		Route	&operator=(const Route &other);
 		RouteType	getType();
 		bool		getDirListing();
+		bool		isRouteValid();
 		void setFileExtensions(std::string &allowed_methods);
 		void setAllowedMethods(std::string methods);
 		void setRootDirectory(std::string root_directory);

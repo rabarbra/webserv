@@ -133,6 +133,8 @@ void Route::parseOptions(std::stringstream &ss)
 		this->parseOption(param);
 		options.erase(0, pos + 1);
 	}
+	if (!this->isRouteValid())
+		throw std::runtime_error("invalid route");
 }
 
 void Route::parseOption(std::string &param)
@@ -171,6 +173,7 @@ void Route::parseOption(std::string &param)
 				throw std::runtime_error("missing ';' after redirect url");
 			word.erase(word.length() - 1, 1);
 			this->setRedirectUrl(word);
+			this->setType(REDIRECTION_);
 		}
 		else if (word == "autoindex")
 		{
@@ -204,10 +207,23 @@ void Route::parseOption(std::string &param)
 			word.erase(word.length() - 1, 1);
 			this->parseAllowedMethods(word);
 		}
-		else {
-			std::cout << "word: " << word << std::endl;
-			throw std::runtime_error("invalid option");
+		else if (word == "cgi")
+		{
+			if (this->cgi)
+				throw std::runtime_error("cgi already set");
+			ss >> word;
+			if (word[word.length() - 1] != ';')
+				throw std::runtime_error("missing ';' after cgi");
+			word.erase(word.length() - 1, 1);
+			if (word == "on")
+				this->setType(CGI_);
+			else if (word == "off")
+				this->setCGI(NULL);
+			else
+				throw std::runtime_error("invalid cgi value");
 		}
+		else 
+			throw std::runtime_error("invalid option");
 	}
 }
 
@@ -251,6 +267,50 @@ void Route::parseAllowedMethods(std::string &method)
 		else
 			throw std::runtime_error("invalid allowed_methods format");
 	}
+}
+
+bool Route::isRouteValid()
+{
+	if (this->type == PATH_)
+	{
+		if (this->allowed_methods.size() == 0 && 
+				this->root_directory == "" &&
+				this->static_dir == "")
+			return false;
+		if (this->file_extensions.size() != 0)
+			return false;
+		if (this->redirect_url != "")
+			return false;
+		if (this->cgi)
+			return false;
+	}
+	else if (this->type == REDIRECTION_)
+	{
+		if (this->allowed_methods.size() == 0 && this->redirect_url == "")
+			return false;
+		if (this->file_extensions.size() >= 1)
+			return false;
+		if (this->root_directory != "")
+			return false;
+		if (this->dir_listing)
+			return false;
+		if (this->static_dir != "")
+			return false;
+		if (this->cgi)
+			return false;
+	}
+	else if (this->type == CGI_)
+	{
+		if (!this->allowed_methods.size() 
+				&& !this->file_extensions.size()
+				&& !this->root_directory.empty())
+			return false;
+		//if (!this->cgi )
+		//	return false;
+		if (this->file_extensions.size() == 0)
+			return false;
+	}
+	return true;
 }
 
 void Route::printRoute()
