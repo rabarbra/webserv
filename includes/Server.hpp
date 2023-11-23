@@ -42,8 +42,10 @@ class Server
 		void				parseListen(std::stringstream &ss);
 		void				parseBodySize(std::stringstream &ss);
 		void				parseErrorPage(std::stringstream &ss);
+		void				parseLocation(std::string &location);
 		void				handle_request(int fd);
 		void				printServer();
+		bool				hasListenDup();
 		std::set<int>		create_conn_sockets();
 };
 #endif

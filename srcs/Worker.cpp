@@ -114,6 +114,7 @@ int	Worker::parse_server(std::string &server)
 			if ((pos = server.find("}")) != std::string::npos) 
 				param = server.substr(0, pos + 1);
 			server.erase(0, pos + 1);
+			new_server.parseLocation(param);
 		}
 		else 
 		{
