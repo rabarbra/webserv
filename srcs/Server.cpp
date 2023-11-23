@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <string>
 
-Server::Server(): routes(), hosts(), server_names(), error_pages(), max_body_size(-1), log(Logger(_INFO, "Server")), _penging_connections_count(5)
+Server::Server(): routes(), hosts(), server_names(), error_pages(), max_body_size(-1), log(Logger(_INFO, "Server")), _penging_connections_count(SOMAXCONN)
 {}
 
 Server::~Server()
@@ -237,56 +237,70 @@ void	Server::parseErrorPage(std::stringstream &ss)
 
 void Server::handle_request(int fd)
 {
-	Request		req(fd);
 	Response	resp;
+	try
+	{
+		Request		req(fd);
 
-	std::string body = std::string("<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\">")
-		+ "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
-		+ "<title>Webserv</title>"
-		+ "<style>"
-		+ "body{"
-			+ "font-family:Arial,sans-serif;background-color:#000000;text-align:center;padding:50px;"
-		+ "}"
-		+ ".container{"
-			+ "max-width:600px;margin:0 auto;"
-		+ "}"
-		+ "h1{"
-			+ "color:#c31a17;"
-		+ "}"
-		+ "p{"
-			+ "color:#938888;"
-		+ "}"
-		+ "</style>"
-		+ "</head>"
-		+ "<body><div class=\"container\">"
-		+ "<h1>Webserv</h1>"
-		+ "<p>"
-			+ "Hello from <span style=\"color: green;\">"
-			+ this->hosts.begin()->first + ":"
-			+ this->hosts.begin()->second
-			+ "</span> server!"
-		+ "</p>"
-		+ "<p>"
-			+ "Your request:"
-		+ "</p>"
-		+ "<p>"
-			+ "Http version: " + req.getVersion()
-			+ "<br/>"
-			+ "Host: " + req.getHost() + ":" + req.getPort()
-			+ "<br/>"
-			+ "path: " + req.getPath()
-			+ "<br/>"
-			+ "query: " + req.getQuery()
-			+ "<br/>"
-			+ "body: " + req.getBody()
-			+ "<br/>"
-			+ "Headers:</p></div><div style=\"max-width:1200px;margin:0 auto;\"><hr/>";
-		std::map<std::string, std::string> headers = req.getHeaders();
-		for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
-			body += ("<br/><span style=\"color:#44ee33;float:left;\">" + it->first + "</span><span style=\"color:#eeee44;float:right;\">" + it->second + "</span>");
-		body +=	"</div></body></html>";
-	resp.setBody(body);
-	resp.run(fd);
+		std::string body = std::string("<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\">")
+			+ "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+			+ "<title>Webserv</title>"
+			+ "<style>"
+			+ "body{"
+				+ "font-family:Arial,sans-serif;background-color:#000000;text-align:center;padding:50px;"
+			+ "}"
+			+ ".container{"
+				+ "max-width:600px;margin:0 auto;"
+			+ "}"
+			+ "h1{"
+				+ "color:#c31a17;"
+			+ "}"
+			+ "p{"
+				+ "color:#938888;"
+			+ "}"
+			+ "</style>"
+			+ "</head>"
+			+ "<body><div class=\"container\">"
+			+ "<h1>Webserv</h1>"
+			+ "<p>"
+				+ "Hello from <span style=\"color: green;\">"
+				+ this->hosts.begin()->first + ":"
+				+ this->hosts.begin()->second
+				+ "</span> server!"
+			+ "</p>"
+			+ "<p>"
+				+ "Your request:"
+			+ "</p>"
+			+ "<p>"
+				+ "Http version: " + req.getVersion()
+				+ "<br/>"
+				+ "Host: " + req.getHost() + ":" + req.getPort()
+				+ "<br/>"
+				+ "path: " + req.getPath()
+				+ "<br/>"
+				+ "query: " + req.getQuery()
+				+ "<br/>"
+				+ "body: " + req.getBody()
+				+ "<br/>"
+				+ "Headers:</p></div><div style=\"max-width:1200px;margin:0 auto;\"><hr/>";
+			std::map<std::string, std::string> headers = req.getHeaders();
+			for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
+			body += ("<br/><span style=\"color:#44ee33;float:left;\">"
+				+ it->first
+				+ "</span><span style=\"color:#eeee44;float:right;\">"
+				+ it->second
+				+ "</span>");
+			body +=	"</div></body></html>";
+		resp.setBody(body);
+		this->select_route(req);
+		resp.run(fd);
+	}
+	catch(const std::exception& e)
+	{
+		resp.setStatusCode("400");
+		resp.run(fd);
+		this->log.ERROR << e.what() << '\n';
+	}
 }
 
 int Server::_create_conn_socket(std::string host, std::string port)
@@ -302,7 +316,7 @@ int Server::_create_conn_socket(std::string host, std::string port)
 	hints.ai_flags = 0;
 	hints.ai_next = 0;
 	hints.ai_protocol = 0;
-	hints.ai_family = AF_UNSPEC;
+	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
     error = getaddrinfo(host.c_str(), port.c_str(), &hints, &addr);
 	if (error)
@@ -331,10 +345,33 @@ std::set<int> Server::create_conn_sockets()
 {
 	std::set<int> res;
 
-	for (std::multimap<std::string, std::string>::iterator i = this->hosts.begin(); i != this->hosts.end(); i++)
+	for (
+		std::multimap<std::string, std::string>::iterator i = this->hosts.begin();
+		i != this->hosts.end();
+		i++
+	)
 	{
 		res.insert(this->_create_conn_socket(i->first, i->second));
 		this->log.INFO << "Listening " << i->first << ":" << i->second;
 	}
 	return res;
+}
+
+Route &Server::select_route(const Request &req)
+{
+	this->routes["test"] = Route();
+	better_string req_path(req.getPath());
+	//for (
+	//	std::map<std::string, Route>::iterator it = this->routes.begin();
+	//	it != this->routes.end();
+	//	it++
+	//)
+	//{
+	//	if (req_path.starts_with(it->first))
+	//	{
+	//		std::cout << "dfg";
+	//	}
+	//}
+	this->log.INFO << req_path << ": " << req_path.starts_with("/test") << " " << req_path.ends_with("abc");
+	return this->routes.begin()->second;
 }

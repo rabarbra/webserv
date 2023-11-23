@@ -18,7 +18,6 @@
 # include "Request.hpp"
 # include "Response.hpp"
 # include "../liblogging/Logger.hpp"
-
 class Server
 {
 	private:
@@ -29,12 +28,13 @@ class Server
 		long long								max_body_size;
 		Logger									log;
 		int										_penging_connections_count;
-		int	_create_conn_socket(std::string host, std::string port);
+		int										_create_conn_socket(std::string host, std::string port);
+		Route									&select_route(const Request &req);
 	public:
 		Server();
 		~Server();
 		Server(const Server &other);
-		Server &operator=(const Server &other);
+		Server				&operator=(const Server &other);
 		void				setRoute(std::string path, Route &route);
 		void				setHosts(std::string host, std::string port);
 		void				setServerNames(std::stringstream &ss);

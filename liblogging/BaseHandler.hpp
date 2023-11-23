@@ -2,7 +2,7 @@
 # define BASE_HANDLER_HPP
 # include <iostream>
 # include "Levels.hpp"
-
+# include "Colors.hpp"
 class BaseHandler
 {
 	protected:

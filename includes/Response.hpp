@@ -7,6 +7,7 @@
 # include <sys/types.h>
 # include <sys/time.h>
 # include <netdb.h>
+# include "bettter_string.hpp"
 class Response
 {
 	private:
@@ -22,8 +23,10 @@ class Response
 		Response();
 		~Response();
 		Response(const Response &other);
-		Response operator=(const Response &other);
-		void	setBody(std::string body);
-		void	run(int fd);
+		Response	operator=(const Response &other);
+		void		setBody(std::string body);
+		void		setHeader(std::string key, std::string value);
+		void		setStatusCode(std::string code);
+		void		run(int fd);
 };
 #endif

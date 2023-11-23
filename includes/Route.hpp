@@ -8,6 +8,7 @@
 # include <iostream>
 # include <algorithm>
 #include "../liblogging/Logger.hpp"
+# include "bettter_string.hpp"
 
 typedef enum e_route_type {
 	PATH_,

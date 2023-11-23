@@ -16,7 +16,10 @@ Worker::~Worker()
 		i != this->conn_socks.end();
 		i++
 	)
+	{
+		this->_log.INFO << "Closing: " << (*i).first;
 		close((*i).first);
+	}
 }
 
 Worker::Worker(char *path_to_conf)

@@ -55,3 +55,13 @@ void Response::setBody(std::string body)
 {
 	this->body = body;
 }
+
+void Response::setStatusCode(std::__1::string code)
+{
+	this->statusCode = code;
+}
+
+void Response::setHeader(std::string key, std::string value)
+{
+	this->headers[key] = value;
+}

@@ -106,37 +106,37 @@ void Request::parse()
 		<< "body:   \t" << this->body << "\n";
 }
 
-std::string Request::getPath()
+std::string Request::getPath() const
 {
 	return this->path;
 }
 
-std::string Request::getQuery()
+std::string Request::getQuery() const
 {
 	return this->query;
 }
 
-std::string Request::getBody()
+std::string Request::getBody() const
 {
 	return this->body;
 }
 
-std::string Request::getVersion()
+std::string Request::getVersion() const
 {
 	return this->httpVersion;
 }
 
-std::string Request::getHost()
+std::string Request::getHost() const
 {
 	return this->host;
 }
 
-std::string Request::getPort()
+std::string Request::getPort() const
 {
 	return this->port;
 }
 
-std::map<std::string, std::string> Request::getHeaders()
+std::map<std::string, std::string> Request::getHeaders() const
 {
 	return this->headers;
 }

@@ -6,6 +6,7 @@
 # include <cstdlib>
 # include <cstring>
 # include <cstdio>
+# include <memory>
 // C libs
 # include <sys/socket.h>
 # include <sys/types.h>
@@ -21,15 +22,15 @@ class Worker
 		std::vector<Server>	servers;
 		std::map<int, int>	conn_socks;
 		std::map<int, int>	conn_map;
-		Logger			_log;
-		Worker();
-		Worker(const Worker &other);
-		Worker &operator=(const Worker &other);
-		void	_parse_config(std::ifstream &conf);
+		Logger				_log;
 		int		parse_server(std::string &server);
+		void	_parse_config(std::ifstream &conf);
 		void	parse_param(std::string param, Server &server);
 		void	_handle_request(int conn_fd);
 		void	_loop(int kq, std::vector<struct kevent> evList);
+		Worker();
+		Worker(const Worker &other);
+		Worker	&operator=(const Worker &other);
 	public:
 		~Worker();
 		Worker(char *path_to_conf);

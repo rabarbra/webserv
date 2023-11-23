@@ -9,7 +9,7 @@ SRC_DIR =		srcs
 INC_DIR =		includes
 
 SRC =			main Worker Server Route Request Response \
-				worker_loop_darwin worker_loop_linux
+				worker_loop_darwin worker_loop_linux better_string
 OBJ =			$(addprefix $(OBJ_DIR)/, $(addsuffix .o, $(SRC)))
 
 LIBLOGGING =	liblogging

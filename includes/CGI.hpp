@@ -1,6 +1,7 @@
 #ifndef CGI_HPP
 # define CGI_HPP
 # include <string>
+# include "bettter_string.hpp"
 class CGI
 {
 	public:
