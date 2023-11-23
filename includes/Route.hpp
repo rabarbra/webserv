@@ -35,6 +35,7 @@ class Route
 		Logger						logger;
 		void						handle_path(Request req, int fd);
 		void						handle_cgi(Request req, int fd);
+		void						handle_redirection(Request req, int fd);
 	public:
 		Route();
 		~Route();

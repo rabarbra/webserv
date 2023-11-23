@@ -364,14 +364,17 @@ void Route::handle_request(Request req, int fd)
 		this->handle_path(req, fd);
 	else if (this->type == CGI_)
 		this->handle_cgi(req, fd);
+	else if (this->type == REDIRECTION_)
+		this->handle_redirection(req, fd);
 }
 
 void Route::handle_path(Request req, int fd)
 {
+	Response resp;
 	std::string full_path = this->root_directory + req.getPath();
 	this->logger.INFO << "Trying to send: " << full_path;
 	std::ifstream file(full_path.c_str());
-	if (file.good())
+	if (file.is_open())
 	{
 		std::string	body;
 		std::string line;
@@ -380,13 +383,25 @@ void Route::handle_path(Request req, int fd)
 			std::getline(file, line);
 			body += line;
 		}
-		Response resp;
 		resp.setBody(body);
+		resp.run(fd);
+		file.close();
+	}
+	else 
+	{
+		resp.setStatusCode("500");
 		resp.run(fd);
 	}
 }
 
 void Route::handle_cgi(Request req, int fd)
+{
+	std::string full_path = this->root_directory + req.getPath();
+	Response resp;
+	resp.run(fd);
+}
+
+void Route::handle_redirection(Request req, int fd)
 {
 	std::string full_path = this->root_directory + req.getPath();
 	Response resp;

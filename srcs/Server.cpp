@@ -255,57 +255,57 @@ void Server::handle_request(int fd)
 			return ;
 		}
 		r.handle_request(req, fd);
-		std::string body = std::string("<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\">")
-			+ "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
-			+ "<title>Webserv</title>"
-			+ "<style>"
-			+ "body{"
-				+ "font-family:Arial,sans-serif;background-color:#000000;text-align:center;padding:50px;"
-			+ "}"
-			+ ".container{"
-				+ "max-width:600px;margin:0 auto;"
-			+ "}"
-			+ "h1{"
-				+ "color:#c31a17;"
-			+ "}"
-			+ "p{"
-				+ "color:#938888;"
-			+ "}"
-			+ "</style>"
-			+ "</head>"
-			+ "<body><div class=\"container\">"
-			+ "<h1>Webserv</h1>"
-			+ "<p>"
-				+ "Hello from <span style=\"color: green;\">"
-				+ this->hosts.begin()->first + ":"
-				+ this->hosts.begin()->second
-				+ "</span> server!"
-			+ "</p>"
-			+ "<p>"
-				+ "Your request:"
-			+ "</p>"
-			+ "<p>"
-				+ "Http version: " + req.getVersion()
-				+ "<br/>"
-				+ "Host: " + req.getHost() + ":" + req.getPort()
-				+ "<br/>"
-				+ "path: " + req.getPath()
-				+ "<br/>"
-				+ "query: " + req.getQuery()
-				+ "<br/>"
-				+ "body: " + req.getBody()
-				+ "<br/>"
-				+ "Headers:</p></div><div style=\"max-width:1200px;margin:0 auto;\"><hr/>";
-			std::map<std::string, std::string> headers = req.getHeaders();
-			for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
-			body += ("<br/><span style=\"color:#44ee33;float:left;\">"
-				+ it->first
-				+ "</span><span style=\"color:#eeee44;float:right;\">"
-				+ it->second
-				+ "</span>");
-			body +=	"</div></body></html>";
-		resp.setBody(body);
-		resp.run(fd);
+		// std::string body = std::string("<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\">")
+		// 	+ "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+		// 	+ "<title>Webserv</title>"
+		// 	+ "<style>"
+		// 	+ "body{"
+		// 		+ "font-family:Arial,sans-serif;background-color:#000000;text-align:center;padding:50px;"
+		// 	+ "}"
+		// 	+ ".container{"
+		// 		+ "max-width:600px;margin:0 auto;"
+		// 	+ "}"
+		// 	+ "h1{"
+		// 		+ "color:#c31a17;"
+		// 	+ "}"
+		// 	+ "p{"
+		// 		+ "color:#938888;"
+		// 	+ "}"
+		// 	+ "</style>"
+		// 	+ "</head>"
+		// 	+ "<body><div class=\"container\">"
+		// 	+ "<h1>Webserv</h1>"
+		// 	+ "<p>"
+		// 		+ "Hello from <span style=\"color: green;\">"
+		// 		+ this->hosts.begin()->first + ":"
+		// 		+ this->hosts.begin()->second
+		// 		+ "</span> server!"
+		// 	+ "</p>"
+		// 	+ "<p>"
+		// 		+ "Your request:"
+		// 	+ "</p>"
+		// 	+ "<p>"
+		// 		+ "Http version: " + req.getVersion()
+		// 		+ "<br/>"
+		// 		+ "Host: " + req.getHost() + ":" + req.getPort()
+		// 		+ "<br/>"
+		// 		+ "path: " + req.getPath()
+		// 		+ "<br/>"
+		// 		+ "query: " + req.getQuery()
+		// 		+ "<br/>"
+		// 		+ "body: " + req.getBody()
+		// 		+ "<br/>"
+		// 		+ "Headers:</p></div><div style=\"max-width:1200px;margin:0 auto;\"><hr/>";
+		// 	std::map<std::string, std::string> headers = req.getHeaders();
+		// 	for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
+		// 	body += ("<br/><span style=\"color:#44ee33;float:left;\">"
+		// 		+ it->first
+		// 		+ "</span><span style=\"color:#eeee44;float:right;\">"
+		// 		+ it->second
+		// 		+ "</span>");
+		// 	body +=	"</div></body></html>";
+		// resp.setBody(body);
+		// resp.run(fd);
 	}
 	catch(const std::exception& e)
 	{
