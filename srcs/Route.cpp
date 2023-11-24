@@ -12,16 +12,26 @@ Route::~Route()
 		delete this->cgi;
 }
 
-Route::Route(const Route &other)
+Route::Route(const Route &other): cgi(NULL)
 {
 	*this = other;
 }
 
 Route &Route::operator=(const Route &other)
 {
+
 	if (this != &other)
 	{
-		this->cgi = other.cgi;
+		if (this->cgi)
+		{
+			delete this->cgi;
+			this->cgi = NULL;
+		}
+		if (other.cgi)
+		{
+			this->cgi = new CGI();
+			*(this->cgi) = *(other.cgi);
+		}
 		this->type = other.type;
 		this->allowed_methods = other.allowed_methods;
 		this->file_extensions = other.file_extensions;
@@ -89,7 +99,7 @@ void	Route::setFileExtensions(std::string &extension)
 
 	unsigned long pos = extension.find("\\.(");
 	if (extension[extension.length() - 1] != '$')
-		throw std::runtime_error("Wrong file extension");
+		throw std::runtime_error("Wrong file extension\n");
 	if (pos == std::string::npos)
 	{
 		extension.erase(extension.length() - 1, 1);
@@ -97,7 +107,7 @@ void	Route::setFileExtensions(std::string &extension)
 		return ;
 	}
 	if (extension[extension.length() - 2] != ')')
-		throw std::runtime_error("Wrong file extension");
+		throw std::runtime_error("Wrong file extension\n");
 	extension = extension.substr(pos + 3, extension.length() - 2);
 	while ((pos = extension.find("|")) != std::string::npos) {
 		token = extension.substr(0, pos);
@@ -107,7 +117,7 @@ void	Route::setFileExtensions(std::string &extension)
 			extension.erase(0, pos + 1);
 		}
 		else
-			throw std::runtime_error("Wrong file format");
+			throw std::runtime_error("Wrong file format\n");
 	}
 	extension = extension.substr(0, extension.find(")"));
 	this->file_extensions.insert(this->file_extensions.end(), "." + extension);
@@ -135,7 +145,7 @@ void Route::parseOptions(std::stringstream &ss)
 		options.erase(0, pos + 1);
 	}
 	if (!this->isRouteValid())
-		throw std::runtime_error("invalid route");
+		throw std::runtime_error("invalid route\n");
 }
 
 void Route::parseOption(std::string &param)
@@ -148,83 +158,76 @@ void Route::parseOption(std::string &param)
 		if (word == "root")
 		{
 			if (this->root_directory != "")
-				throw std::runtime_error("root directory already set");
+				throw std::runtime_error("root directory already set\n");
 			ss >> word;
-			if (word[word.length() - 1] != ';')
-				throw std::runtime_error("missing ';' after root directory");
-			word.erase(word.length() - 1, 1);
+			checkSemiColon(word, "root directory");
 			this->setRootDirectory(word);
 		}
 		else if (word == "index")
 		{
 			if (this->index != "index.html")
-				throw std::runtime_error("index already set");
+				throw std::runtime_error("index already set\n");
 			ss >> word;
-			if (word[word.length() - 1] != ';')
-				throw std::runtime_error("missing ';' after index");
-			word.erase(word.length() - 1, 1);
+			checkSemiColon(word, "index page");
 			this->setIndex(word);
 		}
 		else if (word == "redirect_url")
 		{
 			if (this->redirect_url != "")
-				throw std::runtime_error("redirect url already set");
+				throw std::runtime_error("redirect url already set\n");
 			ss >> word;
-			if (word[word.length() - 1] != ';')
-				throw std::runtime_error("missing ';' after redirect url");
-			word.erase(word.length() - 1, 1);
+			checkSemiColon(word, "redirect url");
 			this->setRedirectUrl(word);
 			this->setType(REDIRECTION_);
 		}
 		else if (word == "autoindex")
 		{
 			if (this->dir_listing)
-				throw std::runtime_error("autoindex already set");
+				throw std::runtime_error("autoindex already set\n");
 			ss >> word;
-			if (word[word.length() - 1] != ';')
-				throw std::runtime_error("missing ';' after autoindex");
-			word.erase(word.length() - 1, 1);
+			checkSemiColon(word, "autoindex");
 			if (word == "on")
 				this->setDirListing(true);
 			else if (word == "off")
 				this->setDirListing(false);
 			else
-				throw std::runtime_error("invalid autoindex value");
+				throw std::runtime_error("invalid autoindex value\n");
 		}
 		else if (word == "static_dir") {
 			if (this->static_dir != "")
-				throw std::runtime_error("static_dir already set");
+				throw std::runtime_error("static_dir already set\n");
 			ss >> word;
-			if (word[word.length() - 1] != ';')
-				throw std::runtime_error("missing ';' after static_dir");
-			word.erase(word.length() - 1, 1);
+			checkSemiColon(word, "static_dir");
 			this->setStaticDir(word);
 		}
 		else if (word == "allowed_methods")
 		{
 			ss >> word;
-			if (word[word.length() - 1] != ';')
-				throw std::runtime_error("missing ';' after allowed_methods");
-			word.erase(word.length() - 1, 1);
+			checkSemiColon(word, "allowed, methods");
 			this->parseAllowedMethods(word);
 		}
 		else if (word == "cgi")
 		{
 			if (this->cgi)
-				throw std::runtime_error("cgi already set");
+				throw std::runtime_error("cgi already set\n");
 			ss >> word;
-			if (word[word.length() - 1] != ';')
-				throw std::runtime_error("missing ';' after cgi");
+			std::vector<std::string> handler;
+			while (!word.empty() && word[word.length() - 1] != ';') {
+				if (checkWordIsOption(word))
+					break;
+				handler.insert(handler.end(), word);
+				ss >> word;
+			}
+			if (!word.empty() && word[word.length() - 1] != ';')
+				throw std::runtime_error("missing ';' after cgi handler\n");
 			word.erase(word.length() - 1, 1);
-			if (word == "on")
-				this->setType(CGI_);
-			else if (word == "off")
-				this->setCGI(NULL);
-			else
-				throw std::runtime_error("invalid cgi value");
+			handler.insert(handler.end(), word);
+			if (checkCgiHandler(handler))
+				throw std::runtime_error("Invalid cgi handler\n");
+			this->setCGI(new CGI(handler));
 		}
-		else 
-			throw std::runtime_error("invalid option");
+		else
+			throw std::runtime_error("Invalid argument\n");
 	}
 }
 
@@ -241,7 +244,7 @@ Method get_method(std::string method)
 	else if (method == "HEAD")
 		return HEAD;
 	else
-		throw std::runtime_error("invalid method");
+		throw std::runtime_error("invalid method\n");
 }
 
 void Route::parseAllowedMethods(std::string &method)
@@ -255,7 +258,7 @@ void Route::parseAllowedMethods(std::string &method)
 	std::string token;
 	unsigned long pos = 0;
 	if (!method.empty() && method[0] != '"' && method[method.length() - 1] != '"')
-		throw std::runtime_error("invalid allowed_methods format");
+		throw std::runtime_error("invalid allowed_methods format\n");
 	method.erase(0, 1);
 	method.erase(method.length() - 1, 1);
 	while ((pos = method.find("|")) != std::string::npos) {
@@ -266,7 +269,7 @@ void Route::parseAllowedMethods(std::string &method)
 			method.erase(0, pos + 1);
 		}
 		else
-			throw std::runtime_error("invalid allowed_methods format");
+			throw std::runtime_error("invalid allowed_methods format\n");
 	}
 }
 

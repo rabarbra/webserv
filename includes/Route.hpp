@@ -63,5 +63,9 @@ class Route
 		size_t		match(std::string path);
 };
 
+bool    checkCgiHandler(std::vector<std::string> handler);
+void	checkSemiColon(std::string &word, std::string message);
+bool	checkWordIsOption(std::string word);
+
 #endif
 
