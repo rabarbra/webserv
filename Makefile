@@ -2,14 +2,15 @@ NAME =			webserv
 
 CXX =			c++
 
-CXXFLAGS =		-std=c++98 -Wall -Wextra -Werror
+CXXFLAGS =		-std=c++98 -Wall -Wextra -Werror -fsanitize=address
 
 OBJ_DIR =		build
 SRC_DIR =		srcs
 INC_DIR =		includes
 
 SRC =			main Worker Server Route Request Response \
-				worker_loop_darwin worker_loop_linux better_string
+				worker_loop_darwin worker_loop_linux better_string \
+				ParseUtils cgi StatusCodes
 OBJ =			$(addprefix $(OBJ_DIR)/, $(addsuffix .o, $(SRC)))
 
 LIBLOGGING =	liblogging
