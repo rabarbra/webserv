@@ -5,7 +5,7 @@
 void Worker::_loop(int kq, std::vector<struct kevent> evList)
 {
 	struct kevent			evSet;
-    struct sockaddr_storage	addr;
+    struct sockaddr_in		addr;
     socklen_t				socklen = sizeof(addr);
 	int						conn_fd;
 	int						num_events;
@@ -18,11 +18,20 @@ void Worker::_loop(int kq, std::vector<struct kevent> evList)
 			if (num_events < 0)
 				throw std::runtime_error("Kevent error: "
 					+ std::string(strerror(errno)));
+			this->_log.INFO << "Events: " << num_events;
         	for (int i = 0; i < num_events; i++)
 			{
-        	    if (this->conn_socks.find(static_cast<int>(evList[i].ident))
-					!= this->conn_socks.end())
+				std::map<int, int>::iterator it = this->conn_socks.find(static_cast<int>(evList[i].ident));
+        	    if (it != this->conn_socks.end())
 				{
+					this->_log.INFO << "Accepting: " << evList[i].ident;
+					if (listen(evList[i].ident, SOMAXCONN) < 0)
+					{
+						close(evList[i].ident);
+						this->conn_socks.erase(it);
+						evList.erase(evList.begin() + i);
+						throw std::runtime_error("Not listening: " + std::string(strerror(errno)));
+					}
         	        conn_fd = accept(
 						evList[i].ident,
 						(struct sockaddr *)&addr,
@@ -31,7 +40,7 @@ void Worker::_loop(int kq, std::vector<struct kevent> evList)
 					if (conn_fd < 0)
 					{
 						throw std::runtime_error(
-							"Error acceptiong connection: " +
+							"Error accepting connection: " +
 							std::string(strerror(errno))
 						);
 					}

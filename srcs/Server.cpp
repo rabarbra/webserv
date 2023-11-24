@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <string>
 
-Server::Server(): routes(), hosts(), server_names(), error_pages(), max_body_size(-1), log(Logger(_INFO, "Server")), _penging_connections_count(5)
+Server::Server(): routes(), hosts(), server_names(), error_pages(), max_body_size(-1), log(Logger(_INFO, "Server")), _penging_connections_count(SOMAXCONN)
 {}
 
 Server::~Server()
@@ -33,9 +33,9 @@ Server &Server::operator=(const Server &other)
 	return (*this);
 }
 
-void Server::setRoute(std::string path, Route &route)
+void Server::setRoute(Route &route)
 {
-	this->routes[path] = route;
+	this->routes.push_back(route);
 }
 
 void Server::setHosts(std::string host, std::string port)
@@ -128,7 +128,8 @@ void	Server::parseLocation(std::string &location)
 		route.setType(CGI_);
 	}
 	route.parseOptions(ss);
-	this->routes[path] = route;
+	route.setPath(path);
+	this->routes.push_back(route);
 }
 
 bool Server::hasListenDup() {
@@ -201,10 +202,10 @@ void		Server::printServer() {
 		this->log.INFO << "Server name [" << i  << "]: " << this->server_names[i];
 	for (std::map<int, std::string>::iterator i = this->error_pages.begin(); i != this->error_pages.end(); i++)
 		this->log.INFO << "Error code path["<< i->first << "]: " << i->second;
-	for (std::map<std::string, Route>::iterator i = this->routes.begin(); i != this->routes.end(); i++)
+	for (std::vector<Route>::iterator i = this->routes.begin(); i != this->routes.end(); i++)
 	{
-		this->log.INFO << "Route path: " << i->first;
-		i->second.printRoute();
+		this->log.INFO << "Route path: " << i->getPath();
+		i->printRoute();
 	}
 	std::cout << std::endl;
 }
@@ -237,56 +238,81 @@ void	Server::parseErrorPage(std::stringstream &ss)
 
 void Server::handle_request(int fd)
 {
-	Request		req(fd);
 	Response	resp;
-
-	std::string body = std::string("<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\">")
-		+ "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
-		+ "<title>Webserv</title>"
-		+ "<style>"
-		+ "body{"
-			+ "font-family:Arial,sans-serif;background-color:#000000;text-align:center;padding:50px;"
-		+ "}"
-		+ ".container{"
-			+ "max-width:600px;margin:0 auto;"
-		+ "}"
-		+ "h1{"
-			+ "color:#c31a17;"
-		+ "}"
-		+ "p{"
-			+ "color:#938888;"
-		+ "}"
-		+ "</style>"
-		+ "</head>"
-		+ "<body><div class=\"container\">"
-		+ "<h1>Webserv</h1>"
-		+ "<p>"
-			+ "Hello from <span style=\"color: green;\">"
-			+ this->hosts.begin()->first + ":"
-			+ this->hosts.begin()->second
-			+ "</span> server!"
-		+ "</p>"
-		+ "<p>"
-			+ "Your request:"
-		+ "</p>"
-		+ "<p>"
-			+ "Http version: " + req.getVersion()
-			+ "<br/>"
-			+ "Host: " + req.getHost() + ":" + req.getPort()
-			+ "<br/>"
-			+ "path: " + req.getPath()
-			+ "<br/>"
-			+ "query: " + req.getQuery()
-			+ "<br/>"
-			+ "body: " + req.getBody()
-			+ "<br/>"
-			+ "Headers:</p></div><div style=\"max-width:1200px;margin:0 auto;\"><hr/>";
-		std::map<std::string, std::string> headers = req.getHeaders();
-		for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
-			body += ("<br/><span style=\"color:#44ee33;float:left;\">" + it->first + "</span><span style=\"color:#eeee44;float:right;\">" + it->second + "</span>");
-		body +=	"</div></body></html>";
-	resp.setBody(body);
-	resp.run(fd);
+	try
+	{
+		Request		req(fd);
+		Route 		r;
+		try
+		{
+			r = this->select_route(req);
+		}
+		catch(const std::exception& e)
+		{
+			resp.setStatusCode("404");
+			resp.setBody("<html><head><title>404</title></head><body style=\"background-color:#000000;text-align:center;color:white;\"><h1>Webserv</h1><p>404 Not Found</p></body></html>");
+			resp.run(fd);
+			return ;
+		}
+		r.handle_request(req, fd);
+		// std::string body = std::string("<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\">")
+		// 	+ "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+		// 	+ "<title>Webserv</title>"
+		// 	+ "<style>"
+		// 	+ "body{"
+		// 		+ "font-family:Arial,sans-serif;background-color:#000000;text-align:center;padding:50px;"
+		// 	+ "}"
+		// 	+ ".container{"
+		// 		+ "max-width:600px;margin:0 auto;"
+		// 	+ "}"
+		// 	+ "h1{"
+		// 		+ "color:#c31a17;"
+		// 	+ "}"
+		// 	+ "p{"
+		// 		+ "color:#938888;"
+		// 	+ "}"
+		// 	+ "</style>"
+		// 	+ "</head>"
+		// 	+ "<body><div class=\"container\">"
+		// 	+ "<h1>Webserv</h1>"
+		// 	+ "<p>"
+		// 		+ "Hello from <span style=\"color: green;\">"
+		// 		+ this->hosts.begin()->first + ":"
+		// 		+ this->hosts.begin()->second
+		// 		+ "</span> server!"
+		// 	+ "</p>"
+		// 	+ "<p>"
+		// 		+ "Your request:"
+		// 	+ "</p>"
+		// 	+ "<p>"
+		// 		+ "Http version: " + req.getVersion()
+		// 		+ "<br/>"
+		// 		+ "Host: " + req.getHost() + ":" + req.getPort()
+		// 		+ "<br/>"
+		// 		+ "path: " + req.getPath()
+		// 		+ "<br/>"
+		// 		+ "query: " + req.getQuery()
+		// 		+ "<br/>"
+		// 		+ "body: " + req.getBody()
+		// 		+ "<br/>"
+		// 		+ "Headers:</p></div><div style=\"max-width:1200px;margin:0 auto;\"><hr/>";
+		// 	std::map<std::string, std::string> headers = req.getHeaders();
+		// 	for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
+		// 	body += ("<br/><span style=\"color:#44ee33;float:left;\">"
+		// 		+ it->first
+		// 		+ "</span><span style=\"color:#eeee44;float:right;\">"
+		// 		+ it->second
+		// 		+ "</span>");
+		// 	body +=	"</div></body></html>";
+		// resp.setBody(body);
+		// resp.run(fd);
+	}
+	catch(const std::exception& e)
+	{
+		resp.setStatusCode("400");
+		resp.run(fd);
+		this->log.ERROR << e.what() << '\n';
+	}
 }
 
 int Server::_create_conn_socket(std::string host, std::string port)
@@ -302,7 +328,7 @@ int Server::_create_conn_socket(std::string host, std::string port)
 	hints.ai_flags = 0;
 	hints.ai_next = 0;
 	hints.ai_protocol = 0;
-	hints.ai_family = AF_UNSPEC;
+	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
     error = getaddrinfo(host.c_str(), port.c_str(), &hints, &addr);
 	if (error)
@@ -331,10 +357,38 @@ std::set<int> Server::create_conn_sockets()
 {
 	std::set<int> res;
 
-	for (std::multimap<std::string, std::string>::iterator i = this->hosts.begin(); i != this->hosts.end(); i++)
+	for (
+		std::multimap<std::string, std::string>::iterator i = this->hosts.begin();
+		i != this->hosts.end();
+		i++
+	)
 	{
 		res.insert(this->_create_conn_socket(i->first, i->second));
 		this->log.INFO << "Listening " << i->first << ":" << i->second;
 	}
 	return res;
+}
+
+Route &Server::select_route(const Request &req)
+{
+	size_t		max_size = 0;
+	size_t		curr_size;
+	std::vector<Route>::iterator	res;
+	for (
+		std::vector<Route>::iterator it = this->routes.begin();
+		it != this->routes.end();
+		it++
+	)
+	{
+		curr_size = it->match(req.getPath());
+		if (curr_size > max_size)
+		{
+			max_size = curr_size;
+			res = it;
+		}
+	}
+	if (!max_size)
+		throw std::runtime_error("No matching route!");
+	this->log.INFO << "Selected route: " << res->getPath();
+	return *res;
 }

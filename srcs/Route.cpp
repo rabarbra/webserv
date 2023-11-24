@@ -31,6 +31,7 @@ Route &Route::operator=(const Route &other)
 		this->index = other.index;
 		this->static_dir = other.static_dir;
 		this->logger = other.logger;
+		this->path = other.path;
 	}
 	return *this;
 }
@@ -330,4 +331,79 @@ void Route::printRoute()
 		this->logger.INFO << "            allowed_method: " << *it;
 	std::cout << std::endl;
 
+}
+
+void Route::setPath(std::string path)
+{
+	this->path = path;
+}
+
+std::string Route::getPath()
+{
+	return this->path;
+}
+
+size_t Route::match(std::string path)
+{
+	better_string	req_path(path);
+	if (!req_path.starts_with(this->path))
+		return 0;
+	if (!this->file_extensions.size())
+		return this->path.size();
+	for (size_t i = 0; i < this->file_extensions.size(); i++)
+	{
+		if (req_path.ends_with(this->file_extensions[i]))
+			return this->path.size();
+	}
+	return 0;
+}
+
+void Route::handle_request(Request req, int fd)
+{
+	if (this->type == PATH_)
+		this->handle_path(req, fd);
+	else if (this->type == CGI_)
+		this->handle_cgi(req, fd);
+	else if (this->type == REDIRECTION_)
+		this->handle_redirection(req, fd);
+}
+
+void Route::handle_path(Request req, int fd)
+{
+	Response resp;
+	std::string full_path = this->root_directory + req.getPath();
+	this->logger.INFO << "Trying to send: " << full_path;
+	std::ifstream file(full_path.c_str());
+	if (file.is_open())
+	{
+		std::string	body;
+		std::string line;
+		while (file)
+		{
+			std::getline(file, line);
+			body += line;
+		}
+		resp.setBody(body);
+		resp.run(fd);
+		file.close();
+	}
+	else 
+	{
+		resp.setStatusCode("500");
+		resp.run(fd);
+	}
+}
+
+void Route::handle_cgi(Request req, int fd)
+{
+	std::string full_path = this->root_directory + req.getPath();
+	Response resp;
+	resp.run(fd);
+}
+
+void Route::handle_redirection(Request req, int fd)
+{
+	std::string full_path = this->root_directory + req.getPath();
+	Response resp;
+	resp.run(fd);
 }

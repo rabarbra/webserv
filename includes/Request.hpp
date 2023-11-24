@@ -12,7 +12,7 @@
 # include <netdb.h>
 # include "Method.hpp"
 # include "../liblogging/Logger.hpp"
-
+# include "bettter_string.hpp"
 class Request
 {
 	private:
@@ -35,13 +35,13 @@ class Request
 		Request(int	fd);
 		~Request();
 		Request(const Request &other);
-		Request &operator=(const Request &other);
-		std::string	getPath();
-		std::string	getHost();
-		std::string	getPort();
-		std::string	getQuery();
-		std::string	getBody();
-		std::string	getVersion();
-		std::map<std::string, std::string>	getHeaders();
+		Request		&operator=(const Request &other);
+		std::string	getPath() const;
+		std::string	getHost() const;
+		std::string	getPort() const;
+		std::string	getQuery() const;
+		std::string	getBody() const;
+		std::string	getVersion() const;
+		std::map<std::string, std::string>	getHeaders() const;
 };
 #endif
