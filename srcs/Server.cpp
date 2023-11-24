@@ -249,8 +249,7 @@ void Server::handle_request(int fd)
 		}
 		catch(const std::exception& e)
 		{
-			resp.setStatusCode("404");
-			resp.setBody("<html><head><title>404</title></head><body style=\"background-color:#000000;text-align:center;color:white;\"><h1>Webserv</h1><p>404 Not Found</p></body></html>");
+			resp.build_error("404");
 			resp.run(fd);
 			return ;
 		}
@@ -309,7 +308,7 @@ void Server::handle_request(int fd)
 	}
 	catch(const std::exception& e)
 	{
-		resp.setStatusCode("400");
+		resp.build_error("400");
 		resp.run(fd);
 		this->log.ERROR << e.what() << '\n';
 	}

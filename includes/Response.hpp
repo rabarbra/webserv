@@ -2,12 +2,15 @@
 # define RESPONSE_HPP
 # include <string>
 # include <sstream>
+# include <fstream>
+# include <iostream>
 # include <map>
 # include <sys/socket.h>
 # include <sys/types.h>
 # include <sys/time.h>
 # include <netdb.h>
-# include "bettter_string.hpp"
+# include "better_string.hpp"
+# include "StatusCodes.hpp"
 class Response
 {
 	private:
@@ -15,7 +18,7 @@ class Response
 		std::string							statusCode;
 		std::string							reason;
 		std::map<std::string, std::string>	headers;
-		std::string							body;
+		better_string						body;
 		std::string							_plain;
 		size_t								body_size;
 		void								_build();
@@ -27,6 +30,9 @@ class Response
 		void		setBody(std::string body);
 		void		setHeader(std::string key, std::string value);
 		void		setStatusCode(std::string code);
+		void		setReason(std::string reason);
+		void		build_error(std::string status_code);
+		void		build_redirect(std::string location, std::string status_code);
 		void		run(int fd);
 };
 #endif

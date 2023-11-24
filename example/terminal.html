@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unix Terminal Emulator</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #0F0;
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #terminal {
+            border: 2px solid #0F0;
+            padding: 20px;
+            width: 80%;
+            max-width: 600px;
+            background-color: #000;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            position: relative;
+        }
+
+        #output {
+            color: #0F0;
+            padding-bottom: 10px;
+            overflow-y: auto;
+            max-height: 200px;
+        }
+
+        #input-container {
+            display: flex;
+        }
+
+        #input {
+            color: #0F0;
+            flex: 1;
+            background: none;
+            border: none;
+            outline: none;
+        }
+
+        #input:focus {
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="terminal">
+        <div id="output" contenteditable="true"></div>
+        <div id="input-container">
+            <span>$</span>
+            <input type="text" id="input" autofocus />
+        </div>
+    </div>
+
+    <script>
+        const output = document.getElementById('output');
+        const input = document.getElementById('input');
+
+        input.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                executeCommand(input.value);
+                input.value = '';
+            }
+        });
+
+        function executeCommand(command) {
+            const response = simulateCommandExecution(command);
+            appendOutput(`$ ${command}\n${response}\n`);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function simulateCommandExecution(command) {
+            switch (command.trim()) {
+                case 'ls':
+                    return 'file1.txt  file2.txt  directory1';
+                case 'pwd':
+                    return '/home/user';
+                case 'date':
+                    return new Date().toString();
+                default:
+                    return `Command not found: ${command}`;
+            }
+        }
+
+        function appendOutput(text) {
+            const span = document.createElement('span');
+            const br = document.createElement('br');
+            span.textContent = text;
+			output.appendChild(br);
+            output.appendChild(span);
+        }
+    </script>
+</body>
+</html>

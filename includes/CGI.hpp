@@ -2,7 +2,7 @@
 # define CGI_HPP
 # include <vector>
 # include <string>
-# include "bettter_string.hpp"
+# include "better_string.hpp"
 class CGI
 {
 	public:

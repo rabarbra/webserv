@@ -371,10 +371,30 @@ void Route::handle_request(Request req, int fd)
 		this->handle_redirection(req, fd);
 }
 
+std::string Route::build_absolute_path(Request req)
+{
+	std::string	root(this->root_directory);
+	std::string	req_path(req.getPath());
+	std::string	index(this->index);
+
+	if (root[root.size() - 1] == '/')
+		root.erase(root.size() - 1);
+	if (!root.size())
+		root = "html";
+	if (index[0] == '/')
+		index.erase(0);
+	if (req_path[req_path.size() - 1] == '/')
+		req_path += index;
+	return root + req_path;
+}
+
 void Route::handle_path(Request req, int fd)
 {
+	better_string	req_path(req.getPath());
+	if (this->dir_listing && req_path.ends_with("/"))
+		return this->handle_dir_listing(req, fd);
 	Response resp;
-	std::string full_path = this->root_directory + req.getPath();
+	std::string full_path = this->build_absolute_path(req);	
 	this->logger.INFO << "Trying to send: " << full_path;
 	std::ifstream file(full_path.c_str());
 	if (file.is_open())
@@ -392,7 +412,7 @@ void Route::handle_path(Request req, int fd)
 	}
 	else 
 	{
-		resp.setStatusCode("500");
+		resp.build_error("404");
 		resp.run(fd);
 	}
 }
@@ -405,6 +425,14 @@ void Route::handle_cgi(Request req, int fd)
 }
 
 void Route::handle_redirection(Request req, int fd)
+{
+	std::string full_path = this->root_directory + req.getPath();
+	Response resp;
+	resp.build_redirect(this->redirect_url, "302");
+	resp.run(fd);
+}
+
+void Route::handle_dir_listing(Request req, int fd)
 {
 	std::string full_path = this->root_directory + req.getPath();
 	Response resp;
