@@ -33,3 +33,8 @@ void better_string::find_and_replace(better_string old_val, better_string new_va
 		pos = this->find(old_val, delta);
 	}	
 }
+
+bool better_string::contains(const better_string substr) const
+{
+	return (std::search(this->begin(), this->end(), substr.begin(), substr.end()) != this->end());
+}

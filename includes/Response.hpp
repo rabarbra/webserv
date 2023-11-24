@@ -30,7 +30,9 @@ class Response
 		void		setBody(std::string body);
 		void		setHeader(std::string key, std::string value);
 		void		setStatusCode(std::string code);
+		void		setReason(std::string reason);
 		void		build_error(std::string status_code);
+		void		build_redirect(std::string location, std::string status_code);
 		void		run(int fd);
 };
 #endif

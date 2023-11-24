@@ -61,6 +61,11 @@ void Response::setStatusCode(std::string code)
 	this->statusCode = code;
 }
 
+void Response::setReason(std::string reason)
+{
+	this->reason = reason;
+}
+
 void Response::setHeader(std::string key, std::string value)
 {
 	this->headers[key] = value;
@@ -69,6 +74,8 @@ void Response::setHeader(std::string key, std::string value)
 void Response::build_error(std::string status_code)
 {
 	StatusCodes		status;
+	this->setStatusCode(status_code);
+	this->setReason(status.getDescription(status_code));
 	std::fstream	error_page("static/error.html");
 	if (error_page.is_open())
 	{
@@ -93,4 +100,17 @@ void Response::build_error(std::string status_code)
 			+ status.getFullStatus(status_code)
 			+ "</h1></body></html>";
 	}
+}
+
+void Response::build_redirect(std::string location, std::string status_code)
+{
+	StatusCodes		status;
+	this->setStatusCode(status_code);
+	this->setReason(status.getDescription(status_code));
+	this->setHeader("Location", location);
+	this->body = "<!DOCTYPE html><html><head><title>"
+		+ status.getFullStatus(status_code)
+		+ "</title></head><body><h1>"
+		+ status.getFullStatus(status_code)
+		+ "</h1></body></html>";
 }

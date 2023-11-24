@@ -1,6 +1,7 @@
 #ifndef ROUTE_HPP
 # define ROUTE_HPP
-#include <sstream>
+# include <sys/stat.h>
+# include <sstream>
 # include <vector>
 # include <string>
 # include <fstream>
@@ -36,6 +37,7 @@ class Route
 		void						handle_path(Request req, int fd);
 		void						handle_cgi(Request req, int fd);
 		void						handle_redirection(Request req, int fd);
+		void						handle_dir_listing(Request req, int fd);
 		std::string					build_absolute_path(Request req);
 	public:
 		Route();
