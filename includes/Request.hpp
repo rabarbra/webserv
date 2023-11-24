@@ -11,6 +11,7 @@
 # include <sys/time.h>
 # include <netdb.h>
 # include "Method.hpp"
+# include "Response.hpp"
 # include "../liblogging/Logger.hpp"
 # include "bettter_string.hpp"
 class Request

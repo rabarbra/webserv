@@ -81,6 +81,8 @@ void Response::build_error(std::string status_code)
 		this->body.find_and_replace("{{title}}", status.getFullStatus(status_code));
 		this->body.find_and_replace("{{header}}", status_code);
 		this->body.find_and_replace("{{text}}", status.getDescription(status_code));
+		this->body.find_and_replace("  ", "");
+		this->body.find_and_replace("\t", "");
 		error_page.close();
 	}
 	else 
@@ -91,5 +93,4 @@ void Response::build_error(std::string status_code)
 			+ status.getFullStatus(status_code)
 			+ "</h1></body></html>";
 	}
-
 }

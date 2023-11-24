@@ -72,7 +72,9 @@ void Request::parse()
 	else if (key == "DELETE")
 		this->method = DELETE;
 	else
+	{
 		throw std::runtime_error("Unknown http method: " + key);
+	}
 	ss >> pathquery;
 	std::stringstream	s_path(pathquery);
 	std::getline(s_path, this->path, '?');

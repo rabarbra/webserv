@@ -21,5 +21,15 @@ bool better_string::ends_with(const std::string other) const
 
 void better_string::find_and_replace(better_string old_val, better_string new_val)
 {
-	this->replace(this->find(old_val), old_val.size(), new_val, 0, new_val.size());
+	size_t	pos;
+	size_t	delta = 0;
+	if (!old_val.size())
+		return ;
+	pos = this->find(old_val, delta);
+	while (pos != this->npos)
+	{
+		*this = this->replace(pos, old_val.size(), new_val, 0, new_val.size());
+		delta = pos + new_val.size();
+		pos = this->find(old_val, delta);
+	}	
 }

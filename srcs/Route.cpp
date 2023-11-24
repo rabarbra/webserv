@@ -371,10 +371,15 @@ void Route::handle_request(Request req, int fd)
 		this->handle_redirection(req, fd);
 }
 
+std::string Route::build_absolute_path(Request req)
+{
+	return req.getPath();
+}
+
 void Route::handle_path(Request req, int fd)
 {
 	Response resp;
-	std::string full_path = this->root_directory + req.getPath();
+	std::string full_path = this->build_absolute_path(req);
 	this->logger.INFO << "Trying to send: " << full_path;
 	std::ifstream file(full_path.c_str());
 	if (file.is_open())
