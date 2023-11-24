@@ -68,6 +68,7 @@ void Response::setHeader(std::string key, std::string value)
 
 void Response::build_error(std::string status_code)
 {
+	StatusCodes		status;
 	std::fstream	error_page("static/error.html");
 	if (error_page.is_open())
 	{
@@ -77,14 +78,18 @@ void Response::build_error(std::string status_code)
 			std::getline(error_page, line);
 			this->body += line;
 		}
-		this->body.find_and_replace("{{title}}", "404 Not Found");
+		this->body.find_and_replace("{{title}}", status.getFullStatus(status_code));
 		this->body.find_and_replace("{{header}}", status_code);
-		this->body.find_and_replace("{{text}}", "Not Found");
+		this->body.find_and_replace("{{text}}", status.getDescription(status_code));
 		error_page.close();
 	}
 	else 
 	{
-		this->body = "";
+		this->body = "<!DOCTYPE html><html><head><title>"
+			+ status.getFullStatus(status_code)
+			+ "</title></head><body><h1>"
+			+ status.getFullStatus(status_code)
+			+ "</h1></body></html>";
 	}
 
 }

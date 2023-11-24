@@ -9,6 +9,7 @@
 # include <sys/time.h>
 # include <netdb.h>
 # include "bettter_string.hpp"
+# include "StatusCodes.hpp"
 class Response
 {
 	private:

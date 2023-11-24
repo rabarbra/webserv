@@ -100,3 +100,8 @@ bool StatusCodes::checkStatus(std::string code)
 		return (false);
 	return (true);
 }
+
+std::string StatusCodes::getDescription(std::string code)
+{
+	return this->_statusCodes[code];
+}

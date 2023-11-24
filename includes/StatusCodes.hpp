@@ -11,6 +11,7 @@ class StatusCodes {
 		StatusCodes(const StatusCodes &src);
 		StatusCodes &operator=(const StatusCodes &src);
 		std::string getFullStatus(std::string code);
+		std::string	getDescription(std::string code);
 		bool checkStatus(std::string code);
 	private:
 		std::map<std::string, std::string> _statusCodes;
