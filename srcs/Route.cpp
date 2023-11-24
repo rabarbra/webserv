@@ -379,6 +379,8 @@ std::string Route::build_absolute_path(Request req)
 
 	if (root[root.size() - 1] == '/')
 		root.erase(root.size() - 1);
+	if (!root.size())
+		root = "html";
 	if (index[0] == '/')
 		index.erase(0);
 	if (req_path[req_path.size() - 1] == '/')
