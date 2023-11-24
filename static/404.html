@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>404 Not Found</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<style type="text/css">
+			:root {
+				--body-bg: #d0d0d0;
+				--div-bg:	#f8f8f8;
+				--div-border: #808080;
+				--div-shadow: #404040;
+				--p-color: #606060;
+				--h-color: #606060;
+			}
+			@media (prefers-color-scheme: dark) {
+				:root {
+					--body-bg: #404040;
+					--div-bg:	#606060;
+					--div-border: #4a4949;
+					--div-shadow: #000000;
+					--p-color: #f8f8f8;
+					--h-color: #f8f8f8;
+				}
+			}
+			body {
+				background-color: var(--body-bg);
+				font-family:sans-serif;
+				display: grid;
+				place-content: center;
+				height: 90vh;
+
+			}
+			div {
+				background-color: var(--div-bg);
+				letter-spacing:4px;
+				width:20em;
+				padding:50px;
+				border-radius:10px;
+				border:1px solid var(--div-border);
+				box-shadow:8px 15px 20px var(--div-shadow);
+			}
+			h1 {
+				margin:0;
+				font-size:22px;
+				text-align:center;
+				color: var(--h-color);
+				font-weight:normal
+			}
+			p {
+				margin:10px 0 0 0;
+				font-size:14px;
+				color: var(--p-color);
+				text-align:center;
+				font-weight:bold
+			}
+			@media (max-width:767px) {
+				div {
+					width: 15em;
+				}
+				h1 {
+					font-size:90%;
+					letter-spacing:2px
+				}
+				p {
+					font-size:70%
+				}
+			}
+			@media (max-width:348px) {
+				div {
+					width: 8em;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div>
+			<h1>404</h1>
+			<p>Not Found</p>
+		</div>
+	</body>
+</html>

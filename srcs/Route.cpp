@@ -392,7 +392,7 @@ void Route::handle_path(Request req, int fd)
 	}
 	else 
 	{
-		resp.setStatusCode("500");
+		resp.build_error("500");
 		resp.run(fd);
 	}
 }

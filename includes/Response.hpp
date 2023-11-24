@@ -2,6 +2,7 @@
 # define RESPONSE_HPP
 # include <string>
 # include <sstream>
+# include <fstream>
 # include <map>
 # include <sys/socket.h>
 # include <sys/types.h>
@@ -15,7 +16,7 @@ class Response
 		std::string							statusCode;
 		std::string							reason;
 		std::map<std::string, std::string>	headers;
-		std::string							body;
+		better_string						body;
 		std::string							_plain;
 		size_t								body_size;
 		void								_build();
@@ -27,6 +28,7 @@ class Response
 		void		setBody(std::string body);
 		void		setHeader(std::string key, std::string value);
 		void		setStatusCode(std::string code);
+		void		build_error(std::string status_code);
 		void		run(int fd);
 };
 #endif
