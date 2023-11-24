@@ -1,4 +1,4 @@
-#include "../includes/bettter_string.hpp"
+#include "../includes/better_string.hpp"
 
 better_string::better_string(): std::string()
 {}

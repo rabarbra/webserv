@@ -9,7 +9,7 @@
 # include <sys/types.h>
 # include <sys/time.h>
 # include <netdb.h>
-# include "bettter_string.hpp"
+# include "better_string.hpp"
 # include "StatusCodes.hpp"
 class Response
 {
