@@ -1,6 +1,7 @@
 #ifndef ROUTE_HPP
 # define ROUTE_HPP
 # include <sys/stat.h>
+# include <unistd.h>
 # include <sstream>
 # include <vector>
 # include <string>
@@ -63,6 +64,7 @@ class Route
 		void		printRoute();
 		void		parseAllowedMethods(std::string &methods);
 		void		handle_request(Request req, int fd);
+		void		sendFile(std::string filename, Response &resp, int fd); 
 		size_t		match(std::string path);
 };
 
