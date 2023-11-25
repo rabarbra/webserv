@@ -5,6 +5,8 @@
 # include <fstream>
 # include <iostream>
 # include <map>
+# include <cstdio>
+# include <cerrno>
 # include <sys/socket.h>
 # include <sys/types.h>
 # include <sys/time.h>

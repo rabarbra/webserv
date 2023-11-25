@@ -6,6 +6,7 @@
 # include <iostream>
 # include <sstream>
 # include <cstdio>
+# include <cerrno>
 # include <algorithm>
 # include <sys/socket.h>
 # include <sys/types.h>
