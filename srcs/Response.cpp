@@ -49,7 +49,7 @@ void Response::run(int fd)
 {
 	size_t	sent = 0;
 	size_t	left;
-	size_t	chunk;
+	ssize_t	chunk;
 
 	this->_build();
 	left = this->_plain.size();
