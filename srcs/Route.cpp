@@ -1,4 +1,6 @@
 #include "../includes/Route.hpp"
+#include <sys/unistd.h>
+#include <unistd.h>
 
 Route::Route():
 	type(PATH_), allowed_methods(std::vector<Method>()),
@@ -388,15 +390,9 @@ std::string Route::build_absolute_path(Request req)
 	return root + req_path;
 }
 
-void Route::handle_path(Request req, int fd)
+void Route::sendFile(std::string filename, Response &resp, int fd) 
 {
-	better_string	req_path(req.getPath());
-	if (this->dir_listing && req_path.ends_with("/"))
-		return this->handle_dir_listing(req, fd);
-	Response resp;
-	std::string full_path = this->build_absolute_path(req);	
-	this->logger.INFO << "Trying to send: " << full_path;
-	std::ifstream file(full_path.c_str());
+	std::ifstream file(filename.c_str());
 	if (file.is_open())
 	{
 		std::string	body;
@@ -415,6 +411,44 @@ void Route::handle_path(Request req, int fd)
 		resp.build_error("404");
 		resp.run(fd);
 	}
+
+}
+
+void Route::handle_path(Request req, int fd)
+{
+	better_string	req_path(req.getPath());
+	Response resp;
+	std::string full_path = this->build_absolute_path(req);
+	struct stat st;
+	if (full_path[full_path.size() - 1] == '/')
+		full_path = full_path.substr(0, full_path.size() - 1);
+	this->logger.INFO << "Trying to send: " << full_path;
+	std::cout << full_path << std::endl;
+	if (stat(full_path.c_str(), &st) == 0 )
+	{
+		std::cout << "--------\n";
+		if (S_ISDIR(st.st_mode))
+		{
+			if (this->dir_listing)
+			{
+				this->handle_dir_listing(req, fd);
+				return;
+			}
+			full_path += "/";
+			full_path += this->index;
+			std::cout << "1-------\n";
+			this->sendFile(full_path, resp, fd);
+			return;
+
+		}
+		else if (S_ISREG(st.st_mode)) {
+
+			std::cout << "2-------\n";
+			this->sendFile(full_path, resp, fd);
+		}
+	}
+	resp.build_error("404");
+	resp.run(fd);
 }
 
 void Route::handle_cgi(Request req, int fd)
@@ -436,5 +470,6 @@ void Route::handle_dir_listing(Request req, int fd)
 {
 	std::string full_path = this->root_directory + req.getPath();
 	Response resp;
+	resp.build_error("508");
 	resp.run(fd);
 }
