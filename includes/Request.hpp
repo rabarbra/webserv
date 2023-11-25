@@ -5,6 +5,8 @@
 # include <string>
 # include <iostream>
 # include <sstream>
+# include <cstdlib>
+# include <cstring>
 # include <cstdio>
 # include <cerrno>
 # include <algorithm>

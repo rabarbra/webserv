@@ -5,6 +5,8 @@
 # include <fstream>
 # include <iostream>
 # include <map>
+# include <cstdlib>
+# include <cstring>
 # include <cstdio>
 # include <cerrno>
 # include <sys/socket.h>
