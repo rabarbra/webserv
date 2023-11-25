@@ -47,8 +47,28 @@ void Response::_build()
 
 void Response::run(int fd)
 {
+	size_t	sent = 0;
+	size_t	left;
+	size_t	chunk;
+
 	this->_build();
-	send(fd, this->_plain.c_str(), this->_plain.size(), 0);
+	left = this->_plain.size();
+	this->log.INFO << "To send: " << left;
+	while (sent < this->_plain.size())
+	{
+		chunk = send(fd, this->_plain.c_str() + sent, left, 0);
+		this->log.INFO << "Sent: " << chunk;
+		if (chunk < 0)
+		{
+			std::stringstream sent_s;
+			std::stringstream left_s;
+			sent_s << sent;
+			left_s << left;
+			throw std::runtime_error("Cannot send (sent: " + sent_s.str() + ", left: " + left_s.str() + "): " + std::string(strerror(errno)));
+		}
+		sent += chunk;
+		left -= chunk;
+	}
 }
 
 void Response::setBody(std::string body)

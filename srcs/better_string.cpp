@@ -19,6 +19,11 @@ bool better_string::ends_with(const std::string other) const
 	return (std::find_end(this->begin(), this->end(), other.begin(), other.end()) == (this->end() - other.length()));
 }
 
+bool better_string::contains(const better_string substr) const
+{
+	return (std::search(this->begin(), this->end(), substr.begin(), substr.end()) != this->end());
+}
+
 void better_string::find_and_replace(better_string old_val, better_string new_val)
 {
 	size_t	pos;
@@ -34,7 +39,17 @@ void better_string::find_and_replace(better_string old_val, better_string new_va
 	}	
 }
 
-bool better_string::contains(const better_string substr) const
+#include <iostream>
+void better_string::trim()
 {
-	return (std::search(this->begin(), this->end(), substr.begin(), substr.end()) != this->end());
+	if (!this->size())
+		return ;
+	size_t	pos = 0;
+	while (pos < this->size() && std::isspace((*this)[pos]))
+		pos++;
+	if (pos > 0)
+		this->erase(0, pos);
+	pos = 0;
+	while (this->size() > 0 && std::isspace((*this)[this->size() - 1]))
+		this->erase(this->size() - 1, 1);
 }

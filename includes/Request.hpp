@@ -19,15 +19,14 @@ class Request
 	private:
 		int									_fd;
 		Method								method;
-		std::string							path;
-		std::string							query;
-		std::string							httpVersion;
-		std::string							host;
-		std::string							port;
+		better_string						path;
+		better_string						query;
+		better_string						httpVersion;
+		better_string						host;
+		better_string						port;
 		std::map<std::string, std::string>	headers;
-		std::string							cookie;
-		std::string							body;
-		std::string							plain;
+		better_string						body;
+		better_string						plain;
 		Logger								log;
 		void								receive();
 		void								parse();
@@ -36,13 +35,15 @@ class Request
 		Request(int	fd);
 		~Request();
 		Request(const Request &other);
-		Request		&operator=(const Request &other);
-		std::string	getPath() const;
-		std::string	getHost() const;
-		std::string	getPort() const;
-		std::string	getQuery() const;
-		std::string	getBody() const;
-		std::string	getVersion() const;
+		Request			&operator=(const Request &other);
+		better_string	getPath() const;
+		better_string	getHost() const;
+		better_string	getPort() const;
+		better_string	getQuery() const;
+		better_string	getBody() const;
+		better_string	getVersion() const;
+		Method			getMethod() const;
+		int				getFd();
 		std::map<std::string, std::string>	getHeaders() const;
 };
 #endif

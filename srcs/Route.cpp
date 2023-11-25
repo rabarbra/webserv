@@ -363,14 +363,28 @@ size_t Route::match(std::string path)
 	return 0;
 }
 
-void Route::handle_request(Request req, int fd)
+void Route::handle_request(Request req)
 {
+	
+	if (
+		std::find(
+			this->allowed_methods.begin(),
+			this->allowed_methods.end(),
+			req.getMethod()
+		) == this->allowed_methods.end()
+	)
+	{
+		Response resp;
+		resp.build_error("405");
+		resp.run(req.getFd());
+		return ;
+	}
 	if (this->type == PATH_)
-		this->handle_path(req, fd);
+		this->handle_path(req);
 	else if (this->type == CGI_)
-		this->handle_cgi(req, fd);
+		this->handle_cgi(req);
 	else if (this->type == REDIRECTION_)
-		this->handle_redirection(req, fd);
+		this->handle_redirection(req);
 }
 
 std::string Route::build_absolute_path(Request req)
@@ -397,6 +411,7 @@ void Route::sendFile(std::string filename, Response &resp, int fd)
 	{
 		std::string	body;
 		std::string line;
+		this->logger.INFO << "File is open";
 		while (file)
 		{
 			std::getline(file, line);
@@ -408,13 +423,14 @@ void Route::sendFile(std::string filename, Response &resp, int fd)
 	}
 	else 
 	{
+		this->logger.WARN << "Cannot open file";
 		resp.build_error("404");
 		resp.run(fd);
 	}
 
 }
 
-void Route::handle_path(Request req, int fd)
+void Route::handle_path(Request req)
 {
 	better_string	req_path(req.getPath());
 	Response resp;
@@ -431,45 +447,43 @@ void Route::handle_path(Request req, int fd)
 		{
 			if (this->dir_listing)
 			{
-				this->handle_dir_listing(req, fd);
+				this->handle_dir_listing(req);
 				return;
 			}
 			full_path += "/";
 			full_path += this->index;
 			std::cout << "1-------\n";
-			this->sendFile(full_path, resp, fd);
+			this->sendFile(full_path, resp, req.getFd());
 			return;
 
 		}
 		else if (S_ISREG(st.st_mode)) {
 
 			std::cout << "2-------\n";
-			this->sendFile(full_path, resp, fd);
+			this->sendFile(full_path, resp, req.getFd());
 		}
 	}
 	resp.build_error("404");
-	resp.run(fd);
+	resp.run(req.getFd());
 }
 
-void Route::handle_cgi(Request req, int fd)
+void Route::handle_cgi(Request req)
 {
-	std::string full_path = this->root_directory + req.getPath();
 	Response resp;
-	resp.run(fd);
+	resp.run(req.getFd());
 }
 
-void Route::handle_redirection(Request req, int fd)
+void Route::handle_redirection(Request req)
 {
-	std::string full_path = this->root_directory + req.getPath();
 	Response resp;
 	resp.build_redirect(this->redirect_url, "302");
-	resp.run(fd);
+	resp.run(req.getFd());
 }
 
-void Route::handle_dir_listing(Request req, int fd)
+void Route::handle_dir_listing(Request req)
 {
 	std::string full_path = this->root_directory + req.getPath();
 	Response resp;
 	resp.build_error("508");
-	resp.run(fd);
+	resp.run(req.getFd());
 }

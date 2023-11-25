@@ -11,6 +11,7 @@
 # include <netdb.h>
 # include "better_string.hpp"
 # include "StatusCodes.hpp"
+# include "../liblogging/Logger.hpp"
 class Response
 {
 	private:
@@ -22,6 +23,7 @@ class Response
 		std::string							_plain;
 		size_t								body_size;
 		void								_build();
+		Logger								log;
 	public:
 		Response();
 		~Response();
