@@ -236,12 +236,20 @@ void	Server::parseErrorPage(std::stringstream &ss)
 		this->error_pages[status_codes[i]] = path;
 }
 
-void Server::handle_request(int fd)
+void Server::handle_request(Request req)
 {
 	Response	resp;
 	try
 	{
-		Request		req(fd);
+		if (
+			this->max_body_size >= 0 &&
+			req.getBody().size() > static_cast<size_t>(this->max_body_size)	
+		)
+		{
+			resp.build_error("413");
+			resp.run(req.getFd());
+			return ;
+		}
 		Route 		r;
 		try
 		{
@@ -250,70 +258,20 @@ void Server::handle_request(int fd)
 		catch(const std::exception& e)
 		{
 			resp.build_error("404");
-			resp.run(fd);
+			resp.run(req.getFd());
 			return ;
 		}
-		r.handle_request(req, fd);
-		// std::string body = std::string("<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\">")
-		// 	+ "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
-		// 	+ "<title>Webserv</title>"
-		// 	+ "<style>"
-		// 	+ "body{"
-		// 		+ "font-family:Arial,sans-serif;background-color:#000000;text-align:center;padding:50px;"
-		// 	+ "}"
-		// 	+ ".container{"
-		// 		+ "max-width:600px;margin:0 auto;"
-		// 	+ "}"
-		// 	+ "h1{"
-		// 		+ "color:#c31a17;"
-		// 	+ "}"
-		// 	+ "p{"
-		// 		+ "color:#938888;"
-		// 	+ "}"
-		// 	+ "</style>"
-		// 	+ "</head>"
-		// 	+ "<body><div class=\"container\">"
-		// 	+ "<h1>Webserv</h1>"
-		// 	+ "<p>"
-		// 		+ "Hello from <span style=\"color: green;\">"
-		// 		+ this->hosts.begin()->first + ":"
-		// 		+ this->hosts.begin()->second
-		// 		+ "</span> server!"
-		// 	+ "</p>"
-		// 	+ "<p>"
-		// 		+ "Your request:"
-		// 	+ "</p>"
-		// 	+ "<p>"
-		// 		+ "Http version: " + req.getVersion()
-		// 		+ "<br/>"
-		// 		+ "Host: " + req.getHost() + ":" + req.getPort()
-		// 		+ "<br/>"
-		// 		+ "path: " + req.getPath()
-		// 		+ "<br/>"
-		// 		+ "query: " + req.getQuery()
-		// 		+ "<br/>"
-		// 		+ "body: " + req.getBody()
-		// 		+ "<br/>"
-		// 		+ "Headers:</p></div><div style=\"max-width:1200px;margin:0 auto;\"><hr/>";
-		// 	std::map<std::string, std::string> headers = req.getHeaders();
-		// 	for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
-		// 	body += ("<br/><span style=\"color:#44ee33;float:left;\">"
-		// 		+ it->first
-		// 		+ "</span><span style=\"color:#eeee44;float:right;\">"
-		// 		+ it->second
-		// 		+ "</span>");
-		// 	body +=	"</div></body></html>";
-		// resp.setBody(body);
-		// resp.run(fd);
+		r.handle_request(req);
 	}
 	catch(const std::exception& e)
 	{
 		resp.build_error("400");
-		resp.run(fd);
+		resp.run(req.getFd());
 		this->log.ERROR << e.what() << '\n';
 	}
 }
 
+#include <fcntl.h>
 int Server::_create_conn_socket(std::string host, std::string port)
 {
 	int				sock;
@@ -341,13 +299,18 @@ int Server::_create_conn_socket(std::string host, std::string port)
     if (bind(sock, addr->ai_addr, addr->ai_addrlen))
 	{
 		freeaddrinfo(addr);
+		close(sock);
 		throw std::runtime_error("Error binding: " + std::string(strerror(errno)));
 	}
     if (listen(sock, this->_penging_connections_count))
 	{
 		freeaddrinfo(addr);
+		close(sock);
 		throw std::runtime_error("Error listening: " + std::string(strerror(errno)));
 	}
+	fcntl(sock, F_SETFL, O_NONBLOCK, FD_CLOEXEC);
+	int	reuseaddr = 1;
+	setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &reuseaddr, sizeof(reuseaddr));
 	freeaddrinfo(addr);
 	return sock;
 }

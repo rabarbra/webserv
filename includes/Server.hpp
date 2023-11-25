@@ -14,6 +14,7 @@
 # include <sys/types.h>
 # include <sys/time.h>
 # include <netdb.h>
+# include <unistd.h>
 # include "Route.hpp"
 # include "Request.hpp"
 # include "Response.hpp"
@@ -43,7 +44,7 @@ class Server
 		void						parseBodySize(std::stringstream &ss);
 		void						parseErrorPage(std::stringstream &ss);
 		void						parseLocation(std::string &location);
-		void						handle_request(int fd);
+		void						handle_request(Request req);
 		void						printServer();
 		bool						hasListenDup();
 		std::set<int>				create_conn_sockets();
