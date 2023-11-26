@@ -513,7 +513,7 @@ void Route::handle_dir_listing(Request req, std::string full_path)
 		{
 			content.find_and_replace("{{is_dir}}", "0");
 			content.find_and_replace("{{abs_size}}", std::to_string(st.st_size));
-			content.find_and_replace("{{size}}", getFileSize((this->build_absolute_path(req) + ent->d_name).c_str()));
+			content.find_and_replace("{{size}}", convertSize(st.st_size));
 		}
 		content.find_and_replace("{{timestamp}}", std::to_string(st.st_mtime));
 		time_t timestamp = st.st_mtime;

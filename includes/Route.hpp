@@ -73,5 +73,6 @@ bool    	checkCgiHandler(std::vector<std::string> handler);
 void		checkSemiColon(std::string &word, std::string message);
 bool		checkWordIsOption(std::string word);
 std::string	getFileSize(std::string path);
+std::string	convertSize(size_t size); 
 
 #endif
