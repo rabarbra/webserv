@@ -5,12 +5,17 @@
 # include <fstream>
 # include <iostream>
 # include <map>
+# include <cstdlib>
+# include <cstring>
+# include <cstdio>
+# include <cerrno>
 # include <sys/socket.h>
 # include <sys/types.h>
 # include <sys/time.h>
 # include <netdb.h>
 # include "better_string.hpp"
 # include "StatusCodes.hpp"
+# include "../liblogging/Logger.hpp"
 class Response
 {
 	private:
@@ -22,6 +27,7 @@ class Response
 		std::string							_plain;
 		size_t								body_size;
 		void								_build();
+		Logger								log;
 	public:
 		Response();
 		~Response();

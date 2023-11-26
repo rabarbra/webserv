@@ -35,10 +35,10 @@ class Route
 		std::string					static_dir; // Empty string by default (don't accept files)
 		CGI							*cgi; // NULL by default
 		Logger						logger;
-		void						handle_path(Request req, int fd);
-		void						handle_cgi(Request req, int fd);
-		void						handle_redirection(Request req, int fd);
-		void						handle_dir_listing(Request req, std::string full_path, int fd);
+		void						handle_path(Request req);
+		void						handle_cgi(Request req);
+		void						handle_redirection(Request req);
+		void						handle_dir_listing(Request req, std::string full_path);
 		std::string					build_absolute_path(Request req);
 	public:
 		Route();
@@ -63,7 +63,7 @@ class Route
 		void		parseOption(std::string &param);
 		void		printRoute();
 		void		parseAllowedMethods(std::string &methods);
-		void		handle_request(Request req, int fd);
+		void		handle_request(Request req);
 		void		sendFile(std::string filename, Response &resp, int fd); 
 		size_t		match(std::string path);
 };
@@ -73,4 +73,3 @@ void	checkSemiColon(std::string &word, std::string message);
 bool	checkWordIsOption(std::string word);
 
 #endif
-

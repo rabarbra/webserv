@@ -34,6 +34,7 @@ Worker::Worker(char *path_to_conf)
 		);
 	}
 	this->_parse_config(conf);
+	//this->_create_server_groups();
 }
 
 std::string createFile(std::ifstream &conf)
@@ -177,7 +178,24 @@ void Worker::_parse_config(std::ifstream &conf)
 
 void Worker::_handle_request(int conn_fd)
 {
-	int conn_sock = this->conn_map[conn_fd];
-	int server_num = this->conn_socks[conn_sock];
-	this->servers[server_num].handle_request(conn_fd);
+	try
+	{
+		this->_log.INFO << "Reciving request " << conn_fd;
+		Request	req(conn_fd);
+		int conn_sock = this->conn_map[conn_fd];
+		int server_num = this->conn_socks[conn_sock];
+		this->servers[server_num].handle_request(req);
+	}
+	catch(const std::exception& e)
+	{
+		Response resp;
+		resp.build_error("400");
+		resp.run(conn_fd);
+		this->_log.ERROR << e.what();
+	}
 }
+
+//void Worker::_create_server_groups()
+//{
+//	
+//}
