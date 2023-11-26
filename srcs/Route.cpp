@@ -465,43 +465,6 @@ void Route::handle_path(Request req)
 	resp.run(req.getFd());
 }
 
-void Route::handle_path(Request req)
-{
-	better_string	req_path(req.getPath());
-	Response resp;
-	std::string full_path = this->build_absolute_path(req);
-	struct stat st;
-	if (full_path[full_path.size() - 1] == '/')
-		full_path = full_path.substr(0, full_path.size() - 1);
-	this->logger.INFO << "Trying to send: " << full_path;
-	std::cout << full_path << std::endl;
-	if (stat(full_path.c_str(), &st) == 0 )
-	{
-		std::cout << "--------\n";
-		if (S_ISDIR(st.st_mode))
-		{
-			if (this->dir_listing)
-			{
-				this->handle_dir_listing(req, full_path);
-				return;
-			}
-			full_path += "/";
-			full_path += this->index;
-			std::cout << "1-------\n";
-			this->sendFile(full_path, resp, req.getFd());
-			return;
-
-		}
-		else if (S_ISREG(st.st_mode)) {
-
-			std::cout << "2-------\n";
-			this->sendFile(full_path, resp, req.getFd());
-		}
-	}
-	resp.build_error("404");
-	resp.run(req.getFd());
-}
-
 void Route::handle_cgi(Request req)
 {
 	Response resp;
