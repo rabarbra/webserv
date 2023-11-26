@@ -1,4 +1,5 @@
 #include "../includes/Route.hpp"
+#include <dirent.h>
 #include <sys/unistd.h>
 #include <unistd.h>
 
@@ -423,27 +424,24 @@ void Route::handle_path(Request req, int fd)
 	if (full_path[full_path.size() - 1] == '/')
 		full_path = full_path.substr(0, full_path.size() - 1);
 	this->logger.INFO << "Trying to send: " << full_path;
-	std::cout << full_path << std::endl;
 	if (stat(full_path.c_str(), &st) == 0 )
 	{
-		std::cout << "--------\n";
 		if (S_ISDIR(st.st_mode))
 		{
+			std::cout << "is dir" << std::endl;
 			if (this->dir_listing)
 			{
-				this->handle_dir_listing(req, fd);
+				this->handle_dir_listing(req, full_path, fd);
 				return;
 			}
 			full_path += "/";
 			full_path += this->index;
-			std::cout << "1-------\n";
 			this->sendFile(full_path, resp, fd);
 			return;
 
 		}
 		else if (S_ISREG(st.st_mode)) {
 
-			std::cout << "2-------\n";
 			this->sendFile(full_path, resp, fd);
 		}
 	}
@@ -466,10 +464,26 @@ void Route::handle_redirection(Request req, int fd)
 	resp.run(fd);
 }
 
-void Route::handle_dir_listing(Request req, int fd)
+void Route::handle_dir_listing(Request req, std::string full_path, int fd)
 {
-	std::string full_path = this->root_directory + req.getPath();
+	(void)req;
 	Response resp;
-	resp.build_error("508");
-	resp.run(fd);
+	DIR *dir;
+	struct dirent *ent;
+	std::string content;
+	if ((dir = opendir(full_path.c_str())) == NULL)
+	{
+		resp.build_dir_listing(full_path, content);
+		std::cout << resp.getBody() << std::endl;
+		resp.run(fd);
+	}
+	else
+	{
+		while ((ent = readdir(dir)) != NULL) {
+			content += std::string("<a href=\"" + req.getPath() + "/" + std::string(ent->d_name) + "\">" + std::string(ent->d_name) + "</a><br>");
+		}
+		closedir(dir);
+		resp.build_dir_listing(full_path, content);
+		resp.run(fd);
+	}
 }

@@ -14,7 +14,7 @@
 # include "Response.hpp"
 #include "../liblogging/Logger.hpp"
 # include "better_string.hpp"
-
+# include <dirent.h>
 typedef enum e_route_type {
 	PATH_,
 	CGI_,
@@ -38,7 +38,7 @@ class Route
 		void						handle_path(Request req, int fd);
 		void						handle_cgi(Request req, int fd);
 		void						handle_redirection(Request req, int fd);
-		void						handle_dir_listing(Request req, int fd);
+		void						handle_dir_listing(Request req, std::string full_path, int fd);
 		std::string					build_absolute_path(Request req);
 	public:
 		Route();

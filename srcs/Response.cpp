@@ -45,6 +45,11 @@ void Response::_build()
 		this->_plain += ("\n" + this->body);
 }
 
+std::string Response::getBody()
+{
+	return this->body;
+}
+
 void Response::run(int fd)
 {
 	this->_build();
@@ -98,6 +103,35 @@ void Response::build_error(std::string status_code)
 			+ status.getFullStatus(status_code)
 			+ "</title></head><body><h1>"
 			+ status.getFullStatus(status_code)
+			+ "</h1></body></html>";
+	}
+}
+
+void Response::build_dir_listing(std::string full_path, std::string content)
+{
+	StatusCodes		status;
+	std::fstream	error_page("static/error.html");
+	if (error_page.is_open())
+	{
+		better_string line;
+		while (error_page)
+		{
+			std::getline(error_page, line);
+			this->body += line;
+		}
+		this->body.find_and_replace("{{title}}", "200 Success");
+		this->body.find_and_replace("{{header}}", "Index of " + full_path);
+		this->body.find_and_replace("{{text}}", content);
+		this->body.find_and_replace("  ", "");
+		this->body.find_and_replace("\t", "");
+		error_page.close();
+	}
+	else 
+	{
+		this->body = "<!DOCTYPE html><html><head><title>"
+			+ status.getFullStatus("200")
+			+ "</title></head><body><h1>"
+			+ status.getFullStatus("200")
 			+ "</h1></body></html>";
 	}
 }
