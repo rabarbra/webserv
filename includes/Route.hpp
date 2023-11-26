@@ -10,6 +10,7 @@
 # include "Method.hpp"
 # include <iostream>
 # include <algorithm>
+# include <ctime>
 # include "Request.hpp"
 # include "Response.hpp"
 #include "../liblogging/Logger.hpp"
@@ -68,8 +69,9 @@ class Route
 		size_t		match(std::string path);
 };
 
-bool    checkCgiHandler(std::vector<std::string> handler);
-void	checkSemiColon(std::string &word, std::string message);
-bool	checkWordIsOption(std::string word);
+bool    	checkCgiHandler(std::vector<std::string> handler);
+void		checkSemiColon(std::string &word, std::string message);
+bool		checkWordIsOption(std::string word);
+std::string	getFileSize(std::string path);
 
 #endif

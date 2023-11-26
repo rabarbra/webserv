@@ -130,7 +130,8 @@ void Response::build_error(std::string status_code)
 void Response::build_dir_listing(std::string full_path, std::string content)
 {
 	StatusCodes		status;
-	std::fstream	error_page("static/error.html");
+	(void)full_path;
+	std::fstream	error_page("static/dir_list.html");
 	if (error_page.is_open())
 	{
 		better_string line;
@@ -138,13 +139,10 @@ void Response::build_dir_listing(std::string full_path, std::string content)
 		{
 			std::getline(error_page, line);
 			this->body += line;
+			this->body += "\n";
 		}
-		this->body.find_and_replace("{{title}}", "200 Success");
-		this->body.find_and_replace("{{header}}", "Index of " + full_path);
-		this->body.find_and_replace("{{text}}", content);
-		this->body.find_and_replace("  ", "");
-		this->body.find_and_replace("\t", "");
 		error_page.close();
+		this->body += content;
 	}
 	else 
 	{

@@ -392,16 +392,11 @@ std::string Route::build_absolute_path(Request req)
 {
 	std::string	root(this->root_directory);
 	std::string	req_path(req.getPath());
-	std::string	index(this->index);
 
 	if (root[root.size() - 1] == '/')
 		root.erase(root.size() - 1);
 	if (!root.size())
 		root = "html";
-	if (index[0] == '/')
-		index.erase(0);
-	if (req_path[req_path.size() - 1] == '/')
-		req_path += index;
 	return root + req_path;
 }
 
@@ -437,12 +432,11 @@ void Route::handle_path(Request req)
 	Response resp;
 	std::string full_path = this->build_absolute_path(req);
 	struct stat st;
-	if (full_path[full_path.size() - 1] == '/')
-		full_path = full_path.substr(0, full_path.size() - 1);
+	this->logger.INFO << "LOGGGGGGGGGG" << full_path;
 	this->logger.INFO << "Trying to send: " << full_path;
 	if (stat(full_path.c_str(), &st) == 0 )
 	{
-		if (S_ISDIR(st.st_mode))
+		if (full_path[full_path.size() - 1] == '/' && S_ISDIR(st.st_mode))
 		{
 			std::cout << "is dir" << std::endl;
 			if (this->dir_listing)
@@ -450,15 +444,23 @@ void Route::handle_path(Request req)
 				this->handle_dir_listing(req, full_path);
 				return;
 			}
-			full_path += "/";
 			full_path += this->index;
 			this->sendFile(full_path, resp, req.getFd());
 			return;
 
 		}
-		else if (S_ISREG(st.st_mode)) {
-
+		else if (S_ISDIR(st.st_mode)) {
+			std::cout << "is dir" << std::endl;
+			full_path += "/";
+			full_path += this->index;
 			this->sendFile(full_path, resp, req.getFd());
+			return;
+		}
+		else if (S_ISREG(st.st_mode))
+		{
+			std::cout << "is reg" << std::endl;
+			this->sendFile(full_path, resp, req.getFd());
+			return;
 		}
 	}
 	resp.build_error("404");
@@ -484,20 +486,46 @@ void Route::handle_dir_listing(Request req, std::string full_path)
 	Response resp;
 	DIR *dir;
 	struct dirent *ent;
-	std::string content;
-	if ((dir = opendir(full_path.c_str())) == NULL)
+	better_string content;
+	better_string dir_content;
+	struct stat st;
+	dir = opendir(full_path.c_str());
+	if (dir == NULL)
 	{
-		resp.build_dir_listing(full_path, content);
-		std::cout << resp.getBody() << std::endl;
+		resp.build_error("404");
 		resp.run(req.getFd());
+		return ;
 	}
-	else
-	{
-		while ((ent = readdir(dir)) != NULL) {
-			content += std::string("<a href=\"" + req.getPath() + "/" + std::string(ent->d_name) + "\">" + std::string(ent->d_name) + "</a><br>");
+	while ((ent = readdir(dir)) != NULL) {
+		content = "<script>addRow(\"{{name}}\",\"{{href}}\",{{is_dir}},{{abs_size}},\"{{size}}\",{{timestamp}},\"{{date}}\");</script>";
+		content.find_and_replace("{{name}}", std::string(ent->d_name));
+		if (req.getPath()[req.getPath().size() - 1] != '/')
+			content.find_and_replace("{{href}}", "/" + std::string(ent->d_name));
+		else
+			content.find_and_replace("{{href}}", std::string(ent->d_name));
+		stat((this->build_absolute_path(req) + ent->d_name).c_str(), &st);
+		if (ent->d_type == DT_DIR)
+		{
+			content.find_and_replace("{{is_dir}}", "1");
+			content.find_and_replace("{{abs_size}}", "0");
 		}
-		closedir(dir);
-		resp.build_dir_listing(full_path, content);
-		resp.run(req.getFd());
+		else
+		{
+			content.find_and_replace("{{is_dir}}", "0");
+			content.find_and_replace("{{abs_size}}", std::to_string(st.st_size));
+			content.find_and_replace("{{size}}", getFileSize((this->build_absolute_path(req) + ent->d_name).c_str()));
+		}
+		content.find_and_replace("{{timestamp}}", std::to_string(st.st_mtime));
+		time_t timestamp = st.st_mtime;
+		struct tm *timeinfo;
+		timeinfo = localtime(&timestamp);
+		char buffer[80];
+		strftime(buffer, 80, "%Y-%m-%d %H:%M:%S", timeinfo);
+		content.find_and_replace("{{date}}", std::string(buffer));
+		dir_content += content;
+		dir_content += "\n";
 	}
+	resp.build_dir_listing(full_path, dir_content);
+	resp.run(req.getFd());
+	return ;
 }
