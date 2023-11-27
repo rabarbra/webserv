@@ -5,6 +5,7 @@
 // Our headers
 # include "Method.hpp"
 # include "Response.hpp"
+# include <iomanip>
 class Request
 {
 	private:
@@ -36,5 +37,6 @@ class Request
 		Method			getMethod() const;
 		int				getFd();
 		std::map<std::string, std::string>	getHeaders() const;
+		std::string		decodeURI(std::string str);
 };
 #endif
