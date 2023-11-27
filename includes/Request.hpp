@@ -49,5 +49,6 @@ class Request
 		Method			getMethod() const;
 		int				getFd();
 		std::map<std::string, std::string>	getHeaders() const;
+		std::string		decodeURI(std::string str);
 };
 #endif

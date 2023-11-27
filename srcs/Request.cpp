@@ -1,4 +1,5 @@
 #include "../includes/Request.hpp"
+#include <sstream>
 #include <unistd.h>
 
 Request::Request(int fd): _fd(fd)
@@ -75,6 +76,7 @@ void Request::parse()
 		throw std::runtime_error("Unknown http method: " + key);
 	}
 	ss >> pathquery;
+	pathquery = this->decodeURI(pathquery);
 	std::stringstream	s_path(pathquery);
 	std::getline(s_path, this->path, '?');
 	this->path.trim();
@@ -158,3 +160,23 @@ int Request::getFd()
 {
 	return this->_fd;
 }
+
+std::string Request::decodeURI(std::string str)
+{
+	for (size_t i = 0; i < str.length(); i++)
+	{
+		if (str[i] == '%' && i + 2 < str.length())
+		{
+			std::stringstream hex;
+			hex << str.substr(i + 1, 2);
+			int val;
+			hex >> std::setbase(16) >> val;
+			char chr = static_cast<char>(val);
+			str.replace(i, 3, &chr, 1);
+		}
+		else if (str[i] == '+')
+			str[i] = ' ';
+	}
+	return str;
+}
+
