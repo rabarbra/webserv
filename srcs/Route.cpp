@@ -1,8 +1,4 @@
 #include "../includes/Route.hpp"
-#include <dirent.h>
-#include <sstream>
-#include <sys/unistd.h>
-#include <unistd.h>
 
 Route::Route():
 	type(PATH_), allowed_methods(std::vector<Method>()),
@@ -391,10 +387,10 @@ void Route::handle_request(Request req)
 
 std::string Route::build_absolute_path(Request req)
 {
-	std::string	root(this->root_directory);
-	std::string	req_path(req.getPath());
+	better_string	root(this->root_directory);
+	std::string		req_path(req.getPath());
 
-	if (root[root.size() - 1] == '/')
+	if (root.ends_with("/"))
 		root.erase(root.size() - 1);
 	if (!root.size())
 		root = "html";
