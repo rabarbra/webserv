@@ -279,6 +279,7 @@ void Route::parseAllowedMethods(std::string &method)
 		else
 			throw std::runtime_error("invalid allowed_methods format\n");
 	}
+	this->allowed_methods.insert(this->allowed_methods.end(), get_method(method));
 }
 
 bool Route::isRouteValid()
