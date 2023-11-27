@@ -2,7 +2,6 @@
 # define SERVER_HPP
 // Cpp libs
 # include <set>
-# include <stdexcept>
 // C libs
 # include <cctype>
 // .h headers

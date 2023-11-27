@@ -1,8 +1,5 @@
 #ifndef WORKER_HPP
 # define WORKER_HPP
-// Cpp libs
-# include <memory>
-// Our headers
 # include "ServerGroup.hpp"
 class Worker
 {
