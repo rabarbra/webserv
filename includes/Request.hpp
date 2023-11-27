@@ -1,23 +1,10 @@
 #ifndef  REQUEST_HPP
 # define  REQUEST_HPP
-# include <string>
-# include <map>
-# include <string>
-# include <iostream>
-# include <sstream>
-# include <cstdlib>
-# include <cstring>
-# include <cstdio>
-# include <cerrno>
-# include <algorithm>
-# include <sys/socket.h>
-# include <sys/types.h>
-# include <sys/time.h>
-# include <netdb.h>
+// .h headers
+# include <unistd.h>
+// Our headers
 # include "Method.hpp"
 # include "Response.hpp"
-# include "../liblogging/Logger.hpp"
-# include "better_string.hpp"
 class Request
 {
 	private:

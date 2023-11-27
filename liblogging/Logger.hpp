@@ -1,7 +1,6 @@
 #ifndef LOGGING_HPP
 # define LOGGING_HPP
 # include <string>
-# include <iostream>
 # include "Levels.hpp"
 # include "BaseHandler.hpp"
 # include "CliHandler.hpp"

@@ -1,22 +1,6 @@
 #ifndef WORKER_HPP
 # define WORKER_HPP
-# include <vector>
-# include <set>
-# include <fstream>
-# include <cstdlib>
-# include <cstring>
-# include <cstdio>
-# include <memory>
-// C libs
-# include <sys/socket.h>
-# include <sys/types.h>
-# include <sys/time.h>
-# include <netdb.h>
-# include <unistd.h>
-// ==
-# include "Server.hpp"
 # include "ServerGroup.hpp"
-# include "../liblogging/Logger.hpp"
 class Worker
 {
 	private:

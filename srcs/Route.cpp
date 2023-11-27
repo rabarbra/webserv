@@ -527,6 +527,7 @@ void Route::handle_dir_listing(Request req, std::string full_path)
 		dir_content += content;
 		dir_content += "\n";
 	}
+	closedir(dir);
 	resp.build_dir_listing(full_path, dir_content);
 	resp.run(req.getFd());
 	return ;

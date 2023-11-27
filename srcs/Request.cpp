@@ -1,6 +1,4 @@
 #include "../includes/Request.hpp"
-#include <sstream>
-#include <unistd.h>
 
 Request::Request(int fd): _fd(fd)
 {

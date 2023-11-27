@@ -1,6 +1,4 @@
 #include "../includes/Worker.hpp"
-#include <iostream>
-#include <sstream>
 
 Worker &Worker::operator=(const Worker &other)
 {
