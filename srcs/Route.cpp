@@ -261,6 +261,14 @@ void Route::parseAllowedMethods(std::string &method)
 		throw std::runtime_error("invalid allowed_methods format\n");
 	method.erase(0, 1);
 	method.erase(method.length() - 1, 1);
+	if (method.find("|") == std::string::npos)
+	{
+		if (!method.empty() && std::find(methods.begin(), methods.end(), method) != methods.end())
+			this->allowed_methods.insert(this->allowed_methods.end(), get_method(method));
+		else
+			throw std::runtime_error("invalid allowed_methods format\n");
+		return ;
+	}
 	while ((pos = method.find("|")) != std::string::npos) {
 		token = method.substr(0, pos);
 		if (!token.empty() && std::find(methods.begin(), methods.end(), token) != methods.end())
@@ -363,6 +371,7 @@ void Route::handle_request(Request req)
 {
 	
 	if (
+		this->allowed_methods.size() &&
 		std::find(
 			this->allowed_methods.begin(),
 			this->allowed_methods.end(),
