@@ -2,7 +2,6 @@
 # include <sys/event.h>
 # include "../includes/Worker.hpp"
 
-#include <fcntl.h>
 void Worker::_loop(int kq)
 {
 	int						max_events = 128;
@@ -10,23 +9,19 @@ void Worker::_loop(int kq)
 	struct kevent			evList[max_events];
 	int						conn_fd;
 	int						num_events;
-	struct timespec 		timeout;
 
-	timeout.tv_sec = 5;
-    timeout.tv_nsec = 0;
     while (1)
 	{
 		try
 		{
-        	num_events = kevent(kq, NULL, 0, evList, max_events, &timeout);
+        	num_events = kevent(kq, NULL, 0, evList, max_events, NULL);
 			if (num_events < 0)
 				throw std::runtime_error("Kevent error 1: "
 					+ std::string(strerror(errno)));
 			this->_log.INFO << "Events: " << num_events;
         	for (int i = 0; i < num_events; i++)
 			{
-				std::map<int, int>::iterator it = this->conn_socks.find(static_cast<int>(evList[i].ident));
-        	    if (it != this->conn_socks.end())
+        	    if (this->conn_socks.find(static_cast<int>(evList[i].ident)) != this->conn_socks.end())
 				{
 					this->_log.INFO << "Accepting: " << evList[i].ident;
 					if (listen(evList[i].ident, SOMAXCONN) < 0)
@@ -50,6 +45,8 @@ void Worker::_loop(int kq)
 							);
 						}
 						fcntl(conn_fd, F_SETFL, O_NONBLOCK, FD_CLOEXEC);
+						int nosigpipe = 1;
+						setsockopt(conn_fd, SOL_SOCKET, SO_NOSIGPIPE, &nosigpipe, sizeof(nosigpipe));
         	        	EV_SET(&evSet, conn_fd, EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, evList[i].udata);
         	        	if (kevent(kq, &evSet, 1, NULL, 0, NULL) < 0)
 						{
@@ -137,5 +134,6 @@ void Worker::run()
 		}
 	}
 	this->_loop(kq);
+	close(kq);
 }
 #endif

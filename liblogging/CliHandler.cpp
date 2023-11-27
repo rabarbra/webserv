@@ -1,18 +1,10 @@
 #include "CliHandler.hpp"
 
-CliHandler::CliHandler()
-{
-	this->lvl = _INFO;
-	this->limit = _INFO;
-	this->first = true;
-}
+CliHandler::CliHandler(): BaseHandler()
+{}
 
-CliHandler::CliHandler(t_lvl lvl, t_lvl limit)
-{
-	this->lvl = lvl;
-	this->limit = limit;
-	this->first = true;
-}
+CliHandler::CliHandler(t_lvl lvl, t_lvl limit): BaseHandler(lvl, limit)
+{}
 
 CliHandler::~CliHandler()
 {}

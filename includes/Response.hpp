@@ -16,6 +16,11 @@
 # include "better_string.hpp"
 # include "StatusCodes.hpp"
 # include "../liblogging/Logger.hpp"
+# ifdef __linux__
+#  define SEND_FLAGS MSG_NOSIGNAL
+# else
+#  define SEND_FLAGS 0
+# endif
 class Response
 {
 	private:

@@ -8,9 +8,9 @@ class BaseHandler
 	protected:
 		t_lvl		lvl;
 		t_lvl		limit;
-		bool		filter();
 		bool		first;
 		BaseHandler	*copy;
+		bool		filter();
 		std::string	returnLevel();
 	public:
 		BaseHandler();
