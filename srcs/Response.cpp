@@ -42,7 +42,7 @@ void Response::_build()
 		this->_plain += (it->first + ": " + it->second + "\r\n");
 	}
 	if (this->body_size)
-		this->_plain += ("\n" + this->body);
+		this->_plain += ("\r\n" + this->body);
 }
 
 std::string Response::getBody()
