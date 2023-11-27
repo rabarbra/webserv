@@ -1,6 +1,4 @@
-#include <iostream>
 #include "../includes/Worker.hpp"
-#include "../liblogging/Logger.hpp"
 
 int	main(int ac, char **av)
 {

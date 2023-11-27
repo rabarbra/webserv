@@ -1,25 +1,14 @@
 #ifndef SERVER_HPP
 # define SERVER_HPP
-# include <map>
-# include <sstream>
-# include <vector>
+// Cpp libs
 # include <set>
-# include <string>
-# include <iostream>
-# include <cstdlib>
-# include <cstring>
-# include <cstdio>
-# include <cerrno>
-# include <sys/socket.h>
-# include <sys/types.h>
-# include <sys/time.h>
+# include <stdexcept>
+// C libs
+# include <cctype>
+// .h headers
 # include <fcntl.h>
-# include <netdb.h>
-# include <unistd.h>
+// Our headers
 # include "Route.hpp"
-# include "Request.hpp"
-# include "Response.hpp"
-# include "../liblogging/Logger.hpp"
 class Server
 {
 	private:

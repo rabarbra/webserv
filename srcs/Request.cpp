@@ -1,5 +1,4 @@
 #include "../includes/Request.hpp"
-#include <unistd.h>
 
 Request::Request(int fd): _fd(fd)
 {

@@ -1,10 +1,6 @@
 #ifndef SERVERGROUP_HPP
 # define SERVERGROUP_HPP
-# include <map>
-# include <string>
 # include "Server.hpp"
-# include "Request.hpp"
-
 class ServerGroup
 {
 	private:

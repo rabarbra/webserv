@@ -1,20 +1,21 @@
 #ifndef RESPONSE_HPP
 # define RESPONSE_HPP
-# include <string>
+// Cpp libs
 # include <sstream>
 # include <fstream>
-# include <iostream>
-# include <map>
+// C libs
+# include <cerrno>
+# include <cstdio>
 # include <cstdlib>
 # include <cstring>
-# include <cstdio>
-# include <cerrno>
-# include <sys/socket.h>
-# include <sys/types.h>
-# include <sys/time.h>
+// .h headers
 # include <netdb.h>
-# include "better_string.hpp"
+# include <sys/time.h>
+# include <sys/types.h>
+# include <sys/socket.h>
+// Our headers
 # include "StatusCodes.hpp"
+# include "better_string.hpp"
 # include "../liblogging/Logger.hpp"
 # ifdef __linux__
 #  define SEND_FLAGS MSG_NOSIGNAL
