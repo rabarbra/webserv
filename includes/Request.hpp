@@ -5,6 +5,7 @@
 // Our headers
 # include "Method.hpp"
 # include "Response.hpp"
+# include <iomanip>
 class Request
 {
 	private:
