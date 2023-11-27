@@ -1,5 +1,6 @@
 #include "../includes/Route.hpp"
 #include <dirent.h>
+#include <sstream>
 #include <sys/unistd.h>
 #include <unistd.h>
 
@@ -503,7 +504,9 @@ void Route::handle_dir_listing(Request req, std::string full_path)
 			content.find_and_replace("{{href}}", "/" + std::string(ent->d_name));
 		else
 			content.find_and_replace("{{href}}", std::string(ent->d_name));
-		stat((this->build_absolute_path(req) + ent->d_name).c_str(), &st);
+		if (stat((this->build_absolute_path(req) + ent->d_name).c_str(), &st) != 0)
+			continue;
+		std::stringstream ss;
 		if (ent->d_type == DT_DIR)
 		{
 			content.find_and_replace("{{is_dir}}", "1");
@@ -512,10 +515,13 @@ void Route::handle_dir_listing(Request req, std::string full_path)
 		else
 		{
 			content.find_and_replace("{{is_dir}}", "0");
-			content.find_and_replace("{{abs_size}}", std::to_string(st.st_size));
+			ss << st.st_size;
+			content.find_and_replace("{{abs_size}}", ss.str());
 			content.find_and_replace("{{size}}", convertSize(st.st_size));
 		}
-		content.find_and_replace("{{timestamp}}", std::to_string(st.st_mtime));
+		ss.clear();
+		ss << st.st_mtime;
+		content.find_and_replace("{{timestamp}}",ss.str());
 		time_t timestamp = st.st_mtime;
 		struct tm *timeinfo;
 		timeinfo = localtime(&timestamp);
