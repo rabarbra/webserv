@@ -16,6 +16,11 @@
 # include "better_string.hpp"
 # include "StatusCodes.hpp"
 # include "../liblogging/Logger.hpp"
+# ifdef __linux__
+#  define SEND_FLAGS MSG_NOSIGNAL
+# else
+#  define SEND_FLAGS 0
+# endif
 class Response
 {
 	private:
@@ -37,7 +42,7 @@ class Response
 		void		setHeader(std::string key, std::string value);
 		void		setStatusCode(std::string code);
 		void		setReason(std::string reason);
-		std::string 	getBody();
+		std::string getBody();
 		void		build_error(std::string status_code);
 		void		build_dir_listing(std::string full_path, std::string content);
 		void		build_redirect(std::string location, std::string status_code);

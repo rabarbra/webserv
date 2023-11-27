@@ -42,7 +42,7 @@ void Response::_build()
 		this->_plain += (it->first + ": " + it->second + "\r\n");
 	}
 	if (this->body_size)
-		this->_plain += ("\n" + this->body);
+		this->_plain += ("\r\n" + this->body);
 }
 
 std::string Response::getBody()
@@ -61,7 +61,7 @@ void Response::run(int fd)
 	this->log.INFO << "To send: " << left;
 	while (sent < this->_plain.size())
 	{
-		chunk = send(fd, this->_plain.c_str() + sent, left, 0);
+		chunk = send(fd, this->_plain.c_str() + sent, left, SEND_FLAGS);
 		this->log.INFO << "Sent: " << chunk;
 		if (chunk < 0)
 		{

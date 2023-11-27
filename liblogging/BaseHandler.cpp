@@ -1,13 +1,9 @@
 #include "BaseHandler.hpp"
 
-BaseHandler::BaseHandler()
-{
-	this->lvl = _INFO;
-	this->first = true;
-	this->copy = NULL;
-}
+BaseHandler::BaseHandler(): lvl(_INFO), limit(_INFO), first(true), copy(NULL)
+{}
 
-BaseHandler::BaseHandler(t_lvl lvl, t_lvl limit): lvl(lvl), limit(limit), first(true)
+BaseHandler::BaseHandler(t_lvl lvl, t_lvl limit): lvl(lvl), limit(limit), first(true), copy(NULL)
 {}
 
 BaseHandler::~BaseHandler()
@@ -16,9 +12,8 @@ BaseHandler::~BaseHandler()
 		delete this->copy;
 }
 
-BaseHandler::BaseHandler(const BaseHandler &other)
+BaseHandler::BaseHandler(const BaseHandler &other): lvl(_INFO), limit(_INFO), first(true), copy(NULL)
 {
-	this->copy = NULL;
 	*this = other;
 }
 

@@ -265,13 +265,16 @@ void Server::handle_request(Request req)
 	}
 	catch(const std::exception& e)
 	{
-		resp.build_error("400");
-		resp.run(req.getFd());
-		this->log.ERROR << e.what() << '\n';
+		better_string errors_msg(e.what());
+		if (!errors_msg.starts_with("Cannot send"))
+		{
+			resp.build_error("400");
+			resp.run(req.getFd());
+		}
+		this->log.ERROR << errors_msg << '\n';
 	}
 }
 
-#include <fcntl.h>
 int Server::_create_conn_socket(std::string host, std::string port)
 {
 	int				sock;
@@ -311,6 +314,7 @@ int Server::_create_conn_socket(std::string host, std::string port)
 	fcntl(sock, F_SETFL, O_NONBLOCK, FD_CLOEXEC);
 	int	reuseaddr = 1;
 	setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &reuseaddr, sizeof(reuseaddr));
+	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(reuseaddr));
 	freeaddrinfo(addr);
 	return sock;
 }

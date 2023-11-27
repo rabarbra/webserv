@@ -1,8 +1,4 @@
 #include "../includes/Route.hpp"
-#include <dirent.h>
-#include <sstream>
-#include <sys/unistd.h>
-#include <unistd.h>
 
 Route::Route():
 	type(PATH_), allowed_methods(std::vector<Method>()),
@@ -336,8 +332,6 @@ void Route::printRoute()
 		this->logger.INFO << "            file_extension: " << *it;
 	for (std::vector<Method>::iterator it = this->allowed_methods.begin(); it != this->allowed_methods.end(); it++)
 		this->logger.INFO << "            allowed_method: " << *it;
-	std::cout << std::endl;
-
 }
 
 void Route::setPath(std::string path)
@@ -391,10 +385,10 @@ void Route::handle_request(Request req)
 
 std::string Route::build_absolute_path(Request req)
 {
-	std::string	root(this->root_directory);
-	std::string	req_path(req.getPath());
+	better_string	root(this->root_directory);
+	std::string		req_path(req.getPath());
 
-	if (root[root.size() - 1] == '/')
+	if (root.ends_with("/"))
 		root.erase(root.size() - 1);
 	if (!root.size())
 		root = "html";
@@ -403,28 +397,28 @@ std::string Route::build_absolute_path(Request req)
 
 void Route::sendFile(std::string filename, Response &resp, int fd) 
 {
-	std::ifstream file(filename.c_str());
-	if (file.is_open())
-	{
-		std::string	body;
-		std::string line;
-		this->logger.INFO << "File is open";
-		while (file)
-		{
-			std::getline(file, line);
-			body += line;
-		}
-		resp.setBody(body);
-		resp.run(fd);
-		file.close();
-	}
-	else 
+	std::ifstream file(filename.c_str(), std::ios::binary | std::ios::ate);
+	if (!file.is_open())
 	{
 		this->logger.WARN << "Cannot open file";
 		resp.build_error("404");
 		resp.run(fd);
 	}
-
+	if (!file.good())
+	{
+		this->logger.WARN << "Bad file";
+		resp.build_error("500");
+		resp.run(fd);
+	}
+	std::streamsize size = file.tellg();
+	file.seekg(0, std::ios::beg);
+	char *buffer = new char[size];
+    file.read(buffer, size);
+	file.close();
+	std::string	body(buffer, size);
+	delete []buffer;
+	resp.setBody(body);
+	resp.run(fd);
 }
 
 void Route::handle_path(Request req)
@@ -433,13 +427,11 @@ void Route::handle_path(Request req)
 	Response resp;
 	std::string full_path = this->build_absolute_path(req);
 	struct stat st;
-	this->logger.INFO << "LOGGGGGGGGGG" << full_path;
 	this->logger.INFO << "Trying to send: " << full_path;
 	if (stat(full_path.c_str(), &st) == 0 )
 	{
 		if (full_path[full_path.size() - 1] == '/' && S_ISDIR(st.st_mode))
 		{
-			std::cout << "is dir" << std::endl;
 			if (this->dir_listing)
 			{
 				this->handle_dir_listing(req, full_path);
@@ -451,7 +443,6 @@ void Route::handle_path(Request req)
 
 		}
 		else if (S_ISDIR(st.st_mode)) {
-			std::cout << "is dir" << std::endl;
 			full_path += "/";
 			full_path += this->index;
 			this->sendFile(full_path, resp, req.getFd());
@@ -459,7 +450,6 @@ void Route::handle_path(Request req)
 		}
 		else if (S_ISREG(st.st_mode))
 		{
-			std::cout << "is reg" << std::endl;
 			this->sendFile(full_path, resp, req.getFd());
 			return;
 		}
@@ -497,6 +487,12 @@ void Route::handle_dir_listing(Request req, std::string full_path)
 		resp.run(req.getFd());
 		return ;
 	}
+	dir_content += ("<script>start(\"" + req.getPath() + "\");</script>\n");
+	better_string route_path(this->getPath());
+	if (!route_path.ends_with("/"))
+		route_path += "/";
+	if (req.getPath() != route_path)
+		dir_content += "<script>onHasParentDirectory();</script>\n";
 	while ((ent = readdir(dir)) != NULL) {
 		content = "<script>addRow(\"{{name}}\",\"{{href}}\",{{is_dir}},{{abs_size}},\"{{size}}\",{{timestamp}},\"{{date}}\");</script>";
 		content.find_and_replace("{{name}}", std::string(ent->d_name));
