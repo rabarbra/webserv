@@ -1,11 +1,4 @@
 #include "../includes/Server.hpp"
-#include <cctype>
-#include <cstdio>
-#include <cstdlib>
-#include <map>
-#include <sstream>
-#include <stdexcept>
-#include <string>
 
 Server::Server(): routes(), hosts(), server_names(), error_pages(), max_body_size(-1), log(Logger(_INFO, "Server")), _penging_connections_count(SOMAXCONN)
 {}

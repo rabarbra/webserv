@@ -1,21 +1,13 @@
 #ifndef ROUTE_HPP
 # define ROUTE_HPP
-# include <vector>
-# include <string>
-# include <sstream>
-# include <fstream>
-# include <iostream>
-# include <algorithm>
+// C libs
 # include <ctime>
+// .h headers
 # include <dirent.h>
-# include <unistd.h>
 # include <sys/stat.h>
+// Our headers
 # include "CGI.hpp"
-# include "Method.hpp"
 # include "Request.hpp"
-# include "Response.hpp"
-# include "../liblogging/Logger.hpp"
-# include "better_string.hpp"
 typedef enum e_route_type {
 	PATH_,
 	CGI_,

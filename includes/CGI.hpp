@@ -1,13 +1,12 @@
 #ifndef CGI_HPP
 # define CGI_HPP
 # include <vector>
-# include <string>
 # include "better_string.hpp"
 class CGI
 {
 	public:
-		void	execute(std::string path);
-		void			setHandler(std::vector<std::string> handler);
+		void						execute(std::string path);
+		void						setHandler(std::vector<std::string> handler);
 		std::vector<std::string>	getHandler();
 		CGI();
 		CGI(std::vector<std::string> handler);
