@@ -10,11 +10,12 @@
 # include "Method.hpp"
 # include <iostream>
 # include <algorithm>
+# include <ctime>
 # include "Request.hpp"
 # include "Response.hpp"
 #include "../liblogging/Logger.hpp"
 # include "better_string.hpp"
-
+# include <dirent.h>
 typedef enum e_route_type {
 	PATH_,
 	CGI_,
@@ -38,7 +39,7 @@ class Route
 		void						handle_path(Request req);
 		void						handle_cgi(Request req);
 		void						handle_redirection(Request req);
-		void						handle_dir_listing(Request req);
+		void						handle_dir_listing(Request req, std::string full_path);
 		std::string					build_absolute_path(Request req);
 	public:
 		Route();
@@ -68,8 +69,10 @@ class Route
 		size_t		match(std::string path);
 };
 
-bool    checkCgiHandler(std::vector<std::string> handler);
-void	checkSemiColon(std::string &word, std::string message);
-bool	checkWordIsOption(std::string word);
+bool    	checkCgiHandler(std::vector<std::string> handler);
+void		checkSemiColon(std::string &word, std::string message);
+bool		checkWordIsOption(std::string word);
+std::string	getFileSize(std::string path);
+std::string	convertSize(size_t size); 
 
 #endif
