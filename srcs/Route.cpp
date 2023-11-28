@@ -2,7 +2,7 @@
 
 Route::Route():
 	type(PATH_), allowed_methods(std::vector<Method>()),
-	root_directory(""), redirect_url(""), dir_listing(false),
+	root_directory(""), redirect_url(""), redirectStatusCode(""), dir_listing(false),
 	index("index.html"), static_dir(), cgi(NULL)
 {}
 
@@ -37,6 +37,7 @@ Route &Route::operator=(const Route &other)
 		this->file_extensions = other.file_extensions;
 		this->root_directory = other.root_directory;
 		this->redirect_url = other.redirect_url;
+		this->redirectStatusCode = other.redirectStatusCode;
 		this->dir_listing = other.dir_listing;
 		this->index = other.index;
 		this->static_dir = other.static_dir;
@@ -144,8 +145,8 @@ void Route::parseOptions(std::stringstream &ss)
 		this->parseOption(param);
 		options.erase(0, pos + 1);
 	}
-	if (!this->isRouteValid())
-		throw std::runtime_error("invalid route\n");
+	//if (!this->isRouteValid())
+	//	throw std::runtime_error("invalid route\n");
 }
 
 void Route::parseOption(std::string &param)
@@ -176,6 +177,22 @@ void Route::parseOption(std::string &param)
 			if (this->redirect_url != "")
 				throw std::runtime_error("redirect url already set\n");
 			ss >> word;
+			if (word[word.length() - 1] != ';')
+			{
+				std::cout << "word: " << word << std::endl;
+				if (word.compare("301") 
+						&& word.compare("302") 
+						&& word.compare("303") 
+						&& word.compare("304") 
+						&& word.compare("305") 
+						&& word.compare("306") 
+						&& word.compare("307") 
+						&& word.compare("308"))
+					throw std::runtime_error("invalid redirection code\n");
+				this->redirectStatusCode = word;
+				ss >> word;
+				std::cout << "word: " << this->redirectStatusCode << std::endl;
+			}
 			checkSemiColon(word, "redirect url");
 			this->setRedirectUrl(word);
 			this->setType(REDIRECTION_);
@@ -477,7 +494,11 @@ void Route::handle_cgi(Request req)
 void Route::handle_redirection(Request req)
 {
 	Response resp;
-	resp.build_redirect(this->redirect_url, "302");
+	std::cout << "redirecting to: " << this->redirect_url << "with code " << this->redirectStatusCode << std::endl;
+	if (!this->redirectStatusCode.empty())
+		resp.build_redirect(this->redirect_url, this->redirectStatusCode);
+	else
+		resp.build_redirect(this->redirect_url, "302");
 	resp.run(req.getFd());
 }
 

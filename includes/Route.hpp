@@ -23,6 +23,7 @@ class Route
 		std::vector<std::string>	file_extensions; // Empty if not specified
 		std::string					root_directory; // Current directory if not specified
 		std::string					redirect_url; // Empty if not specified
+		std::string					redirectStatusCode;
 		bool						dir_listing; // false by default
 		std::string					index; // index.html by default
 		std::string					static_dir; // Empty string by default (don't accept files)
