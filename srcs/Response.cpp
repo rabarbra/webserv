@@ -55,7 +55,12 @@ void Response::run(int fd)
 	size_t	sent = 0;
 	size_t	left;
 	ssize_t	chunk;
+	char	buffer[80];
 
+	time_t timestamp = time(NULL);
+	struct tm *timeinfo = localtime(&timestamp); 
+	strftime(buffer, 80, "%a, %d %b %Y %H:%M:%S %Z", timeinfo);
+	this->setHeader("Date", buffer);
 	this->_build();
 	left = this->_plain.size();
 	this->log.INFO << "To send: " << left;
