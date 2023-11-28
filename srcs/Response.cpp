@@ -54,6 +54,7 @@ void Response::run(int fd)
 {
 	size_t	sent = 0;
 	size_t	left;
+	size_t	chunk_size;
 	ssize_t	chunk;
 	char	buffer[80];
 
@@ -62,11 +63,14 @@ void Response::run(int fd)
 	strftime(buffer, 80, "%a, %d %b %Y %H:%M:%S %Z", timeinfo);
 	this->setHeader("Date", buffer);
 	this->_build();
+	chunk_size = 2048;
 	left = this->_plain.size();
+	if (left < chunk_size)
+		chunk_size = left;
 	this->log.INFO << "To send: " << left;
 	while (sent < this->_plain.size())
 	{
-		chunk = send(fd, this->_plain.c_str() + sent, left, SEND_FLAGS);
+		chunk = send(fd, this->_plain.c_str() + sent, chunk_size, SEND_FLAGS);
 		this->log.INFO << "Sent: " << chunk;
 		if (chunk < 0)
 		{
@@ -78,6 +82,8 @@ void Response::run(int fd)
 		}
 		sent += chunk;
 		left -= chunk;
+		if (left < chunk_size)
+			chunk_size = left;
 	}
 }
 
