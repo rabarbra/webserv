@@ -17,6 +17,8 @@
 # include "StatusCodes.hpp"
 # include "better_string.hpp"
 # include "../liblogging/Logger.hpp"
+# include "MimeTypes.hpp"
+
 # ifdef __linux__
 #  define SEND_FLAGS MSG_NOSIGNAL
 # else
@@ -43,6 +45,7 @@ class Response
 		void		setHeader(std::string key, std::string value);
 		void		setStatusCode(std::string code);
 		void		setReason(std::string reason);
+		void            setContentTypes(std::string filename);
 		std::string getBody();
 		void		build_error(std::string status_code);
 		void		build_dir_listing(std::string full_path, std::string content);

@@ -10,7 +10,7 @@ INC_DIR =		includes
 
 SRC =			main Worker Server ServerGroup Route Request Response \
 				worker_loop_darwin worker_loop_linux better_string \
-				ParseUtils cgi StatusCodes
+				ParseUtils cgi StatusCodes MimeTypes 
 OBJ =			$(addprefix $(OBJ_DIR)/, $(addsuffix .o, $(SRC)))
 
 LIBLOGGING =	liblogging

@@ -55,7 +55,12 @@ void Response::run(int fd)
 	size_t	sent = 0;
 	size_t	left;
 	ssize_t	chunk;
+	char	buffer[80];
 
+	time_t timestamp = time(NULL);
+	struct tm *timeinfo = localtime(&timestamp); 
+	strftime(buffer, 80, "%a, %d %b %Y %H:%M:%S %Z", timeinfo);
+	this->setHeader("Date", buffer);
 	this->_build();
 	left = this->_plain.size();
 	this->log.INFO << "To send: " << left;
@@ -96,11 +101,18 @@ void Response::setHeader(std::string key, std::string value)
 	this->headers[key] = value;
 }
 
+void Response::setContentTypes(std::string filename)
+{
+	MimeTypes	mime_types;
+	this->setHeader("Content-Type", mime_types.getMimeType(filename));
+}
+
 void Response::build_error(std::string status_code)
 {
 	StatusCodes		status;
 	this->setStatusCode(status_code);
 	this->setReason(status.getDescription(status_code));
+	this->setContentTypes("error.html");
 	std::fstream	error_page("static/error.html");
 	if (error_page.is_open())
 	{
@@ -131,6 +143,7 @@ void Response::build_dir_listing(std::string full_path, std::string content)
 {
 	StatusCodes		status;
 	(void)full_path;
+	this->setContentTypes("dir_list.html");
 	std::fstream	error_page("static/dir_list.html");
 	if (error_page.is_open())
 	{
@@ -160,6 +173,7 @@ void Response::build_redirect(std::string location, std::string status_code)
 	this->setStatusCode(status_code);
 	this->setReason(status.getDescription(status_code));
 	this->setHeader("Location", location);
+	this->setContentTypes("error.html");
 	this->body = "<!DOCTYPE html><html><head><title>"
 		+ status.getFullStatus(status_code)
 		+ "</title></head><body><h1>"

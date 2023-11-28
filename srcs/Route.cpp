@@ -437,6 +437,7 @@ void Route::sendFile(std::string filename, Response &resp, int fd)
 		resp.build_error("500");
 		resp.run(fd);
 	}
+	resp.setContentTypes(filename);
 	std::streamsize size = file.tellg();
 	file.seekg(0, std::ios::beg);
 	char *buffer = new char[size];
