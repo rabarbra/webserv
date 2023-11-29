@@ -3,7 +3,14 @@
 Worker &Worker::operator=(const Worker &other)
 {
 	if (this != &other)
-		return *this;
+	{
+		this->servers = other.servers;
+		this->server_groups = other.server_groups;
+		this->conn_socks = other.conn_socks;
+		this->conn_map = other.conn_map;
+		this->ev = other.ev;
+		this->_log = other._log;
+	}	
 	return *this;
 }
 
@@ -20,7 +27,7 @@ Worker::~Worker()
 	}
 }
 
-Worker::Worker(char *path_to_conf)
+Worker::Worker(char *path_to_conf, char **env): ev(env)
 {
 	std::ifstream	conf(path_to_conf);
 	if (!conf.is_open())
@@ -109,6 +116,7 @@ int	Worker::parse_server(std::string &server)
 	size_t pos = 0;
 	std::string param;
 
+	new_server.setEnv(this->ev);
 	while ((pos = server.find(delimiter)) != std::string::npos) {
 		param = server.substr(0, pos);
 		if (param.find("location") != std::string::npos)

@@ -3,7 +3,7 @@
 Route::Route():
 	type(PATH_), allowed_methods(std::vector<Method>()),
 	root_directory(""), redirect_url(""), redirectStatusCode(""), dir_listing(false),
-	index("index.html"), static_dir(), cgi(NULL)
+	index("index.html"), static_dir(), cgi(NULL), ev(NULL)
 {}
 
 Route::~Route()
@@ -12,7 +12,7 @@ Route::~Route()
 		delete this->cgi;
 }
 
-Route::Route(const Route &other): cgi(NULL)
+Route::Route(const Route &other): cgi(NULL) , ev(NULL)
 {
 	*this = other;
 }
@@ -43,6 +43,7 @@ Route &Route::operator=(const Route &other)
 		this->static_dir = other.static_dir;
 		this->logger = other.logger;
 		this->path = other.path;
+		this->ev = other.ev;
 	}
 	return *this;
 }
@@ -92,6 +93,11 @@ void Route::setIndex(std::string index)
 void Route::setStaticDir(std::string static_dir)
 {
 	this->static_dir = static_dir;
+}
+
+void Route::setEv(char **ev)
+{
+	this->ev = ev;
 }
 
 void	Route::setFileExtensions(std::string &extension)
@@ -241,6 +247,7 @@ void Route::parseOption(std::string &param)
 			handler.insert(handler.end(), word);
 			if (checkCgiHandler(handler))
 				throw std::runtime_error("Invalid cgi handler\n");
+			this->setType(CGI_);
 			this->setCGI(new CGI(handler));
 		}
 		else
@@ -334,10 +341,6 @@ bool Route::isRouteValid()
 		if (!this->allowed_methods.size() 
 				&& !this->file_extensions.size()
 				&& !this->root_directory.empty())
-			return false;
-		//if (!this->cgi )
-		//	return false;
-		if (this->file_extensions.size() == 0)
 			return false;
 	}
 	return true;
@@ -488,8 +491,59 @@ void Route::handle_path(Request req)
 
 void Route::handle_cgi(Request req)
 {
-	Response resp;
-	resp.run(req.getFd());
+	int fd[2];
+	//pid_t pid;
+	this->logger.INFO << "LOGGGGGGGGGGGGGGG";
+	this->configureCGI(req, fd);
+//	if (pipe(fd) == -1)
+//	{
+//		this->logger.WARN << "Cannot create pipe";
+//		Response resp;
+//		resp.build_error("500");
+//		resp.run(req.getFd());
+//		return ;
+//	}
+//	if ((pid = fork()) == -1)
+//	{
+//		this->logger.WARN << "Cannot fork";
+//		Response resp;
+//		resp.build_error("500");
+//		resp.run(req.getFd());
+//		return ;
+//	}
+//	if (pid == 0)
+//	{
+//		if (this->configureCGI(req, fd) == -1)
+//		{
+//			this->logger.WARN << "Cannot configure CGI";
+//			Response resp;
+//			resp.build_error("500");
+//			resp.run(req.getFd());
+//			return ;
+//		}
+//	}
+//	else
+//	{
+//		close(fd[1]);
+//		Response resp;
+//		//resp.build_cgi(pid, fd[0]);
+//		resp.run(req.getFd());
+//	}
+}
+#include <stdio.h>
+int Route::configureCGI(Request &req, int *fd)
+{
+	(void)req;
+	(void)fd;
+	std::vector<char *> envp;
+	int i = 0;
+	while (this->ev[i])
+	{
+		envp.push_back(this->ev[i]);
+		this->logger.WARN << "env: " << std::string(envp[i]);
+		i++;
+	}
+	return (0);
 }
 
 void Route::handle_redirection(Request req)

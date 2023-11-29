@@ -19,16 +19,17 @@ class Route
 	private:
 		RouteType					type; // Path by default
 		std::string					path;
-		std::vector<Method> 		allowed_methods;// All methods if not specified
-		std::vector<std::string>	file_extensions; // Empty if not specified
+		std::vector<Method> 				allowed_methods;// All methods if not specified
+		std::vector<std::string>			file_extensions; // Empty if not specified
 		std::string					root_directory; // Current directory if not specified
 		std::string					redirect_url; // Empty if not specified
 		std::string					redirectStatusCode;
 		bool						dir_listing; // false by default
 		std::string					index; // index.html by default
 		std::string					static_dir; // Empty string by default (don't accept files)
-		CGI							*cgi; // NULL by default
+		CGI						*cgi; // NULL by default
 		Logger						logger;
+		char						**ev;
 		void						handle_path(Request req);
 		void						handle_cgi(Request req);
 		void						handle_redirection(Request req);
@@ -51,6 +52,7 @@ class Route
 		void		setStaticDir(std::string static_dir);
 		void		setType(RouteType type);
 		void		setCGI(CGI *cgi);
+		void		setEv(char **env);
 		void		setPath(std::string path);
 		std::string	getPath();
 		void		parseOptions(std::stringstream &options);
@@ -60,6 +62,7 @@ class Route
 		void		handle_request(Request req);
 		void		sendFile(std::string filename, Response &resp, int fd); 
 		size_t		match(std::string path);
+		int		configureCGI(Request &req, int *fd);
 };
 
 bool    	checkCgiHandler(std::vector<std::string> handler);

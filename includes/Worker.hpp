@@ -8,6 +8,7 @@ class Worker
 		std::vector<ServerGroup>	server_groups;
 		std::map<int, int>			conn_socks;
 		std::map<int, int>			conn_map;
+		char					**ev;
 		Logger						_log;
 		int							parse_server(std::string &server);
 		void						_parse_config(std::ifstream &conf);
@@ -20,7 +21,7 @@ class Worker
 		Worker(const Worker &other);
 	public:
 		~Worker();
-		Worker(char *path_to_conf);
+		Worker(char *path_to_conf, char **ev);
 		void	run();
 };
 #endif

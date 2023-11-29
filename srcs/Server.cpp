@@ -22,6 +22,7 @@ Server &Server::operator=(const Server &other)
 		this->max_body_size = other.max_body_size;
 		this->_penging_connections_count = other._penging_connections_count;
 		this->log = other.log;
+		this->env = other.env;
 	}
 	return (*this);
 }
@@ -41,6 +42,11 @@ void Server::setServerNames(std::stringstream &ss)
 	std::string word;
 	while (ss >> word)
 		this->server_names.insert(this->server_names.end(), word);
+}
+
+void Server::setEnv(char **env)
+{
+	this->env = env;
 }
 
 bool isNumber(std::string &str)
@@ -122,6 +128,8 @@ void	Server::parseLocation(std::string &location)
 	}
 	route.parseOptions(ss);
 	route.setPath(path);
+	route.setEv(this->env);
+//	printf("path: %s\n", this->env[0]);
 	this->routes.push_back(route);
 }
 
