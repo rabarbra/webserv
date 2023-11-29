@@ -62,8 +62,9 @@ void Response::run(int fd)
 	struct tm *timeinfo = localtime(&timestamp); 
 	strftime(buffer, 80, "%a, %d %b %Y %H:%M:%S %Z", timeinfo);
 	this->setHeader("Date", buffer);
+	this->setHeader("Server", "Webserv42");
 	this->_build();
-	chunk_size = 2048;
+	chunk_size = 536;
 	left = this->_plain.size();
 	if (left < chunk_size)
 		chunk_size = left;

@@ -309,6 +309,30 @@ int Server::_create_conn_socket(std::string host, std::string port)
 	setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &reuseaddr, sizeof(reuseaddr));
 	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(reuseaddr));
 	freeaddrinfo(addr);
+	for (size_t i = 0; i < this->routes.size(); i++)
+	{
+		std::string route_type;
+		RouteType r = this->routes[i].getType();
+		switch (r)
+		{
+			case PATH_:
+				route_type = "path:\t";
+				break;
+			case REDIRECTION_:
+				route_type = "redir:\t";
+				break;
+			case CGI_:
+				route_type = "cgi: \t";
+				break;
+			default:
+				route_type = "unkn:\t";
+				break;
+		}
+		this->log.INFO
+			<< route_type
+			<< "http://" << host << ":" << port << this->routes[i].getPath()
+			<< (this->routes[i].getRedirectUrl().size() ? "\n\t\t\t\t=> " + this->routes[i].getRedirectUrl() : "");
+	}
 	return sock;
 }
 

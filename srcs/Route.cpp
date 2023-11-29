@@ -57,6 +57,11 @@ bool Route::getDirListing()
 	return this->dir_listing;
 }
 
+std::string Route::getRedirectUrl()
+{
+	return this->redirect_url;
+}
+
 //-------------------------------------------SETTERS---------------------------------------------
 
 void Route::setType(RouteType type)

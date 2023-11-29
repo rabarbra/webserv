@@ -46,6 +46,7 @@ class Route
 		void		setAllowedMethods(std::string methods);
 		void		setRootDirectory(std::string root_directory);
 		void		setRedirectUrl(std::string redirect_url);
+		std::string	getRedirectUrl();
 		void		setDirListing(bool dir_listing);
 		void		setIndex(std::string index);
 		void		setStaticDir(std::string static_dir);
