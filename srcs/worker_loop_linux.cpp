@@ -6,7 +6,7 @@ void Worker::run()
 {
 	std::set<int>					server_socks;
 
-	std::vector<Server> servers = this->config.getServers()
+	std::vector<Server> servers = this->config.getServers();
 	int epollfd = epoll_create(1);
 	if (epollfd < 0)
 		throw std::runtime_error("Error creating epoll: " + std::string(strerror(errno)));
