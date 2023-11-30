@@ -1,11 +1,11 @@
 #ifndef  REQUEST_HPP
 # define  REQUEST_HPP
+# include <iomanip>
 // .h headers
 # include <unistd.h>
 // Our headers
 # include "Method.hpp"
 # include "Response.hpp"
-# include <iomanip>
 class Request
 {
 	private:

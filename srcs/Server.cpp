@@ -43,143 +43,24 @@ void Server::setServerNames(std::stringstream &ss)
 		this->server_names.insert(this->server_names.end(), word);
 }
 
-bool isNumber(std::string &str)
+long long Server::getMaxBodySize()
 {
-	for (long unsigned int i = 0; i < str.length(); i++)
-	{
-		if (!isdigit(str[i]))
-			return false;
-	}
-	return true;
+	return this->max_body_size;
 }
 
-void Server::parseListen(std::stringstream &ss)
+void Server::setMaxBodySize(long long bodySize)
 {
-	std::string word;
-	std::string host;
-	std::string port;
-	int both = 0;
-	size_t pos;
-
-	while (ss >> word)
-	{
-		if ((pos = word.find(":")) != std::string::npos)
-		{
-			if (both)
-				throw std::runtime_error("Host and port are already set!");
-			host = word.substr(0, pos);
-			port = word.substr(pos + 1, word.length());
-			if (!isNumber(port))
-				throw std::runtime_error("Host and port are already set!");
-			if (host.empty())
-				host = "127.0.0.1";
-			else if (port.empty())
-				port = "80";
-			this->setHosts(host, port);
-			both = 1;
-		}
-		else if (isNumber(word))
-		{
-			if (both)
-				throw std::runtime_error("Host and port are already set");
-			this->setHosts("127.0.0.1", word);
-			both = 1;
-		}		
-		else
-		{
-			if (both)
-				throw std::runtime_error("Host and port are already set!");
-			this->setHosts(word, "80");
-			both = 1;
-		}
-	}
+	this->max_body_size = bodySize;
 }
 
-void	Server::parseLocation(std::string &location)
+void Server::setErrorPage(int code, std::string path)
 {
-	Route route;
-	std::string word;
-	std::stringstream ss(location);
-	std::string path;
-	std::vector<std::string> args;
-
-	while (ss >> word && word != "{")
-	{
-		if (word != "location")
-			args.insert(args.end(), word);
-	}
-	if (args.size() == 0)
-		throw std::runtime_error("invalid number of arguments in 'location'");
-	if (args.size() > 2)
-		throw std::runtime_error("invalid number of arguments in 'location'");
-	if (args.size() == 1)
-		path = args[0];
-	else
-	{
-		path = args[0];
-		route.setFileExtensions(args[1]);
-		route.setType(CGI_);
-	}
-	route.parseOptions(ss);
-	route.setPath(path);
-	this->routes.push_back(route);
+	this->error_pages[code] = path;
 }
 
 bool Server::hasListenDup() {
 	std::set<std::pair<std::string, std::string> > s(this->hosts.begin(), this->hosts.end());
 	return (s.size() != this->hosts.size());
-}
-
-void Server::parseBodySize(std::stringstream &ss) {
-	std::string size;
-	std::string unit;
-	long long number;
-	int i = 0;
-
-	if (this->max_body_size != -1)
-		throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
-	while (ss >> size)
-		++i;
-	if (i != 1)
-		throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
-	if (isNumber(size))
-		number = atoi(size.c_str());
-	else
-	{
-		unit = size.substr(size.find_first_not_of("0123456789"), size.length());
-		size = size.substr(0, size.find_last_of("0123456789") + 1);
-		if (size.compare("18446744073709551615") > 0)
-			throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
-		if (unit.compare("k") && unit.compare("m") && 
-				unit.compare("g") && unit.compare("K") && 
-				unit.compare("M") && unit.compare("G") && 
-				unit.compare("Kb") && unit.compare("Mb") && 
-				unit.compare("Gb") && unit.compare("KB") && 
-				unit.compare("MB") && unit.compare("GB"))
-			throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
-		number = atoi(size.c_str());
-		if (number < 0)
-			throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
-		if (!unit.compare("k") || !unit.compare("K") || !unit.compare("Kb") || !unit.compare("KB"))
-		{
-			if (size.compare("18446744073709551615") > 0)
-				throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
-			number *= 1024;
-		}
-		else if (!unit.compare("m") || !unit.compare("M") || !unit.compare("Mb") || !unit.compare("MB"))
-		{
-			if (size.compare("17592186044416") > 0)
-				throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
-			number *= 1024 * 1024;
-		}
-		else if (!unit.compare("g") || !unit.compare("G") || !unit.compare("Gb") || !unit.compare("GB"))
-		{
-			if (size.compare("17179869184") > 0)
-				throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
-			number *= 1024 * 1024 * 1024;
-		}
-	}
-	this->max_body_size = static_cast<unsigned long>(number);
 }
 
 std::vector<std::string> Server::getServerNames()
@@ -201,32 +82,6 @@ void		Server::printServer() {
 		i->printRoute();
 	}
 	std::cout << std::endl;
-}
-
-void	Server::parseErrorPage(std::stringstream &ss)
-{
-	std::string word;
-	std::string path;
-	std::vector<int> status_codes;
-
-	while (ss >> word)
-	{
-		if (isNumber(word))
-		{
-			int status_code = atoi(word.c_str());
-			if (status_code < 400 || status_code > 505)
-				throw std::runtime_error("Invalid Error Code");
-			status_codes.insert(status_codes.end(), status_code);
-		}
-		else
-		{
-			if (status_codes.empty())
-				throw std::runtime_error("No .html file provided");
-			path = word;
-		}
-	}
-	for (long unsigned int i = 0; i < status_codes.size(); i++)
-		this->error_pages[status_codes[i]] = path;
 }
 
 void Server::handle_request(Request req)
@@ -334,6 +189,11 @@ int Server::_create_conn_socket(std::string host, std::string port)
 			<< (this->routes[i].getRedirectUrl().size() ? "\n\t\t\t\t=> " + this->routes[i].getRedirectUrl() : "");
 	}
 	return sock;
+}
+
+std::multimap<std::string, std::string> Server::getHosts()
+{
+	return this->hosts;
 }
 
 std::set<int> Server::create_conn_sockets()

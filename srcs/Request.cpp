@@ -63,20 +63,11 @@ void Request::parse()
 	std::string			line;
 
 	ss >> key;
-	if (key == "GET")
-		this->method = GET;
-	else if (key == "POST")
-		this->method = POST;
-	else if (key == "DELETE")
-		this->method = DELETE;
-	else
-	{
-		throw std::runtime_error("Unknown http method: " + key);
-	}
+	this->method = get_method(key);
 	ss >> pathquery;
-	pathquery = this->decodeURI(pathquery);
 	std::stringstream	s_path(pathquery);
 	std::getline(s_path, this->path, '?');
+	this->path = this->decodeURI(this->path);
 	this->path.trim();
 	std::getline(s_path, this->query, ' ');
 	this->query.trim();
@@ -177,4 +168,3 @@ std::string Request::decodeURI(std::string str)
 	}
 	return str;
 }
-

@@ -69,9 +69,9 @@ void Route::setType(RouteType type)
 	this->type = type;
 }
 
-void Route::setAllowedMethods(std::string methods)
+void Route::setAllowedMethod(Method method)
 {
-	(void)methods;
+	this->allowed_methods.push_back(method);
 }
 
 void Route::setRootDirectory(std::string root_directory)
@@ -134,174 +134,24 @@ void Route::setCGI(CGI *cgi)
 	this->cgi = cgi;
 }
 
-//-------------------------------------------PARSERS---------------------------------------------
-
-void Route::parseOptions(std::stringstream &ss)
+std::string Route::getIndex()
 {
-	std::string word;
-	std::string options;
-	std::string param;
-	unsigned long pos = 0;
-
-	while (ss >> word && word != "{")
-		options += word + " ";
-	while ((pos = options.find(";")) != std::string::npos) {
-		param = options.substr(0, pos + 1);
-		this->parseOption(param);
-		options.erase(0, pos + 1);
-	}
-	//if (!this->isRouteValid())
-	//	throw std::runtime_error("invalid route\n");
+	return this->index;
 }
 
-void Route::parseOption(std::string &param)
+std::string Route::getRootDir()
 {
-	std::string word;
-	std::stringstream ss(param);
-
-	while (ss >> word)
-	{
-		if (word == "root")
-		{
-			if (this->root_directory != "")
-				throw std::runtime_error("root directory already set\n");
-			ss >> word;
-			checkSemiColon(word, "root directory");
-			this->setRootDirectory(word);
-		}
-		else if (word == "index")
-		{
-			if (this->index != "index.html")
-				throw std::runtime_error("index already set\n");
-			ss >> word;
-			checkSemiColon(word, "index page");
-			this->setIndex(word);
-		}
-		else if (word == "redirect_url")
-		{
-			if (this->redirect_url != "")
-				throw std::runtime_error("redirect url already set\n");
-			ss >> word;
-			if (word[word.length() - 1] != ';')
-			{
-				std::cout << "word: " << word << std::endl;
-				if (word.compare("301") 
-						&& word.compare("302") 
-						&& word.compare("303") 
-						&& word.compare("304") 
-						&& word.compare("305") 
-						&& word.compare("306") 
-						&& word.compare("307") 
-						&& word.compare("308"))
-					throw std::runtime_error("invalid redirection code\n");
-				this->redirectStatusCode = word;
-				ss >> word;
-				std::cout << "word: " << this->redirectStatusCode << std::endl;
-			}
-			checkSemiColon(word, "redirect url");
-			this->setRedirectUrl(word);
-			this->setType(REDIRECTION_);
-		}
-		else if (word == "autoindex")
-		{
-			if (this->dir_listing)
-				throw std::runtime_error("autoindex already set\n");
-			ss >> word;
-			checkSemiColon(word, "autoindex");
-			if (word == "on")
-				this->setDirListing(true);
-			else if (word == "off")
-				this->setDirListing(false);
-			else
-				throw std::runtime_error("invalid autoindex value\n");
-		}
-		else if (word == "static_dir") {
-			if (this->static_dir != "")
-				throw std::runtime_error("static_dir already set\n");
-			ss >> word;
-			checkSemiColon(word, "static_dir");
-			this->setStaticDir(word);
-		}
-		else if (word == "allowed_methods")
-		{
-			ss >> word;
-			checkSemiColon(word, "allowed, methods");
-			this->parseAllowedMethods(word);
-		}
-		else if (word == "cgi")
-		{
-			if (this->cgi)
-				throw std::runtime_error("cgi already set\n");
-			ss >> word;
-			std::vector<std::string> handler;
-			while (!word.empty() && word[word.length() - 1] != ';') {
-				if (checkWordIsOption(word))
-					break;
-				handler.insert(handler.end(), word);
-				ss >> word;
-			}
-			if (!word.empty() && word[word.length() - 1] != ';')
-				throw std::runtime_error("missing ';' after cgi handler\n");
-			word.erase(word.length() - 1, 1);
-			handler.insert(handler.end(), word);
-			if (checkCgiHandler(handler))
-				throw std::runtime_error("Invalid cgi handler\n");
-			this->setCGI(new CGI(handler));
-		}
-		else
-			throw std::runtime_error("Invalid argument\n");
-	}
+	return this->root_directory;
 }
 
-Method get_method(std::string method)
+std::string Route::getStaticDir()
 {
-	if (method == "GET")
-		return GET;
-	else if (method == "POST")
-		return POST;
-	else if (method == "DELETE")
-		return DELETE;
-	else if (method == "PUT")
-		return PUT;
-	else if (method == "HEAD")
-		return HEAD;
-	else
-		throw std::runtime_error("invalid method\n");
+	return this->static_dir;
 }
 
-void Route::parseAllowedMethods(std::string &method)
+CGI *Route::getCGI()
 {
-	std::vector<std::string> methods;
-	methods.insert(methods.end(), "GET");
-	methods.insert(methods.end(), "POST");
-	methods.insert(methods.end(), "PUT");
-	methods.insert(methods.end(), "HEAD");
-	methods.insert(methods.end(), "DELETE");
-	std::string token;
-	unsigned long pos = 0;
-	if (!method.empty() && method[0] != '"' && method[method.length() - 1] != '"')
-		throw std::runtime_error("invalid allowed_methods format\n");
-	method.erase(0, 1);
-	method.erase(method.length() - 1, 1);
-	if (method.find("|") == std::string::npos)
-	{
-		if (!method.empty() && std::find(methods.begin(), methods.end(), method) != methods.end())
-			this->allowed_methods.insert(this->allowed_methods.end(), get_method(method));
-		else
-			throw std::runtime_error("invalid allowed_methods format\n");
-		return ;
-	}
-	while ((pos = method.find("|")) != std::string::npos) {
-		token = method.substr(0, pos);
-		if (!token.empty() && std::find(methods.begin(), methods.end(), token) != methods.end())
-		{
-			this->allowed_methods.insert(this->allowed_methods.end(), get_method(token));
-			method.erase(0, pos + 1);
-		}
-		else
-			throw std::runtime_error("invalid allowed_methods format\n");
-	}
-	this->allowed_methods.insert(this->allowed_methods.end(), get_method(method));
+	return this->cgi;
 }
 
 bool Route::isRouteValid()
@@ -557,9 +407,9 @@ void Route::handle_dir_listing(Request req, std::string full_path)
 		content.find_and_replace("{{timestamp}}",ss.str());
 		time_t timestamp = st.st_mtime;
 		struct tm *timeinfo;
-		timeinfo = localtime(&timestamp);
+		timeinfo = std::localtime(&timestamp);
 		char buffer[80];
-		strftime(buffer, 80, "%Y-%m-%d %H:%M:%S", timeinfo);
+		std::strftime(buffer, 80, "%Y-%m-%d %H:%M:%S", timeinfo);
 		content.find_and_replace("{{date}}", std::string(buffer));
 		dir_content += content;
 		dir_content += "\n";

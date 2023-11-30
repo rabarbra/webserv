@@ -14,10 +14,10 @@
 # include <sys/types.h>
 # include <sys/socket.h>
 // Our headers
+# include "MimeTypes.hpp"
 # include "StatusCodes.hpp"
 # include "better_string.hpp"
 # include "../liblogging/Logger.hpp"
-# include "MimeTypes.hpp"
 
 # ifdef __linux__
 #  define SEND_FLAGS MSG_NOSIGNAL

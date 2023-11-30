@@ -59,8 +59,8 @@ void Response::run(int fd)
 	char	buffer[80];
 
 	time_t timestamp = time(NULL);
-	struct tm *timeinfo = localtime(&timestamp); 
-	strftime(buffer, 80, "%a, %d %b %Y %H:%M:%S %Z", timeinfo);
+	struct tm *timeinfo = std::localtime(&timestamp); 
+	std::strftime(buffer, 80, "%a, %d %b %Y %H:%M:%S %Z", timeinfo);
 	this->setHeader("Date", buffer);
 	this->setHeader("Server", "Webserv42");
 	this->_build();
