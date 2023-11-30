@@ -7,7 +7,6 @@
 # include <sys/stat.h>
 // Our headers
 # include "CGI.hpp"
-# include "Request.hpp"
 typedef enum e_route_type {
 	PATH_,
 	CGI_,
@@ -42,6 +41,7 @@ class Route
 		Route		&operator=(const Route &other);
 		RouteType	getType();
 		bool		getDirListing();
+		std::string	getRootDirectory();
 		bool		isRouteValid();
 		void		setFileExtensions(std::string &allowed_methods);
 		void		setAllowedMethods(std::string methods);

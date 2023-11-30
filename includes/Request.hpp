@@ -34,8 +34,9 @@ class Request
 		better_string	getQuery() const;
 		better_string	getBody() const;
 		better_string	getVersion() const;
-		Method			getMethod() const;
-		int				getFd();
+		Method		getMethod() const;
+		std::string 	getMethodString() const;
+		int		getFd();
 		std::map<std::string, std::string>	getHeaders() const;
 		std::string		decodeURI(std::string str);
 };

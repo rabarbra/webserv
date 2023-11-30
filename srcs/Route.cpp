@@ -58,6 +58,11 @@ bool Route::getDirListing()
 	return this->dir_listing;
 }
 
+std::string	Route::getRootDirectory()
+{
+	return this->root_directory;
+}
+
 //-------------------------------------------SETTERS---------------------------------------------
 
 void Route::setType(RouteType type)
@@ -72,6 +77,8 @@ void Route::setAllowedMethods(std::string methods)
 
 void Route::setRootDirectory(std::string root_directory)
 {
+	if (root_directory[root_directory.length() - 1] == '/')
+		root_directory.erase(root_directory.length() - 1, 1);
 	this->root_directory = root_directory;
 }
 
@@ -454,11 +461,11 @@ void Route::sendFile(std::string filename, Response &resp, int fd)
 
 void Route::handle_path(Request req)
 {
-	better_string	req_path(req.getPath());
 	Response resp;
+	better_string	req_path(req.getPath());
 	std::string full_path = this->build_absolute_path(req);
-	struct stat st;
 	this->logger.INFO << "Trying to send: " << full_path;
+	struct stat st;
 	if (stat(full_path.c_str(), &st) == 0 )
 	{
 		if (full_path[full_path.size() - 1] == '/' && S_ISDIR(st.st_mode))
@@ -491,59 +498,34 @@ void Route::handle_path(Request req)
 
 void Route::handle_cgi(Request req)
 {
-	int fd[2];
+	//int fd[2];
 	//pid_t pid;
-	this->logger.INFO << "LOGGGGGGGGGGGGGGG";
-	this->configureCGI(req, fd);
-//	if (pipe(fd) == -1)
-//	{
-//		this->logger.WARN << "Cannot create pipe";
-//		Response resp;
-//		resp.build_error("500");
-//		resp.run(req.getFd());
-//		return ;
-//	}
-//	if ((pid = fork()) == -1)
-//	{
-//		this->logger.WARN << "Cannot fork";
-//		Response resp;
-//		resp.build_error("500");
-//		resp.run(req.getFd());
-//		return ;
-//	}
-//	if (pid == 0)
-//	{
-//		if (this->configureCGI(req, fd) == -1)
-//		{
-//			this->logger.WARN << "Cannot configure CGI";
-//			Response resp;
-//			resp.build_error("500");
-//			resp.run(req.getFd());
-//			return ;
-//		}
-//	}
-//	else
-//	{
-//		close(fd[1]);
-//		Response resp;
-//		//resp.build_cgi(pid, fd[0]);
-//		resp.run(req.getFd());
-//	}
-}
-#include <stdio.h>
-int Route::configureCGI(Request &req, int *fd)
-{
-	(void)req;
-	(void)fd;
-	std::vector<char *> envp;
-	int i = 0;
-	while (this->ev[i])
+	Response resp;
+	better_string	req_path(req.getPath());
+	std::string full_path = this->build_absolute_path(req);
+	this->cgi->createEnv(req, this->root_directory);
+	struct stat st;
+	if (stat(full_path.c_str(), &st) == 0 )
 	{
-		envp.push_back(this->ev[i]);
-		this->logger.WARN << "env: " << std::string(envp[i]);
-		i++;
+		if (full_path[full_path.size() - 1] == '/' && S_ISDIR(st.st_mode))
+		{
+			if (this->dir_listing)
+			{
+				this->handle_dir_listing(req, full_path);
+				return;
+			}
+			full_path += this->index;
+			this->sendFile(full_path, resp, req.getFd());
+			return;
+
+		}
+		else if (S_ISDIR(st.st_mode)) 
+			this->logger.INFO << "Here goes execution of handler";
+		else if (S_ISREG(st.st_mode))	
+			this->logger.INFO << "Here goes execution of handler";
 	}
-	return (0);
+	resp.build_error("404");
+	resp.run(req.getFd());
 }
 
 void Route::handle_redirection(Request req)
