@@ -33,6 +33,55 @@ Request &Request::operator=(const Request &other)
 	return *this;
 }
 
+// Getters
+
+better_string Request::getPath() const
+{
+	return this->path;
+}
+
+better_string Request::getQuery() const
+{
+	return this->query;
+}
+
+better_string Request::getBody() const
+{
+	return this->body;
+}
+
+better_string Request::getVersion() const
+{
+	return this->httpVersion;
+}
+
+better_string Request::getHost() const
+{
+	return this->host;
+}
+
+better_string Request::getPort() const
+{
+	return this->port;
+}
+
+std::map<std::string, std::string> Request::getHeaders() const
+{
+	return this->headers;
+}
+
+Method Request::getMethod() const
+{
+	return this->method;
+}
+
+int Request::getFd() const
+{
+	return this->_fd;
+}
+
+// Private
+
 void Request::receive()
 {
 	int			buf_size = 2048;
@@ -105,50 +154,7 @@ void Request::parse()
 		<< "body:   \t" << this->body << "\n";
 }
 
-better_string Request::getPath() const
-{
-	return this->path;
-}
-
-better_string Request::getQuery() const
-{
-	return this->query;
-}
-
-better_string Request::getBody() const
-{
-	return this->body;
-}
-
-better_string Request::getVersion() const
-{
-	return this->httpVersion;
-}
-
-better_string Request::getHost() const
-{
-	return this->host;
-}
-
-better_string Request::getPort() const
-{
-	return this->port;
-}
-
-std::map<std::string, std::string> Request::getHeaders() const
-{
-	return this->headers;
-}
-
-Method Request::getMethod() const
-{
-	return this->method;
-}
-
-int Request::getFd()
-{
-	return this->_fd;
-}
+// Public
 
 std::string Request::decodeURI(std::string str)
 {

@@ -47,21 +47,6 @@ Route &Route::operator=(const Route &other)
 	return *this;
 }
 
-RouteType Route::getType()
-{
-	return this->type;
-}
-
-bool Route::getDirListing()
-{
-	return this->dir_listing;
-}
-
-std::string Route::getRedirectUrl()
-{
-	return this->redirect_url;
-}
-
 //-------------------------------------------SETTERS---------------------------------------------
 
 void Route::setType(RouteType type)
@@ -134,25 +119,54 @@ void Route::setCGI(CGI *cgi)
 	this->cgi = cgi;
 }
 
-std::string Route::getIndex()
+void Route::setPath(std::string path)
+{
+	this->path = path;
+}
+
+// Getters
+
+std::string Route::getIndex() const
 {
 	return this->index;
 }
 
-std::string Route::getRootDir()
+std::string Route::getRootDir() const
 {
 	return this->root_directory;
 }
 
-std::string Route::getStaticDir()
+std::string Route::getStaticDir() const
 {
 	return this->static_dir;
 }
 
-CGI *Route::getCGI()
+CGI *Route::getCGI() const
 {
 	return this->cgi;
 }
+
+RouteType Route::getType() const
+{
+	return this->type;
+}
+
+bool Route::getDirListing() const
+{
+	return this->dir_listing;
+}
+
+std::string Route::getRedirectUrl() const
+{
+	return this->redirect_url;
+}
+
+std::string Route::getPath() const
+{
+	return this->path;
+}
+
+// Private
 
 bool Route::isRouteValid()
 {
@@ -196,73 +210,6 @@ bool Route::isRouteValid()
 			return false;
 	}
 	return true;
-}
-
-void Route::printRoute()
-{
-	this->logger.INFO << "            |";
-	this->logger.INFO << "            |";
-	this->logger.INFO << "            |";
-	this->logger.INFO << "            "<< "Route type: " << this->getType();
-	this->logger.INFO << "            dir_listing: " << this->dir_listing;
-	this->logger.INFO << "            root_directory: " << this->root_directory;
-	this->logger.INFO << "            redirect_url: " << this->redirect_url;
-	this->logger.INFO << "            index: " << this->index;
-	this->logger.INFO << "            static_dir: " << this->static_dir;
-	for (std::vector<std::string>::iterator it = this->file_extensions.begin(); it != this->file_extensions.end(); it++)
-		this->logger.INFO << "            file_extension: " << *it;
-	for (std::vector<Method>::iterator it = this->allowed_methods.begin(); it != this->allowed_methods.end(); it++)
-		this->logger.INFO << "            allowed_method: " << *it;
-}
-
-void Route::setPath(std::string path)
-{
-	this->path = path;
-}
-
-std::string Route::getPath()
-{
-	return this->path;
-}
-
-size_t Route::match(std::string path)
-{
-	better_string	req_path(path);
-	if (!req_path.starts_with(this->path))
-		return 0;
-	if (!this->file_extensions.size())
-		return this->path.size();
-	for (size_t i = 0; i < this->file_extensions.size(); i++)
-	{
-		if (req_path.ends_with(this->file_extensions[i]))
-			return this->path.size();
-	}
-	return 0;
-}
-
-void Route::handle_request(Request req)
-{
-	
-	if (
-		this->allowed_methods.size() &&
-		std::find(
-			this->allowed_methods.begin(),
-			this->allowed_methods.end(),
-			req.getMethod()
-		) == this->allowed_methods.end()
-	)
-	{
-		Response resp;
-		resp.build_error("405");
-		resp.run(req.getFd());
-		return ;
-	}
-	if (this->type == PATH_)
-		this->handle_path(req);
-	else if (this->type == CGI_)
-		this->handle_cgi(req);
-	else if (this->type == REDIRECTION_)
-		this->handle_redirection(req);
 }
 
 std::string Route::build_absolute_path(Request req)
@@ -418,4 +365,63 @@ void Route::handle_dir_listing(Request req, std::string full_path)
 	resp.build_dir_listing(full_path, dir_content);
 	resp.run(req.getFd());
 	return ;
+}
+
+// Public
+
+size_t Route::match(std::string path)
+{
+	better_string	req_path(path);
+	if (!req_path.starts_with(this->path))
+		return 0;
+	if (!this->file_extensions.size())
+		return this->path.size();
+	for (size_t i = 0; i < this->file_extensions.size(); i++)
+	{
+		if (req_path.ends_with(this->file_extensions[i]))
+			return this->path.size();
+	}
+	return 0;
+}
+
+void Route::handle_request(Request req)
+{
+	
+	if (
+		this->allowed_methods.size() &&
+		std::find(
+			this->allowed_methods.begin(),
+			this->allowed_methods.end(),
+			req.getMethod()
+		) == this->allowed_methods.end()
+	)
+	{
+		Response resp;
+		resp.build_error("405");
+		resp.run(req.getFd());
+		return ;
+	}
+	if (this->type == PATH_)
+		this->handle_path(req);
+	else if (this->type == CGI_)
+		this->handle_cgi(req);
+	else if (this->type == REDIRECTION_)
+		this->handle_redirection(req);
+}
+
+void Route::printRoute()
+{
+	this->logger.INFO << "            |";
+	this->logger.INFO << "            |";
+	this->logger.INFO << "            |";
+	this->logger.INFO << "            "<< "Route type: " << this->getType();
+	this->logger.INFO << "            dir_listing: " << this->dir_listing;
+	this->logger.INFO << "            root_directory: " << this->root_directory;
+	this->logger.INFO << "            redirect_url: " << this->redirect_url;
+	this->logger.INFO << "            index: " << this->index;
+	this->logger.INFO << "            static_dir: " << this->static_dir;
+	for (std::vector<std::string>::iterator it = this->file_extensions.begin(); it != this->file_extensions.end(); it++)
+		this->logger.INFO << "            file_extension: " << *it;
+	for (std::vector<Method>::iterator it = this->allowed_methods.begin(); it != this->allowed_methods.end(); it++)
+		this->logger.INFO << "            allowed_method: " << *it;
 }

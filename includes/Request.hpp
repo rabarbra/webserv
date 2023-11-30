@@ -27,16 +27,18 @@ class Request
 		Request(int	fd);
 		~Request();
 		Request(const Request &other);
-		Request			&operator=(const Request &other);
-		better_string	getPath() const;
-		better_string	getHost() const;
-		better_string	getPort() const;
-		better_string	getQuery() const;
-		better_string	getBody() const;
-		better_string	getVersion() const;
-		Method			getMethod() const;
-		int				getFd();
+		Request								&operator=(const Request &other);
+		// Getters
+		better_string						getPath() const;
+		better_string						getHost() const;
+		better_string						getPort() const;
+		better_string						getQuery() const;
+		better_string						getBody() const;
+		better_string						getVersion() const;
+		Method								getMethod() const;
+		int									getFd() const;
 		std::map<std::string, std::string>	getHeaders() const;
-		std::string		decodeURI(std::string str);
+		// Public
+		std::string							decodeURI(std::string str);
 };
 #endif

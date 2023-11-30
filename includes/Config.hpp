@@ -21,7 +21,7 @@ class Config
 		~Config();
 		Config(const Config &other);
 		Config				&operator=(const Config &other);
-		std::vector<Server>	getServers();
+		std::vector<Server>	getServers() const;
 		void				parse(std::ifstream &conf);
 };
 #endif

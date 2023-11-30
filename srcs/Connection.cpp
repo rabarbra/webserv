@@ -20,6 +20,8 @@ Connection &Connection::operator=(const Connection &other)
 	return *this;
 }
 
+// Public
+
 void Connection::addServer(Server server)
 {
 	std::vector<std::string> names = server.getServerNames();

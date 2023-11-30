@@ -24,6 +24,43 @@ Response Response::operator=(const Response &other)
 	return *this;
 }
 
+// Setters
+
+void Response::setBody(std::string body)
+{
+	this->body = body;
+}
+
+void Response::setStatusCode(std::string code)
+{
+	this->statusCode = code;
+}
+
+void Response::setReason(std::string reason)
+{
+	this->reason = reason;
+}
+
+void Response::setHeader(std::string key, std::string value)
+{
+	this->headers[key] = value;
+}
+
+void Response::setContentTypes(std::string filename)
+{
+	MimeTypes	mime_types;
+	this->setHeader("Content-Type", mime_types.getMimeType(filename));
+}
+
+// Getters
+
+std::string Response::getBody() const
+{
+	return this->body;
+}
+
+// Private
+
 void Response::_build()
 {
 
@@ -45,10 +82,7 @@ void Response::_build()
 		this->_plain += ("\r\n" + this->body);
 }
 
-std::string Response::getBody()
-{
-	return this->body;
-}
+// Public
 
 void Response::run(int fd)
 {
@@ -86,32 +120,6 @@ void Response::run(int fd)
 		if (left < chunk_size)
 			chunk_size = left;
 	}
-}
-
-void Response::setBody(std::string body)
-{
-	this->body = body;
-}
-
-void Response::setStatusCode(std::string code)
-{
-	this->statusCode = code;
-}
-
-void Response::setReason(std::string reason)
-{
-	this->reason = reason;
-}
-
-void Response::setHeader(std::string key, std::string value)
-{
-	this->headers[key] = value;
-}
-
-void Response::setContentTypes(std::string filename)
-{
-	MimeTypes	mime_types;
-	this->setHeader("Content-Type", mime_types.getMimeType(filename));
 }
 
 void Response::build_error(std::string status_code)

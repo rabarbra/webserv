@@ -20,10 +20,14 @@ Config &Config::operator=(const Config &other)
 	return *this;
 }
 
-std::vector<Server> Config::getServers()
+// Getters
+
+std::vector<Server> Config::getServers() const
 {
 	return this->servers;
 }
+
+// Private
 
 std::string createFile(std::ifstream &conf)
 {
@@ -139,29 +143,6 @@ void	Config::parse_param(std::string param, Server &server)
 		else if (!word.compare("error_page"))
 			this->parseErrorPage(server, ss);
 	}
-}
-
-void Config::parse(std::ifstream &conf)
-{
-	std::string	line;
-	std::string	server;
-
-	server = createFile(conf);
-	if (checkBrackets(server) == false)
-		throw std::runtime_error("Invalid Brackets");
-	std::stringstream	ss(server);
-	line.clear();
-	server.clear();
-	while (ss >> line)
-	{
-		server = getServerContent(ss, line, 0);
-		if (server.empty())
-			throw std::runtime_error("Empty Server Block");
-		if (this->parse_server(server))
-			throw std::runtime_error("Failed parsing server");
-	}
-	for (long unsigned int i=0; i < this->servers.size(); i++)
-		this->servers[i].printServer();
 }
 
 bool isNumber(std::string &str)
@@ -343,6 +324,41 @@ void Config::parseOptions(Route &route, std::stringstream &ss)
 	//	throw std::runtime_error("invalid route\n");
 }
 
+bool checkCgiHandler(std::vector<std::string> handler)
+{
+	if (handler[0][0] != '/')
+	{
+		for (unsigned long i = 0; i < handler[0].length(); i++)
+		{
+			if (handler[0][i] == '/')
+				return (true);
+		}
+	}
+	return (false);
+}
+
+void	checkSemiColon(std::string &word, std::string message)
+{
+	if (word[word.length() - 1] != ';')
+		throw std::runtime_error("Missing ';' after " + message);
+	word.erase(word.length() - 1, 1);
+}
+
+bool	checkWordIsOption(std::string word)
+{
+	std::vector<std::string> options;
+	options.insert(options.end(), "root");
+	options.insert(options.end(), "cgi");
+	options.insert(options.end(), "autoindex");
+	options.insert(options.end(), "redirect_url");
+	options.insert(options.end(), "static_dir");
+	options.insert(options.end(), "allowed_methods");
+	options.insert(options.end(), "index");
+	if (std::find(options.begin(), options.end(), word) != options.end())
+		throw std::runtime_error("Missing ';' after cgi)");
+	return (false);
+}
+
 void Config::parseOption(Route &route, std::string &param)
 {
 	std::string word;
@@ -473,4 +489,29 @@ void Config::parseAllowedMethods(Route &route, std::string &method)
 			throw std::runtime_error("invalid allowed_methods format\n");
 	}
 	route.setAllowedMethod(get_method(method));
+}
+
+// Public
+
+void Config::parse(std::ifstream &conf)
+{
+	std::string	line;
+	std::string	server;
+
+	server = createFile(conf);
+	if (checkBrackets(server) == false)
+		throw std::runtime_error("Invalid Brackets");
+	std::stringstream	ss(server);
+	line.clear();
+	server.clear();
+	while (ss >> line)
+	{
+		server = getServerContent(ss, line, 0);
+		if (server.empty())
+			throw std::runtime_error("Empty Server Block");
+		if (this->parse_server(server))
+			throw std::runtime_error("Failed parsing server");
+	}
+	for (long unsigned int i=0; i < this->servers.size(); i++)
+		this->servers[i].printServer();
 }

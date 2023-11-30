@@ -35,19 +35,22 @@ class Response
 		better_string						body;
 		std::string							_plain;
 		size_t								body_size;
-		void								_build();
 		Logger								log;
+		void								_build();
 	public:
 		Response();
 		~Response();
 		Response(const Response &other);
 		Response	operator=(const Response &other);
+		// Setters
 		void		setBody(std::string body);
 		void		setHeader(std::string key, std::string value);
 		void		setStatusCode(std::string code);
 		void		setReason(std::string reason);
-		void            setContentTypes(std::string filename);
-		std::string getBody();
+		void		setContentTypes(std::string filename);
+		// Getters
+		std::string getBody() const;
+		// Public
 		void		build_error(std::string status_code);
 		void		build_dir_listing(std::string full_path, std::string content);
 		void		build_redirect(std::string location, std::string status_code);

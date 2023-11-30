@@ -11,6 +11,7 @@ class Connection
 		~Connection();
 		Connection(const Connection &other);
 		Connection	&operator=(const Connection &other);
+		// Public
 		void		addServer(Server server);
 		void		handleRequest(Request req);
 		bool		compare_addr(struct sockaddr *addr);

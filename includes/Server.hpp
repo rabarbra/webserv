@@ -25,14 +25,17 @@ class Server
 		~Server();
 		Server(const Server &other);
 		Server									&operator=(const Server &other);
+		// Setters
 		void									setRoute(Route &route);
 		void									setHosts(std::string host, std::string port);
 		void									setErrorPage(int code, std::string path);
 		void									setServerNames(std::stringstream &ss);
-		std::vector<std::string> 				getServerNames();
-		std::multimap<std::string, std::string>	getHosts();
-		long long								getMaxBodySize();
 		void									setMaxBodySize(long long bodySize);
+		// Getters
+		std::vector<std::string> 				getServerNames() const;
+		std::multimap<std::string, std::string>	getHosts() const;
+		long long								getMaxBodySize() const;
+		// Public
 		void									handle_request(Request req);
 		void									printServer();
 		bool									hasListenDup();
