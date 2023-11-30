@@ -8,6 +8,7 @@
 # include <cstdio>
 # include <cstdlib>
 # include <cstring>
+# include <ctime>
 // .h headers
 # include <netdb.h>
 # include <sys/time.h>
