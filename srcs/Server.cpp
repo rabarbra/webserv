@@ -65,6 +65,11 @@ void Server::setErrorPage(int code, std::string path)
 
 // Getters
 
+char **Server::getEnv() const
+{
+	return this->env;
+}
+
 long long Server::getMaxBodySize() const
 {
 	return this->max_body_size;

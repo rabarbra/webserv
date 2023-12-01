@@ -1,13 +1,16 @@
 #include "../includes/CGI.hpp"
 #include <set>
 #include <sstream>
-
+ 
 CGI::CGI() : handler(), env(NULL), executablePath()
 {
 }
 
-CGI::CGI(std::vector<std::string> handler): handler(handler), env(NULL)
+CGI::CGI(std::vector<std::string> handler, char **env): handler(handler), env(NULL)
 {
+	char *path = ft_getEnv(env);
+	this->setPaths(path);
+	this->setExecutablePath();
 }
 
 CGI::~CGI()
@@ -76,12 +79,19 @@ CGI	&CGI::operator=(const CGI &other)
 	return (*this);
 }
 
+// Getters
+std::vector<std::string>	CGI::getHandler()
+{
+	return (this->handler);
+}
+
+// Setters
 void CGI::setEnv(char ** envp)
 {
 	this->env = envp;
 }
 
-void	CGI::setHandler(std::vector<std::string> handler)
+void CGI::setHandler(std::vector<std::string> handler)
 {
 	this->handler = handler;
 }
@@ -101,7 +111,43 @@ void	CGI::setPaths(char *path)
 	}
 }
 
-std::vector<std::string>	CGI::getHandler()
+std::string CGI::getExecutablePath(std::string full_path)
 {
-	return (this->handler);
+	if (this->executablePath.empty())
+		return full_path;
+	return this->executablePath;
+}
+
+char **CGI::getArgs(std::string full_path)
+{
+	char **args = new char*[this->handler.size() + 1];
+	int i = -1;
+	while (++i < (int)this->handler.size())
+	{
+		if (this->handler[i].compare("$self") == 0) {
+			args[i] = new char[full_path.size() + 1];
+			args[i] = strcpy(args[i], full_path.c_str());
+		}
+		else {
+			args[i] = new char[this->handler[i].size() + 1];
+			args[i] = strcpy(args[i], this->handler[i].c_str());
+		}
+		std::cerr << "args[" << i << "]: " << args[i] << std::endl;
+	}
+	args[i] = NULL;
+	return args;
+}
+
+void CGI::setExecutablePath()
+{
+	if (this->handler[0].compare("$self") == 0)
+		return;
+	if (this->handler[0][0] != '/')
+	{
+		this->executablePath = findExecutablePath(this->paths, this->handler[0]);
+		this->handler[0] = this->executablePath;
+	}
+	else
+		this->executablePath = handler[0];
+	std::cout << "executablePath: " << this->executablePath << std::endl;
 }

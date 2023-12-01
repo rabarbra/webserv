@@ -22,9 +22,21 @@ Config &Config::operator=(const Config &other)
 
 // Getters
 
+char **Config::getEnv() const
+{
+	return this->env;
+}
+
 std::vector<Server> Config::getServers() const
 {
 	return this->servers;
+}
+
+// Setters
+
+void Config::setEnv(char **env)
+{
+	this->env = env;
 }
 
 // Private
@@ -103,6 +115,7 @@ int	Config::parse_server(std::string &server)
 	size_t pos = 0;
 	std::string param;
 
+	new_server.setEnv(this->getEnv());
 	while ((pos = server.find(delimiter)) != std::string::npos) {
 		param = server.substr(0, pos);
 		if (param.find("location") != std::string::npos)
@@ -205,6 +218,7 @@ void	Config::parseLocation(Server &server, std::string &location)
 	std::string path;
 	std::vector<std::string> args;
 
+	route.setEv(server.getEnv());
 	while (ss >> word && word != "{")
 	{
 		if (word != "location")
@@ -220,7 +234,6 @@ void	Config::parseLocation(Server &server, std::string &location)
 	{
 		path = args[0];
 		route.setFileExtensions(args[1]);
-		route.setType(CGI_);
 	}
 	this->parseOptions(route, ss);
 	route.setPath(path);
@@ -449,7 +462,8 @@ void Config::parseOption(Route &route, std::string &param)
 			handler.insert(handler.end(), word);
 			if (checkCgiHandler(handler))
 				throw std::runtime_error("Invalid cgi handler\n");
-			route.setCGI(new CGI(handler));
+			route.setCGI(new CGI(handler, route.getEv()));
+			route.setType(CGI_);
 		}
 		else
 			throw std::runtime_error("Invalid argument\n");
@@ -512,6 +526,4 @@ void Config::parse(std::ifstream &conf)
 		if (this->parse_server(server))
 			throw std::runtime_error("Failed parsing server");
 	}
-	for (long unsigned int i=0; i < this->servers.size(); i++)
-		this->servers[i].printServer();
 }

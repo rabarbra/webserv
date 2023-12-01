@@ -31,6 +31,7 @@ Worker::Worker(char *path_to_conf, char **env): ev(env)
 			" cannot be open!"
 		);
 	}
+	this->config.setEnv(this->ev);
 	this->config.parse(conf);
 	this->_create_connections();
 }
