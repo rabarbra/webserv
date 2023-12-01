@@ -39,7 +39,6 @@ void better_string::find_and_replace(better_string old_val, better_string new_va
 	}	
 }
 
-#include <iostream>
 void better_string::trim()
 {
 	if (!this->size())

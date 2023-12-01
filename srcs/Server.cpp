@@ -2,7 +2,7 @@
 
 Server::Server():
 	routes(), hosts(), server_names(), error_pages(), max_body_size(-1),
-	log(Logger(_INFO, "Server")), _penging_connections_count(SOMAXCONN)
+	log(Logger(_INFO, "Server"))
 {}
 
 Server::~Server()
@@ -22,7 +22,6 @@ Server &Server::operator=(const Server &other)
 		this->server_names = other.server_names;
 		this->error_pages = other.error_pages;
 		this->max_body_size = other.max_body_size;
-		this->_penging_connections_count = other._penging_connections_count;
 		this->log = other.log;
 	}
 	return (*this);
@@ -76,74 +75,6 @@ std::multimap<std::string, std::string> Server::getHosts() const
 
 // Private
 
-int Server::_create_conn_socket(std::string host, std::string port)
-{
-	int				sock;
-	struct addrinfo	*addr;
-    struct addrinfo	hints;
-	int				error;
-
-	hints.ai_addr = 0;
-	hints.ai_addrlen = 0;
-	hints.ai_canonname = 0;
-	hints.ai_flags = 0;
-	hints.ai_next = 0;
-	hints.ai_protocol = 0;
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_STREAM;
-    error = getaddrinfo(host.c_str(), port.c_str(), &hints, &addr);
-	if (error)
-		throw std::runtime_error("Wrong address: " + std::string(gai_strerror(error)));
-    sock = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
-	if (sock < 0)
-	{
-		freeaddrinfo(addr);
-		throw std::runtime_error("Error creating connection socket: " + std::string(strerror(errno)));
-	}
-    if (bind(sock, addr->ai_addr, addr->ai_addrlen))
-	{
-		freeaddrinfo(addr);
-		close(sock);
-		throw std::runtime_error("Error binding: " + std::string(strerror(errno)));
-	}
-    if (listen(sock, this->_penging_connections_count))
-	{
-		freeaddrinfo(addr);
-		close(sock);
-		throw std::runtime_error("Error listening: " + std::string(strerror(errno)));
-	}
-	fcntl(sock, F_SETFL, O_NONBLOCK, FD_CLOEXEC);
-	int	reuseaddr = 1;
-	setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &reuseaddr, sizeof(reuseaddr));
-	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(reuseaddr));
-	freeaddrinfo(addr);
-	for (size_t i = 0; i < this->routes.size(); i++)
-	{
-		std::string route_type;
-		RouteType r = this->routes[i].getType();
-		switch (r)
-		{
-			case PATH_:
-				route_type = "path:\t";
-				break;
-			case REDIRECTION_:
-				route_type = "redir:\t";
-				break;
-			case CGI_:
-				route_type = "cgi: \t";
-				break;
-			default:
-				route_type = "unkn:\t";
-				break;
-		}
-		this->log.INFO
-			<< route_type
-			<< "http://" << host << ":" << port << this->routes[i].getPath()
-			<< (this->routes[i].getRedirectUrl().size() ? "\n\t\t\t\t=> " + this->routes[i].getRedirectUrl() : "");
-	}
-	return sock;
-}
-
 Route &Server::select_route(const Request &req)
 {
 	size_t		max_size = 0;
@@ -176,7 +107,7 @@ bool Server::hasListenDup() {
 }
 
 void		Server::printServer() {
-	std::cout << "---------Server-----------\n";
+	this->log.INFO << "---------Server-----------";
 	for (std::multimap<std::string, std::string>::iterator i = this->hosts.begin(); i != this->hosts.end(); i++)
 		this->log.INFO << "Host: " << i->first << " Port: " << i->second;
 	this->log.INFO << "Client Max body size : " << this->max_body_size;
@@ -189,7 +120,47 @@ void		Server::printServer() {
 		this->log.INFO << "Route path: " << i->getPath();
 		i->printRoute();
 	}
-	std::cout << std::endl;
+	for (size_t i = 0; i < this->routes.size(); i++)
+	{
+		std::string route_type;
+		RouteType r = this->routes[i].getType();
+		switch (r)
+		{
+			case PATH_:
+				route_type = "path:\t";
+				break;
+			case REDIRECTION_:
+				route_type = "redir:\t";
+				break;
+			case CGI_:
+				route_type = "cgi: \t";
+				break;
+			default:
+				route_type = "unkn:\t";
+				break;
+		}
+		this->log.INFO
+			<< route_type
+			<< "http://" << this->hosts.begin()->first << ":" << this->hosts.begin()->second << this->routes[i].getPath()
+			<< (this->routes[i].getRedirectUrl().size() ? "\n\t\t\t\t=> " + this->routes[i].getRedirectUrl() : "");
+	}
+}
+
+std::string Server::printHosts()
+{
+	std::stringstream res;
+	res << "<";
+	for (std::multimap<std::string, std::string>::iterator it = this->hosts.begin(); it != this->hosts.end(); it++)
+	{
+		res << (it->first + ":" + it->second + " ");
+	}
+	res << "| ";
+	for(std::vector<std::string>::iterator it = this->server_names.begin(); it != this->server_names.end(); it++)
+	{
+		res << (*it + " ");
+	}
+	res << ">";
+	return res.str();
 }
 
 void Server::handle_request(Request req)
@@ -229,20 +200,4 @@ void Server::handle_request(Request req)
 		}
 		this->log.ERROR << errors_msg << '\n';
 	}
-}
-
-std::set<int> Server::create_conn_sockets()
-{
-	std::set<int> res;
-
-	for (
-		std::multimap<std::string, std::string>::iterator i = this->hosts.begin();
-		i != this->hosts.end();
-		i++
-	)
-	{
-		res.insert(this->_create_conn_socket(i->first, i->second));
-		this->log.INFO << "Listening " << i->first << ":" << i->second;
-	}
-	return res;
 }

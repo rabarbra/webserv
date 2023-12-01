@@ -17,8 +17,6 @@ class Server
 		std::map<int, std::string>				error_pages; // Key - status code, value - path to error page file for this status code
 		long long								max_body_size;
 		Logger									log;
-		int										_penging_connections_count;
-		int										_create_conn_socket(std::string host, std::string port);
 		Route									&select_route(const Request &req);
 	public:
 		Server();
@@ -38,7 +36,7 @@ class Server
 		// Public
 		void									handle_request(Request req);
 		void									printServer();
+		std::string								printHosts();
 		bool									hasListenDup();
-		std::set<int>							create_conn_sockets();
 };
 #endif
