@@ -24,62 +24,7 @@ Response Response::operator=(const Response &other)
 	return *this;
 }
 
-void Response::_build()
-{
-
-	this->_plain = this->httpVersion + " "
-		+ this->statusCode + " "
-		+ this->reason + "\r\n";
-	this->body_size = this->body.size();
-	if (this->body_size)
-	{
-		std::stringstream	len;
-		len << this->body_size;
-		this->headers["Content-Length"] = len.str();
-	}
-	for (std::map<std::string, std::string>::iterator it = this->headers.begin(); it != this->headers.end(); it++)
-	{
-		this->_plain += (it->first + ": " + it->second + "\r\n");
-	}
-	if (this->body_size)
-		this->_plain += ("\r\n" + this->body);
-}
-
-std::string Response::getBody()
-{
-	return this->body;
-}
-
-void Response::run(int fd)
-{
-	size_t	sent = 0;
-	size_t	left;
-	ssize_t	chunk;
-	char	buffer[80];
-
-	time_t timestamp = time(NULL);
-	struct tm *timeinfo = localtime(&timestamp); 
-	strftime(buffer, 80, "%a, %d %b %Y %H:%M:%S %Z", timeinfo);
-	this->setHeader("Date", buffer);
-	this->_build();
-	left = this->_plain.size();
-	this->log.INFO << "To send: " << left;
-	while (sent < this->_plain.size())
-	{
-		chunk = send(fd, this->_plain.c_str() + sent, left, SEND_FLAGS);
-		this->log.INFO << "Sent: " << chunk;
-		if (chunk < 0)
-		{
-			std::stringstream sent_s;
-			std::stringstream left_s;
-			sent_s << sent;
-			left_s << left;
-			throw std::runtime_error("Cannot send (sent: " + sent_s.str() + ", left: " + left_s.str() + "): " + std::string(strerror(errno)));
-		}
-		sent += chunk;
-		left -= chunk;
-	}
-}
+// Setters
 
 void Response::setBody(std::string body)
 {
@@ -105,6 +50,76 @@ void Response::setContentTypes(std::string filename)
 {
 	MimeTypes	mime_types;
 	this->setHeader("Content-Type", mime_types.getMimeType(filename));
+}
+
+// Getters
+
+std::string Response::getBody() const
+{
+	return this->body;
+}
+
+// Private
+
+void Response::_build()
+{
+
+	this->_plain = this->httpVersion + " "
+		+ this->statusCode + " "
+		+ this->reason + "\r\n";
+	this->body_size = this->body.size();
+	if (this->body_size)
+	{
+		std::stringstream	len;
+		len << this->body_size;
+		this->headers["Content-Length"] = len.str();
+	}
+	for (std::map<std::string, std::string>::iterator it = this->headers.begin(); it != this->headers.end(); it++)
+	{
+		this->_plain += (it->first + ": " + it->second + "\r\n");
+	}
+	if (this->body_size)
+		this->_plain += ("\r\n" + this->body);
+}
+
+// Public
+
+void Response::run(int fd)
+{
+	size_t	sent = 0;
+	size_t	left;
+	size_t	chunk_size;
+	ssize_t	chunk;
+	char	buffer[80];
+
+	time_t timestamp = time(NULL);
+	struct tm *timeinfo = std::localtime(&timestamp); 
+	std::strftime(buffer, 80, "%a, %d %b %Y %H:%M:%S %Z", timeinfo);
+	this->setHeader("Date", buffer);
+	this->setHeader("Server", "Webserv42");
+	this->_build();
+	chunk_size = 536;
+	left = this->_plain.size();
+	if (left < chunk_size)
+		chunk_size = left;
+	this->log.INFO << "To send: " << left;
+	while (sent < this->_plain.size())
+	{
+		chunk = send(fd, this->_plain.c_str() + sent, chunk_size, SEND_FLAGS);
+		this->log.INFO << "Sent: " << chunk;
+		if (chunk < 0)
+		{
+			std::stringstream sent_s;
+			std::stringstream left_s;
+			sent_s << sent;
+			left_s << left;
+			throw std::runtime_error("Cannot send (sent: " + sent_s.str() + ", left: " + left_s.str() + "): " + std::string(strerror(errno)));
+		}
+		sent += chunk;
+		left -= chunk;
+		if (left < chunk_size)
+			chunk_size = left;
+	}
 }
 
 void Response::build_error(std::string status_code)

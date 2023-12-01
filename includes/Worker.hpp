@@ -1,19 +1,17 @@
 #ifndef WORKER_HPP
 # define WORKER_HPP
-# include "ServerGroup.hpp"
+# include "Config.hpp"
+# include "Connection.hpp"
 class Worker
 {
 	private:
-		std::vector<Server>			servers;
-		std::vector<ServerGroup>	server_groups;
+		Config						config;
+		std::vector<Connection>		connections;
 		std::map<int, int>			conn_socks;
 		std::map<int, int>			conn_map;
 		char					**ev;
 		Logger						_log;
-		int							parse_server(std::string &server);
-		void						_parse_config(std::ifstream &conf);
-		void						_create_server_groups();
-		void						parse_param(std::string param, Server &server);
+		void						_create_connections();
 		void						_handle_request(int conn_fd);
 		void						_loop(int kq);
 		Worker						&operator=(const Worker &other);

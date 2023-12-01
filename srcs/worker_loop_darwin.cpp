@@ -116,6 +116,7 @@ void Worker::run()
 			std::string(strerror(errno))
 		);
 	}
+	std::vector<Server> servers = this->config.getServers();
 	for (size_t i = 0; i < servers.size(); i++)
 	{
 		server_socks = servers[i].create_conn_sockets();
