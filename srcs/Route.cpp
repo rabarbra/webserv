@@ -337,11 +337,6 @@ void Route::handle_cgi(Request req)
 		}	
 		else if (S_ISREG(st.st_mode))	
 		{
-			if (access(full_path.c_str(), X_OK) == -1 && access(full_path.c_str(), R_OK) == 0)
-			{
-				this->sendFile(full_path, resp, req.getFd());
-				return;
-			}
 			this->cgi->createEnv(req, this->root_directory);
 			if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == -1)
 				return(this->sendError(req, resp, "501", "socketpair failed"));
@@ -349,7 +344,7 @@ void Route::handle_cgi(Request req)
 				return(this->sendError(req, resp, "502", "fork failed"));
 			if (pid == 0)
 			{
-				if (this->child_process(req, resp, sv, full_path) == -1)
+				if (this->child_process(req, resp, sv, full_path) == -1 && access(full_path.c_str(), R_OK) == 0)
 					return (this->sendError(req, resp, "500", "child_process failed"));
 			}
 			else

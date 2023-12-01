@@ -188,6 +188,12 @@ void Server::handle_request(Request req)
 			resp.run(req.getFd());
 			return ;
 		}
+		else if (req.getPath().find("..") != std::string::npos)
+		{
+			resp.build_error("403");
+			resp.run(req.getFd());
+			return ;
+		}
 		Route 		r;
 		try
 		{
