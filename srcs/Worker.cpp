@@ -22,7 +22,7 @@ Worker::~Worker()
 	}
 }
 
-Worker::Worker(char *path_to_conf): queue(-1), ev(env)
+Worker::Worker(char *path_to_conf, char **env): queue(-1), ev(env)
 {
 	std::ifstream	conf(path_to_conf);
 	if (!conf.is_open())
