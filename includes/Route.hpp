@@ -5,6 +5,7 @@
 // .h headers
 # include <dirent.h>
 # include <sys/stat.h>
+# include <sys/wait.h>
 // Our headers
 # include "CGI.hpp"
 #include "Request.hpp"
