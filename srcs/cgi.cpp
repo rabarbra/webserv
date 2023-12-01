@@ -2,19 +2,16 @@
 #include <set>
 #include <sstream>
 
-CGI::CGI() : handler()
+CGI::CGI() : handler(), env(NULL), executablePath()
 {
-	
 }
 
-CGI::CGI(std::vector<std::string> handler)
+CGI::CGI(std::vector<std::string> handler): handler(handler), env(NULL)
 {
-	this->handler = handler;
 }
 
 CGI::~CGI()
 {
-	
 }
 
 char **CGI::getEnv()
@@ -89,13 +86,18 @@ void	CGI::setHandler(std::vector<std::string> handler)
 	this->handler = handler;
 }
 
-void	CGI::setPath(char *path)
+void	CGI::setPaths(char *path)
 {
+	if (path == NULL)
+		return ;
 	std::stringstream ss(path);
 	std::string token;
 	while (std::getline(ss, token, ':'))
 	{
-		this->path.push_back(token);
+		if (token[token.length() - 1] == '/')
+			token.erase(token.length() - 1);
+		this->paths.push_back(token);
+		std::cout << "path: " << token << std::endl;
 	}
 }
 

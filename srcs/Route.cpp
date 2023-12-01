@@ -162,6 +162,19 @@ void Route::parseOptions(std::stringstream &ss)
 	//	throw std::runtime_error("invalid route\n");
 }
 
+#include <stdio.h>
+char *ft_getenv(char **env)
+{
+	if (!env)
+		return (NULL);
+	for (int i = 0; env[i]; i++)
+	{
+		if (!strncmp(env[i], "PATH=", 5))
+			return (env[i] + 5);
+	}
+	return (NULL);
+}
+
 void Route::parseOption(std::string &param)
 {
 	std::string word;
@@ -256,6 +269,7 @@ void Route::parseOption(std::string &param)
 				throw std::runtime_error("Invalid cgi handler\n");
 			this->setType(CGI_);
 			this->setCGI(new CGI(handler));
+			this->cgi->setPaths(ft_getenv(this->ev));
 		}
 		else
 			throw std::runtime_error("Invalid argument\n");

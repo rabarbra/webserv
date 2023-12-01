@@ -12,7 +12,7 @@ int	main(int ac, char **av, char **ev)
 	try
 	{
 		Worker	worker(av[1], ev);
-		worker.run();
+		//worker.run();
 	}
 	catch(const std::exception& e)
 	{

@@ -1,12 +1,12 @@
 #include "../includes/Server.hpp"
 
-Server::Server(): routes(), hosts(), server_names(), error_pages(), max_body_size(-1), log(Logger(_INFO, "Server")), _penging_connections_count(SOMAXCONN)
+Server::Server(): routes(), hosts(), server_names(), error_pages(), max_body_size(-1), log(Logger(_INFO, "Server")), _penging_connections_count(SOMAXCONN), env(NULL)
 {}
 
 Server::~Server()
 {}
 
-Server::Server(const Server &other)
+Server::Server(const Server &other) : env(NULL)
 {
 	*this = other;
 }
@@ -124,12 +124,10 @@ void	Server::parseLocation(std::string &location)
 	{
 		path = args[0];
 		route.setFileExtensions(args[1]);
-		route.setType(CGI_);
 	}
+	route.setEv(this->env);
 	route.parseOptions(ss);
 	route.setPath(path);
-	route.setEv(this->env);
-//	printf("path: %s\n", this->env[0]);
 	this->routes.push_back(route);
 }
 

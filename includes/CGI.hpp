@@ -10,7 +10,7 @@ class CGI
 		void						createEnv(Request &req, std::string root_directory);
 		void						setHandler(std::vector<std::string> handler);
 		void						setEnv(char **envp);
-		void						setPath(char *path);
+		void						setPaths(char *path);
 		std::vector<std::string>			getHandler();
 		char						**getEnv();
 		CGI();
@@ -21,7 +21,9 @@ class CGI
 	private:
 		std::vector<std::string>		handler;
 		char					**env;
-		std::vector<std::string>		path;
+		std::vector<std::string>		paths;
+		std::string				executablePath;
+		std::string				executable;
 };
 
 #endif
