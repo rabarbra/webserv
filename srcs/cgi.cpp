@@ -21,7 +21,7 @@ char **CGI::getEnv()
 {
 	return this->env;
 }
-
+#include <string>
 void CGI::createEnv(Request &req, std::string root_directory)
 {
 	(void)req;
@@ -43,7 +43,10 @@ void CGI::createEnv(Request &req, std::string root_directory)
 	envp.push_back("REQUEST_METHOD=" + req.getMethodString());
 	envp.push_back("AUTH_TYPE=Basic");
 	envp.push_back("GATEWAY_INTERFACE=CGI/1.1");
-	envp.push_back("CONTENT_LENGTH=" + std::to_string(req.getBody().size()));
+	std::stringstream ss;
+    	ss << req.getBody().size();
+    	std::string result = ss.str();
+	envp.push_back("CONTENT_LENGTH=" + result);
 	std::map<std::string, std::string> headers = req.getHeaders();
 	for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
 	{
