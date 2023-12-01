@@ -9,18 +9,20 @@ Worker &Worker::operator=(const Worker &other)
 
 Worker::~Worker()
 {
+	if (this->queue >= 0)
+		close(this->queue);
 	for (
-		std::map<int, int>::iterator i = this->conn_socks.begin();
-		i != this->conn_socks.end();
-		i++
+		std::map<int, int>::iterator it = this->conn_map.begin();
+		it != this->conn_map.end();
+		it++
 	)
 	{
-		this->_log.INFO << "Closing: " << (*i).first;
-		close((*i).first);
+		if (it->first >= 0)
+			close(it->first);
 	}
 }
 
-Worker::Worker(char *path_to_conf, char **env): ev(env)
+Worker::Worker(char *path_to_conf): queue(-1), ev(env)
 {
 	std::ifstream	conf(path_to_conf);
 	if (!conf.is_open())
@@ -33,34 +35,24 @@ Worker::Worker(char *path_to_conf, char **env): ev(env)
 	}
 	this->config.setEnv(this->ev);
 	this->config.parse(conf);
-	this->_create_connections();
+	this->initQueue();
+	this->create_connections();
 }
 
-void Worker::_handle_request(int conn_fd)
+// Private
+
+int Worker::find_connection(int sock)
 {
-	std::vector<Server> servers = this->config.getServers();
-	try
+	for (size_t i = 0; i < this->connections.size(); i++)
 	{
-		this->_log.INFO << "Reciving request " << conn_fd;
-		Request	req(conn_fd);
-		int conn_sock = this->conn_map[conn_fd];
-		int server_num = this->conn_socks[conn_sock];
-		servers[server_num].handle_request(req);
+		if (this->connections[i].getSocket() == sock)
+			return i;
 	}
-	catch(const std::exception& e)
-	{
-		Response resp;
-		resp.build_error("400");
-		resp.run(conn_fd);
-		this->_log.ERROR << e.what();
-	}
+	return -1;
 }
 
-void Worker::_create_connections()
+void Worker::create_connections()
 {
-	std::string			host;
-	std::string			port;
-	//int					sock;
 	struct addrinfo		*addr;
     struct addrinfo		hints;
 	int					error;
@@ -69,26 +61,116 @@ void Worker::_create_connections()
 	for (size_t i = 0; i < servers.size(); i++)
 	{
 		std::multimap<std::string, std::string> hosts = servers[i].getHosts();
-		for (std::multimap<std::string, std::string>::iterator it = hosts.begin(); it != hosts.end(); it++)
+		for (
+			std::multimap<std::string, std::string>::iterator it = hosts.begin();
+			it != hosts.end();
+			it++
+		)
 		{
-			host = it->first;
-			port = it->second;
-			hints.ai_addr = 0;
-			hints.ai_addrlen = 0;
-			hints.ai_canonname = 0;
-			hints.ai_flags = 0;
-			hints.ai_next = 0;
-			hints.ai_protocol = 0;
+			std::memset(&hints, 0, sizeof(addrinfo));
 			hints.ai_family = AF_INET;
 			hints.ai_socktype = SOCK_STREAM;
-    		error = getaddrinfo(host.c_str(), port.c_str(), &hints, &addr);
+    		error = getaddrinfo(it->first.c_str(), it->second.c_str(), &hints, &addr);
 			if (error)
 				throw std::runtime_error("Wrong address: " + std::string(gai_strerror(error)));
-			for (std::vector<Connection>::iterator it = this->connections.begin(); it != this->connections.end(); it++)
+			bool already_exists = false;
+			for (
+				std::vector<Connection>::iterator it = this->connections.begin();
+				it != this->connections.end();
+				it++
+			)
 			{
-				if (it->compare_addr(addr->ai_addr))
+				if (it->compare_addr(addr))
+				{
 					it->addServer(servers[i]);
+					already_exists = true;
+					break ;
+				}
 			}
+			if (!already_exists)
+			{
+				Connection conn(addr);
+				conn.addServer(servers[i]);
+				this->connections.push_back(conn);
+				this->addSocketToQueue(this->connections.back().getSocket());
+			}
+		}
+	}
+}
+
+void Worker::accept_connection(int sock)
+{
+	int	conn_fd;
+
+	this->log.INFO << "Accepting: " << sock;
+	if (listen(sock, SOMAXCONN) < 0)
+		throw std::runtime_error("Not listening: " + std::string(strerror(errno)));
+	while (1)
+	{
+		struct sockaddr_in	addr;
+		socklen_t			socklen = sizeof(addr);
+    	conn_fd = accept(
+			sock,
+			reinterpret_cast<sockaddr*>(&addr),
+			&socklen
+		);
+		if (conn_fd < 0)
+		{
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
+				break ;
+			throw std::runtime_error(
+				"Error accepting connection: " +
+				std::string(strerror(errno))
+			);
+		}
+		fcntl(conn_fd, F_SETFL, O_NONBLOCK, FD_CLOEXEC);
+		#ifdef __APPLE__
+			int nosigpipe = 1;
+			setsockopt(conn_fd, SOL_SOCKET, SO_NOSIGPIPE, &nosigpipe, sizeof(nosigpipe));
+		#endif
+		this->addSocketToQueue(conn_fd);
+		this->conn_map[conn_fd] = this->find_connection(sock);
+		this->log.INFO << "[" << conn_fd << "]: connected";
+	}
+}
+
+void Worker::run()
+{
+	int	num_events;
+	int	event_sock;
+
+	while (1)
+	{
+		try
+		{
+			num_events = this->getNewEventsCount();
+			this->log.INFO << num_events << " new events";
+			if (num_events < 0)
+				throw std::runtime_error("Queue error: " + std::string(strerror(errno)));
+			for (int i = 0; i < num_events; i++)
+			{
+				event_sock = this->getEventSock(i);
+				switch (this->getEventType(i))
+				{
+					case NEW_CONN:
+						this->accept_connection(event_sock);
+						break;
+					case EOF_CONN:
+						this->deleteSocketFromQueue(event_sock);
+						this->conn_map.erase(event_sock);
+						close(event_sock);
+						break;
+					case READ_AVAIL:
+						this->connections[this->conn_map[event_sock]].handleRequest(Request(event_sock));
+						break;
+					default:
+						break;
+				}
+			}
+		}
+		catch(const std::exception& e)
+		{
+			this->log.ERROR << e.what();
 		}
 	}
 }

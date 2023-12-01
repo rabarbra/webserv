@@ -9,7 +9,7 @@ SRC_DIR =		srcs
 INC_DIR =		includes
 
 SRC =			main Worker Server Connection Route Request Response \
-				worker_loop_darwin worker_loop_linux better_string \
+				worker_queue_darwin worker_queue_linux better_string \
 				ParseUtils cgi StatusCodes MimeTypes Config Method
 OBJ =			$(addprefix $(OBJ_DIR)/, $(addsuffix .o, $(SRC)))
 
