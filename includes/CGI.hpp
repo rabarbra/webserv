@@ -4,17 +4,19 @@
 # include "better_string.hpp"
 class CGI
 {
+	private:
+		std::vector<std::string>	handler;
 	public:
-		void						execute(std::string path);
-		void						setHandler(std::vector<std::string> handler);
-		std::vector<std::string>	getHandler();
 		CGI();
 		CGI(std::vector<std::string> handler);
 		CGI(const CGI &copy);
 		CGI &operator=(const CGI &copy);
 		~CGI();
-	private:
-		std::vector<std::string>		handler;
-};
-
+		// Setters
+		void						setHandler(std::vector<std::string> handler);
+		// Getters
+		std::vector<std::string>	getHandler();
+		// Public
+		void						execute(std::string path);
+}; 
 #endif

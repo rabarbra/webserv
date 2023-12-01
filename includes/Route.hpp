@@ -34,38 +34,38 @@ class Route
 		void						handle_redirection(Request req);
 		void						handle_dir_listing(Request req, std::string full_path);
 		std::string					build_absolute_path(Request req);
+		void						sendFile(std::string filename, Response &resp, int fd); 
 	public:
 		Route();
 		~Route();
 		Route(const Route &other);
 		Route		&operator=(const Route &other);
-		RouteType	getType();
-		bool		getDirListing();
 		bool		isRouteValid();
-		void		setFileExtensions(std::string &allowed_methods);
-		void		setAllowedMethods(std::string methods);
+		// Setters
 		void		setRootDirectory(std::string root_directory);
-		void		setRedirectUrl(std::string redirect_url);
 		void		setDirListing(bool dir_listing);
-		void		setIndex(std::string index);
-		void		setStaticDir(std::string static_dir);
 		void		setType(RouteType type);
-		void		setCGI(CGI *cgi);
+		void		setRedirectUrl(std::string redirect_url);
+		void		setIndex(std::string index);
 		void		setPath(std::string path);
-		std::string	getPath();
-		void		parseOptions(std::stringstream &options);
-		void		parseOption(std::string &param);
+		void		setStaticDir(std::string static_dir);
+		void		setCGI(CGI *cgi);
+		void		setAllowedMethod(Method method);
+		void		setFileExtensions(std::string &allowed_methods);
+		// Getters
+		std::string	getRootDir() const;
+		bool		getDirListing() const;
+		RouteType	getType() const;
+		std::string	getRedirectUrl() const;
+		std::string	getIndex() const;
+		std::string	getPath() const;
+		std::string	getStaticDir() const;
+		CGI			*getCGI() const;
+		// Public
 		void		printRoute();
-		void		parseAllowedMethods(std::string &methods);
 		void		handle_request(Request req);
-		void		sendFile(std::string filename, Response &resp, int fd); 
 		size_t		match(std::string path);
 };
 
-bool    	checkCgiHandler(std::vector<std::string> handler);
-void		checkSemiColon(std::string &word, std::string message);
-bool		checkWordIsOption(std::string word);
-std::string	getFileSize(std::string path);
-std::string	convertSize(size_t size); 
-
+std::string	convertSize(size_t size);
 #endif

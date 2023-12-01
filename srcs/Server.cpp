@@ -1,6 +1,8 @@
 #include "../includes/Server.hpp"
 
-Server::Server(): routes(), hosts(), server_names(), error_pages(), max_body_size(-1), log(Logger(_INFO, "Server")), _penging_connections_count(SOMAXCONN)
+Server::Server():
+	routes(), hosts(), server_names(), error_pages(), max_body_size(-1),
+	log(Logger(_INFO, "Server")), _penging_connections_count(SOMAXCONN)
 {}
 
 Server::~Server()
@@ -26,6 +28,8 @@ Server &Server::operator=(const Server &other)
 	return (*this);
 }
 
+// Setters
+
 void Server::setRoute(Route &route)
 {
 	this->routes.push_back(route);
@@ -43,230 +47,34 @@ void Server::setServerNames(std::stringstream &ss)
 		this->server_names.insert(this->server_names.end(), word);
 }
 
-bool isNumber(std::string &str)
+void Server::setMaxBodySize(long long bodySize)
 {
-	for (long unsigned int i = 0; i < str.length(); i++)
-	{
-		if (!isdigit(str[i]))
-			return false;
-	}
-	return true;
+	this->max_body_size = bodySize;
 }
 
-void Server::parseListen(std::stringstream &ss)
+void Server::setErrorPage(int code, std::string path)
 {
-	std::string word;
-	std::string host;
-	std::string port;
-	int both = 0;
-	size_t pos;
-
-	while (ss >> word)
-	{
-		if ((pos = word.find(":")) != std::string::npos)
-		{
-			if (both)
-				throw std::runtime_error("Host and port are already set!");
-			host = word.substr(0, pos);
-			port = word.substr(pos + 1, word.length());
-			if (!isNumber(port))
-				throw std::runtime_error("Host and port are already set!");
-			if (host.empty())
-				host = "127.0.0.1";
-			else if (port.empty())
-				port = "80";
-			this->setHosts(host, port);
-			both = 1;
-		}
-		else if (isNumber(word))
-		{
-			if (both)
-				throw std::runtime_error("Host and port are already set");
-			this->setHosts("127.0.0.1", word);
-			both = 1;
-		}		
-		else
-		{
-			if (both)
-				throw std::runtime_error("Host and port are already set!");
-			this->setHosts(word, "80");
-			both = 1;
-		}
-	}
+	this->error_pages[code] = path;
 }
 
-void	Server::parseLocation(std::string &location)
+// Getters
+
+long long Server::getMaxBodySize() const
 {
-	Route route;
-	std::string word;
-	std::stringstream ss(location);
-	std::string path;
-	std::vector<std::string> args;
-
-	while (ss >> word && word != "{")
-	{
-		if (word != "location")
-			args.insert(args.end(), word);
-	}
-	if (args.size() == 0)
-		throw std::runtime_error("invalid number of arguments in 'location'");
-	if (args.size() > 2)
-		throw std::runtime_error("invalid number of arguments in 'location'");
-	if (args.size() == 1)
-		path = args[0];
-	else
-	{
-		path = args[0];
-		route.setFileExtensions(args[1]);
-		route.setType(CGI_);
-	}
-	route.parseOptions(ss);
-	route.setPath(path);
-	this->routes.push_back(route);
+	return this->max_body_size;
 }
 
-bool Server::hasListenDup() {
-	std::set<std::pair<std::string, std::string> > s(this->hosts.begin(), this->hosts.end());
-	return (s.size() != this->hosts.size());
-}
-
-void Server::parseBodySize(std::stringstream &ss) {
-	std::string size;
-	std::string unit;
-	long long number;
-	int i = 0;
-
-	if (this->max_body_size != -1)
-		throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
-	while (ss >> size)
-		++i;
-	if (i != 1)
-		throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
-	if (isNumber(size))
-		number = atoi(size.c_str());
-	else
-	{
-		unit = size.substr(size.find_first_not_of("0123456789"), size.length());
-		size = size.substr(0, size.find_last_of("0123456789") + 1);
-		if (size.compare("18446744073709551615") > 0)
-			throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
-		if (unit.compare("k") && unit.compare("m") && 
-				unit.compare("g") && unit.compare("K") && 
-				unit.compare("M") && unit.compare("G") && 
-				unit.compare("Kb") && unit.compare("Mb") && 
-				unit.compare("Gb") && unit.compare("KB") && 
-				unit.compare("MB") && unit.compare("GB"))
-			throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
-		number = atoi(size.c_str());
-		if (number < 0)
-			throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
-		if (!unit.compare("k") || !unit.compare("K") || !unit.compare("Kb") || !unit.compare("KB"))
-		{
-			if (size.compare("18446744073709551615") > 0)
-				throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
-			number *= 1024;
-		}
-		else if (!unit.compare("m") || !unit.compare("M") || !unit.compare("Mb") || !unit.compare("MB"))
-		{
-			if (size.compare("17592186044416") > 0)
-				throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
-			number *= 1024 * 1024;
-		}
-		else if (!unit.compare("g") || !unit.compare("G") || !unit.compare("Gb") || !unit.compare("GB"))
-		{
-			if (size.compare("17179869184") > 0)
-				throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
-			number *= 1024 * 1024 * 1024;
-		}
-	}
-	this->max_body_size = static_cast<unsigned long>(number);
-}
-
-std::vector<std::string> Server::getServerNames()
+std::vector<std::string> Server::getServerNames() const
 {
 	return this->server_names;
 }
-void		Server::printServer() {
-	std::cout << "---------Server-----------\n";
-	for (std::multimap<std::string, std::string>::iterator i = this->hosts.begin(); i != this->hosts.end(); i++)
-		this->log.INFO << "Host: " << i->first << " Port: " << i->second;
-	this->log.INFO << "Client Max body size : " << this->max_body_size;
-	for (long unsigned int i = 0; i < this->server_names.size(); i++)
-		this->log.INFO << "Server name [" << i  << "]: " << this->server_names[i];
-	for (std::map<int, std::string>::iterator i = this->error_pages.begin(); i != this->error_pages.end(); i++)
-		this->log.INFO << "Error code path["<< i->first << "]: " << i->second;
-	for (std::vector<Route>::iterator i = this->routes.begin(); i != this->routes.end(); i++)
-	{
-		this->log.INFO << "Route path: " << i->getPath();
-		i->printRoute();
-	}
-	std::cout << std::endl;
-}
 
-void	Server::parseErrorPage(std::stringstream &ss)
+std::multimap<std::string, std::string> Server::getHosts() const
 {
-	std::string word;
-	std::string path;
-	std::vector<int> status_codes;
-
-	while (ss >> word)
-	{
-		if (isNumber(word))
-		{
-			int status_code = atoi(word.c_str());
-			if (status_code < 400 || status_code > 505)
-				throw std::runtime_error("Invalid Error Code");
-			status_codes.insert(status_codes.end(), status_code);
-		}
-		else
-		{
-			if (status_codes.empty())
-				throw std::runtime_error("No .html file provided");
-			path = word;
-		}
-	}
-	for (long unsigned int i = 0; i < status_codes.size(); i++)
-		this->error_pages[status_codes[i]] = path;
+	return this->hosts;
 }
 
-void Server::handle_request(Request req)
-{
-	Response	resp;
-	try
-	{
-		if (
-			this->max_body_size >= 0 &&
-			req.getBody().size() > static_cast<size_t>(this->max_body_size)	
-		)
-		{
-			resp.build_error("413");
-			resp.run(req.getFd());
-			return ;
-		}
-		Route 		r;
-		try
-		{
-			r = this->select_route(req);
-		}
-		catch(const std::exception& e)
-		{
-			resp.build_error("404");
-			resp.run(req.getFd());
-			return ;
-		}
-		r.handle_request(req);
-	}
-	catch(const std::exception& e)
-	{
-		better_string errors_msg(e.what());
-		if (!errors_msg.starts_with("Cannot send"))
-		{
-			resp.build_error("400");
-			resp.run(req.getFd());
-		}
-		this->log.ERROR << errors_msg << '\n';
-	}
-}
+// Private
 
 int Server::_create_conn_socket(std::string host, std::string port)
 {
@@ -309,23 +117,31 @@ int Server::_create_conn_socket(std::string host, std::string port)
 	setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &reuseaddr, sizeof(reuseaddr));
 	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(reuseaddr));
 	freeaddrinfo(addr);
-	return sock;
-}
-
-std::set<int> Server::create_conn_sockets()
-{
-	std::set<int> res;
-
-	for (
-		std::multimap<std::string, std::string>::iterator i = this->hosts.begin();
-		i != this->hosts.end();
-		i++
-	)
+	for (size_t i = 0; i < this->routes.size(); i++)
 	{
-		res.insert(this->_create_conn_socket(i->first, i->second));
-		this->log.INFO << "Listening " << i->first << ":" << i->second;
+		std::string route_type;
+		RouteType r = this->routes[i].getType();
+		switch (r)
+		{
+			case PATH_:
+				route_type = "path:\t";
+				break;
+			case REDIRECTION_:
+				route_type = "redir:\t";
+				break;
+			case CGI_:
+				route_type = "cgi: \t";
+				break;
+			default:
+				route_type = "unkn:\t";
+				break;
+		}
+		this->log.INFO
+			<< route_type
+			<< "http://" << host << ":" << port << this->routes[i].getPath()
+			<< (this->routes[i].getRedirectUrl().size() ? "\n\t\t\t\t=> " + this->routes[i].getRedirectUrl() : "");
 	}
-	return res;
+	return sock;
 }
 
 Route &Server::select_route(const Request &req)
@@ -350,4 +166,83 @@ Route &Server::select_route(const Request &req)
 		throw std::runtime_error("No matching route!");
 	this->log.INFO << "Selected route: " << res->getPath();
 	return *res;
+}
+
+// Public
+
+bool Server::hasListenDup() {
+	std::set<std::pair<std::string, std::string> > s(this->hosts.begin(), this->hosts.end());
+	return (s.size() != this->hosts.size());
+}
+
+void		Server::printServer() {
+	std::cout << "---------Server-----------\n";
+	for (std::multimap<std::string, std::string>::iterator i = this->hosts.begin(); i != this->hosts.end(); i++)
+		this->log.INFO << "Host: " << i->first << " Port: " << i->second;
+	this->log.INFO << "Client Max body size : " << this->max_body_size;
+	for (long unsigned int i = 0; i < this->server_names.size(); i++)
+		this->log.INFO << "Server name [" << i  << "]: " << this->server_names[i];
+	for (std::map<int, std::string>::iterator i = this->error_pages.begin(); i != this->error_pages.end(); i++)
+		this->log.INFO << "Error code path["<< i->first << "]: " << i->second;
+	for (std::vector<Route>::iterator i = this->routes.begin(); i != this->routes.end(); i++)
+	{
+		this->log.INFO << "Route path: " << i->getPath();
+		i->printRoute();
+	}
+	std::cout << std::endl;
+}
+
+void Server::handle_request(Request req)
+{
+	Response	resp;
+	try
+	{
+		if (
+			this->max_body_size >= 0 &&
+			req.getBody().size() > static_cast<size_t>(this->max_body_size)	
+		)
+		{
+			resp.build_error("413");
+			resp.run(req.getFd());
+			return ;
+		}
+		Route 		r;
+		try
+		{
+			r = this->select_route(req);
+		}
+		catch(const std::exception& e)
+		{
+			resp.build_error("404");
+			resp.run(req.getFd());
+			return ;
+		}
+		r.handle_request(req);
+	}
+	catch(const std::exception& e)
+	{
+		better_string errors_msg(e.what());
+		if (!errors_msg.starts_with("Cannot send"))
+		{
+			resp.build_error("400");
+			resp.run(req.getFd());
+		}
+		this->log.ERROR << errors_msg << '\n';
+	}
+}
+
+std::set<int> Server::create_conn_sockets()
+{
+	std::set<int> res;
+
+	for (
+		std::multimap<std::string, std::string>::iterator i = this->hosts.begin();
+		i != this->hosts.end();
+		i++
+	)
+	{
+		res.insert(this->_create_conn_socket(i->first, i->second));
+		this->log.INFO << "Listening " << i->first << ":" << i->second;
+	}
+	return res;
 }

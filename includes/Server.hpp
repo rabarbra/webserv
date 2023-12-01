@@ -24,18 +24,21 @@ class Server
 		Server();
 		~Server();
 		Server(const Server &other);
-		Server						&operator=(const Server &other);
-		void						setRoute(Route &route);
-		void						setHosts(std::string host, std::string port);
-		void						setServerNames(std::stringstream &ss);
-		std::vector<std::string> 	getServerNames();
-		void						parseListen(std::stringstream &ss);
-		void						parseBodySize(std::stringstream &ss);
-		void						parseErrorPage(std::stringstream &ss);
-		void						parseLocation(std::string &location);
-		void						handle_request(Request req);
-		void						printServer();
-		bool						hasListenDup();
-		std::set<int>				create_conn_sockets();
+		Server									&operator=(const Server &other);
+		// Setters
+		void									setRoute(Route &route);
+		void									setHosts(std::string host, std::string port);
+		void									setErrorPage(int code, std::string path);
+		void									setServerNames(std::stringstream &ss);
+		void									setMaxBodySize(long long bodySize);
+		// Getters
+		std::vector<std::string> 				getServerNames() const;
+		std::multimap<std::string, std::string>	getHosts() const;
+		long long								getMaxBodySize() const;
+		// Public
+		void									handle_request(Request req);
+		void									printServer();
+		bool									hasListenDup();
+		std::set<int>							create_conn_sockets();
 };
 #endif
