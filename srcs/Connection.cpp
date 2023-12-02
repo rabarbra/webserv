@@ -56,7 +56,10 @@ Connection &Connection::operator=(const Connection &other)
 			this->addr = NULL;
 		}
 		if (other.addr)
-			this->addr = other.clone_addrinfo();
+		{
+			this->addr = new addrinfo;
+			other.clone_addrinfo(this->addr);
+		}
 	}
 	return *this;
 }
@@ -96,22 +99,20 @@ int Connection::getSocket() const
 
 // Private
 
-addrinfo *Connection::clone_addrinfo() const
+void Connection::clone_addrinfo(addrinfo *dst) const
 {
 	if (this->addr == NULL) {
-        return NULL;
+        return ;
     }
-    addrinfo* cloned = new addrinfo;
-    std::memcpy(cloned, this->addr, sizeof(addrinfo));
+    std::memcpy(dst, this->addr, sizeof(addrinfo));
     if (this->addr->ai_addr != NULL) {
-        cloned->ai_addr = new sockaddr;
-        std::memcpy(cloned->ai_addr, this->addr->ai_addr, this->addr->ai_addrlen);
+        dst->ai_addr = new sockaddr;
+        std::memcpy(dst->ai_addr, this->addr->ai_addr, this->addr->ai_addrlen);
     }
     if (this->addr->ai_canonname != NULL) {
-        cloned->ai_canonname = new char[strlen(this->addr->ai_canonname) + 1];
-        std::strcpy(cloned->ai_canonname, this->addr->ai_canonname);
+        dst->ai_canonname = new char[strlen(this->addr->ai_canonname) + 1];
+        std::strcpy(dst->ai_canonname, this->addr->ai_canonname);
     }
-    return cloned;
 }
 
 // Public
@@ -130,12 +131,15 @@ void Connection::addServer(Server server)
 	}
 	for (size_t i = 0; i < names.size(); i++)
 	{
-		this->log.INFO
-			<< "Server " << server.printHosts()
-			<< " added with server name " << names[i] << " to connection "
-			<< this->getHost() + ":" << this->getPort()
-			<< " (socket: " << this->sock << ")";
-		this->servers[names[i]] = server;
+		if (this->servers.find(names[i]) == this->servers.end())
+		{
+			this->log.INFO
+				<< "Server " << server.printHosts()
+				<< " added with server name " << names[i] << " to connection "
+				<< this->getHost() + ":" << this->getPort()
+				<< " (socket: " << this->sock << ")";
+			this->servers[names[i]] = server;
+		}
 	}
 }
 

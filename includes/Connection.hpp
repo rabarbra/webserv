@@ -8,7 +8,7 @@ class Connection
 		addrinfo						*addr;
 		int								sock;
 		Logger							log;
-		addrinfo						*clone_addrinfo() const;
+		void							clone_addrinfo(addrinfo *dst) const;
 	public:
 		Connection();
 		~Connection();
