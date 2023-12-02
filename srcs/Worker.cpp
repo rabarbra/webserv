@@ -53,9 +53,9 @@ int Worker::find_connection(int sock)
 
 void Worker::create_connections()
 {
-	struct addrinfo		*addr;
     struct addrinfo		hints;
 	int					error;
+	struct addrinfo		*addr;
 
 	std::vector<Server> servers = this->config.getServers();
 	for (size_t i = 0; i < servers.size(); i++)
@@ -89,9 +89,10 @@ void Worker::create_connections()
 			}
 			if (!already_exists)
 			{
-				Connection conn(addr);
-				conn.addServer(servers[i]);
-				this->connections.push_back(conn);
+				this->connections.push_back(Connection());
+				this->connections.back().setAddress(addr);
+				this->connections.back().startListen();
+				this->connections.back().addServer(servers[i]);
 				this->addSocketToQueue(this->connections.back().getSocket());
 			}
 		}
@@ -130,7 +131,11 @@ void Worker::accept_connection(int sock)
 		#endif
 		this->addSocketToQueue(conn_fd);
 		this->conn_map[conn_fd] = this->find_connection(sock);
-		this->log.INFO << "[" << conn_fd << "]: connected";
+		this->log.INFO 
+			<< "[" << conn_fd << "]: connected to sock " << sock << " "
+			<< this->find_connection(sock)
+			<< this->connections[this->find_connection(sock)].getHost() << ":"
+			<< this->connections[this->find_connection(sock)].getPort();
 	}
 }
 
