@@ -70,16 +70,6 @@ Connection &Connection::operator=(const Connection &other)
 	return *this;
 }
 
-// Setters
-
-void Connection::setAddress(addrinfo *addr)
-{
-	if (this->addr)
-		freeaddrinfo(this->addr);
-	this->addr = addr;
-	this->addr = this->clone_addrinfo();
-}
-
 // Getters
 
 int Connection::getSocket() const
@@ -136,31 +126,4 @@ void Connection::handleRequest(Request req)
 		this->servers["default"].handle_request(req);
 	else
 		it->second.handle_request(req);
-}
-
-void Connection::startListen()
-{
-	this->sock = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
-	if (sock < 0)
-	{
-		this->~Connection();
-		throw std::runtime_error("Error creating connection socket: " + std::string(strerror(errno)));
-	}
-    if (bind(sock, addr->ai_addr, addr->ai_addrlen))
-	{
-		this->~Connection();
-		throw std::runtime_error("Error binding: " + std::string(strerror(errno)));
-	}
-    if (listen(sock, SOMAXCONN))
-	{
-		this->~Connection();
-		throw std::runtime_error("Error listening: " + std::string(strerror(errno)));
-	}
-	fcntl(sock, F_SETFL, O_NONBLOCK, FD_CLOEXEC);
-	int	reuseaddr = 1;
-	setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &reuseaddr, sizeof(reuseaddr));
-	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(reuseaddr));
-	this->log.INFO
-		<< "New connection with socket: " << sock
-		<< ", addr: " << this->getHost() << ":" << this->getPort();
 }
