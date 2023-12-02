@@ -6,7 +6,8 @@
 class Config
 {
 	private:
-		std::vector<Server>	servers;
+		std::vector<Server>		servers;
+		char				**env;
 		int					parse_server(std::string &server);
 		void				parse_param(std::string param, Server &server);
 		void				parseListen(Server &server, std::stringstream &ss);
@@ -21,7 +22,9 @@ class Config
 		~Config();
 		Config(const Config &other);
 		Config				&operator=(const Config &other);
-		std::vector<Server>	getServers() const;
+		std::vector<Server>		getServers() const;
+		char				**getEnv() const;
+		void				setEnv(char **env);
 		void				parse(std::ifstream &conf);
 };
 #endif

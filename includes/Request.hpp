@@ -36,6 +36,7 @@ class Request
 		better_string						getBody() const;
 		better_string						getVersion() const;
 		Method								getMethod() const;
+		std::string 						getMethodString() const;
 		int									getFd() const;
 		std::map<std::string, std::string>	getHeaders() const;
 		// Public

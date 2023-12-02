@@ -22,6 +22,7 @@ class Worker
 		std::map<int, int>		conn_map;
 		Logger					log;
 		int						queue;
+    char					**ev;
 		static const int		max_events = 128;
 		// Os specific
 		#ifdef __APPLE__
@@ -45,8 +46,8 @@ class Worker
 		Worker					&operator=(const Worker &other);
 	public:
 		~Worker();
-		Worker(char *path_to_conf);
-		void					run();
+		Worker(char *path_to_conf, char **ev);
+		void	run();
 };
 
 #endif

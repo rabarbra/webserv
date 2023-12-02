@@ -8,7 +8,7 @@ Server::Server():
 Server::~Server()
 {}
 
-Server::Server(const Server &other)
+Server::Server(const Server &other) : env(NULL)
 {
 	*this = other;
 }
@@ -23,6 +23,7 @@ Server &Server::operator=(const Server &other)
 		this->error_pages = other.error_pages;
 		this->max_body_size = other.max_body_size;
 		this->log = other.log;
+		this->env = other.env;
 	}
 	return (*this);
 }
@@ -46,6 +47,11 @@ void Server::setServerNames(std::stringstream &ss)
 		this->server_names.insert(this->server_names.end(), word);
 }
 
+void Server::setEnv(char **env)
+{
+	this->env = env;
+}
+
 void Server::setMaxBodySize(long long bodySize)
 {
 	this->max_body_size = bodySize;
@@ -57,6 +63,11 @@ void Server::setErrorPage(int code, std::string path)
 }
 
 // Getters
+
+char **Server::getEnv() const
+{
+	return this->env;
+}
 
 long long Server::getMaxBodySize() const
 {
@@ -174,6 +185,12 @@ void Server::handle_request(Request req)
 		)
 		{
 			resp.build_error("413");
+			resp.run(req.getFd());
+			return ;
+		}
+		else if (req.getPath().find("..") != std::string::npos)
+		{
+			resp.build_error("403");
 			resp.run(req.getFd());
 			return ;
 		}

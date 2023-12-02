@@ -3,7 +3,7 @@
 Worker &Worker::operator=(const Worker &other)
 {
 	if (this != &other)
-		return *this;
+		return (*this);
 	return *this;
 }
 
@@ -22,7 +22,7 @@ Worker::~Worker()
 	}
 }
 
-Worker::Worker(char *path_to_conf): queue(-1)
+Worker::Worker(char *path_to_conf, char **env): queue(-1), ev(env)
 {
 	std::ifstream	conf(path_to_conf);
 	if (!conf.is_open())
@@ -33,6 +33,7 @@ Worker::Worker(char *path_to_conf): queue(-1)
 			" cannot be open!"
 		);
 	}
+	this->config.setEnv(this->ev);
 	this->config.parse(conf);
 	this->initQueue();
 	this->create_connections();

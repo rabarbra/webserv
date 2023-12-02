@@ -1,6 +1,7 @@
 #include "../includes/Worker.hpp"
 
-int	main(int ac, char **av)
+#include <stdio.h>
+int	main(int ac, char **av, char **ev)
 {
 	Logger log;
 	if (ac != 2)
@@ -10,7 +11,7 @@ int	main(int ac, char **av)
 	}
 	try
 	{
-		Worker	worker(av[1]);
+		Worker	worker(av[1], ev);
 		worker.run();
 	}
 	catch(const std::exception& e)

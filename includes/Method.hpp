@@ -9,7 +9,8 @@ typedef enum e_meth {
 	PATCH,
 	DELETE,
 	CONNECT,
-	OPTIONS
+	OPTIONS,
+	HEAD
 }			Method;
 Method get_method(std::string method);
 #endif

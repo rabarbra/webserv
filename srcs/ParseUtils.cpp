@@ -28,3 +28,27 @@ std::string convertSize(size_t size) {
     std::string result = convertToString(roundOff(size_d)) + " " + SIZES[div];
     return result;
 }
+
+char *ft_getEnv(char **env)
+{
+	int i = -1;
+	if (env == NULL)
+		return (NULL);
+	while (env[++i])
+	{
+		if (!strncmp(env[i], "PATH=", 5))
+			return (env[i] + 5);
+	}
+	return (NULL);
+}
+
+std::string findExecutablePath(std::vector<std::string> paths, std::string handler)
+{
+	for (std::vector<std::string>::iterator it = paths.begin(); it != paths.end(); it++)
+	{
+		std::string path = *it + "/" + handler;
+		if (access(path.c_str(), X_OK) == 0)
+			return (path);
+	}
+	return (NULL);
+}

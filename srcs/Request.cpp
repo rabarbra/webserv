@@ -80,6 +80,22 @@ int Request::getFd() const
 	return this->_fd;
 }
 
+std::string Request::getMethodString() const
+{
+	if (this->method == GET)
+		return "GET";
+	else if (this->method == POST)
+		return "POST";
+	else if (this->method == DELETE)
+		return "DELETE";
+	else if (this->method == PUT)
+		return "PUT";
+	else if (this->method == HEAD)
+		return "HEAD";
+	else
+		return "UNKNOWN";
+}
+
 // Private
 
 void Request::receive()
