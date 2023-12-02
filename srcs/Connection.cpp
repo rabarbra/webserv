@@ -17,7 +17,31 @@ Connection::Connection(const Connection &other): servers(), addr(NULL), sock(-1)
 }
 
 Connection::Connection(addrinfo *addr): servers(), addr(addr), sock(-1)
-{}
+{
+	this->sock = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+	if (sock < 0)
+	{
+		this->~Connection();
+		throw std::runtime_error("Error creating connection socket: " + std::string(strerror(errno)));
+	}
+    if (bind(sock, addr->ai_addr, addr->ai_addrlen))
+	{
+		this->~Connection();
+		throw std::runtime_error("Error binding: " + std::string(strerror(errno)));
+	}
+    if (listen(sock, SOMAXCONN))
+	{
+		this->~Connection();
+		throw std::runtime_error("Error listening: " + std::string(strerror(errno)));
+	}
+	fcntl(sock, F_SETFL, O_NONBLOCK, FD_CLOEXEC);
+	int	reuseaddr = 1;
+	setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &reuseaddr, sizeof(reuseaddr));
+	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(reuseaddr));
+	this->log.INFO
+		<< "New connection with socket: " << sock
+		<< ", addr: " << this->getHost() << ":" << this->getPort();
+}
 
 Connection &Connection::operator=(const Connection &other)
 {
@@ -32,19 +56,12 @@ Connection &Connection::operator=(const Connection &other)
 			this->addr = NULL;
 		}
 		if (other.addr)
-			this->addr = other.clone_addrinfo();
+		{
+			this->addr = new addrinfo;
+			other.clone_addrinfo(this->addr);
+		}
 	}
 	return *this;
-}
-
-// Setters
-
-void Connection::setAddress(addrinfo *addr)
-{
-	if (this->addr)
-		freeaddrinfo(this->addr);
-	this->addr = addr;
-	this->addr = this->clone_addrinfo();
 }
 
 // Getters
@@ -82,22 +99,20 @@ int Connection::getSocket() const
 
 // Private
 
-addrinfo *Connection::clone_addrinfo() const
+void Connection::clone_addrinfo(addrinfo *dst) const
 {
 	if (this->addr == NULL) {
-        return NULL;
+        return ;
     }
-    addrinfo* cloned = new addrinfo;
-    std::memcpy(cloned, this->addr, sizeof(addrinfo));
+    std::memcpy(dst, this->addr, sizeof(addrinfo));
     if (this->addr->ai_addr != NULL) {
-        cloned->ai_addr = new sockaddr;
-        std::memcpy(cloned->ai_addr, this->addr->ai_addr, this->addr->ai_addrlen);
+        dst->ai_addr = new sockaddr;
+        std::memcpy(dst->ai_addr, this->addr->ai_addr, this->addr->ai_addrlen);
     }
     if (this->addr->ai_canonname != NULL) {
-        cloned->ai_canonname = new char[strlen(this->addr->ai_canonname) + 1];
-        std::strcpy(cloned->ai_canonname, this->addr->ai_canonname);
+        dst->ai_canonname = new char[strlen(this->addr->ai_canonname) + 1];
+        std::strcpy(dst->ai_canonname, this->addr->ai_canonname);
     }
-    return cloned;
 }
 
 // Public
@@ -161,31 +176,4 @@ bool Connection::compare_addr(addrinfo *other)
         );
     }
 	return false;
-}
-
-void Connection::startListen()
-{
-	this->sock = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
-	if (sock < 0)
-	{
-		this->~Connection();
-		throw std::runtime_error("Error creating connection socket: " + std::string(strerror(errno)));
-	}
-    if (bind(sock, addr->ai_addr, addr->ai_addrlen))
-	{
-		this->~Connection();
-		throw std::runtime_error("Error binding: " + std::string(strerror(errno)));
-	}
-    if (listen(sock, SOMAXCONN))
-	{
-		this->~Connection();
-		throw std::runtime_error("Error listening: " + std::string(strerror(errno)));
-	}
-	fcntl(sock, F_SETFL, O_NONBLOCK, FD_CLOEXEC);
-	int	reuseaddr = 1;
-	setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &reuseaddr, sizeof(reuseaddr));
-	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(reuseaddr));
-	this->log.INFO
-		<< "New connection with socket: " << sock
-		<< ", addr: " << this->getHost() << ":" << this->getPort();
 }

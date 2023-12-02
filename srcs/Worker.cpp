@@ -84,16 +84,15 @@ void Worker::create_connections()
 				{
 					it->addServer(servers[i]);
 					already_exists = true;
+					freeaddrinfo(addr);
 					break ;
 				}
 			}
 			if (!already_exists)
 			{
-				this->connections.push_back(Connection());
-				this->connections.back().setAddress(addr);
-				this->connections.back().startListen();
-				this->connections.back().addServer(servers[i]);
-				this->addSocketToQueue(this->connections.back().getSocket());
+				Connection conn(addr);
+				conn.addServer(servers[i]);
+				this->connections.push_back(conn);
 			}
 		}
 	}
@@ -144,6 +143,12 @@ void Worker::run()
 	int	num_events;
 	int	event_sock;
 
+	for (
+		std::vector<Connection>::iterator it = this->connections.begin();
+		it != this->connections.end();
+		it++
+	)
+		this->addSocketToQueue(it->getSocket());
 	while (1)
 	{
 		try

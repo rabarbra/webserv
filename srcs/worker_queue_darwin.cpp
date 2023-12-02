@@ -25,7 +25,6 @@ void Worker::addSocketToQueue(int sock)
 			std::string(strerror(errno))
 		);
 	}
-	this->log.INFO << sock << " added to kqueue";
 }
 
 void Worker::deleteSocketFromQueue(int sock)
