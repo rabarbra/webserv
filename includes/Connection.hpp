@@ -15,11 +15,14 @@ class Connection
 		Connection(Address &addr);
 		Connection(const Connection &other);
 		Connection 						&operator=(const Connection &other);
+		// Setters
+		void							setAddress(addrinfo *addr);
 		// Getters
 		int								getSocket() const;
 		Address							getAddress() const;
 		// Public
 		void							addServer(Server server);
+		void							startListen();
 		void							handleRequest(Request req);
 };
 #endif
