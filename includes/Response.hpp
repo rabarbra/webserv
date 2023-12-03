@@ -52,6 +52,7 @@ class Response
 		std::string getBody() const;
 		// Public
 		void		build_error(std::string status_code);
+		void		build_ok(std::string statuscode);
 		void		build_dir_listing(std::string full_path, std::string content);
 		void		build_redirect(std::string location, std::string status_code);
 		void		run(int fd);

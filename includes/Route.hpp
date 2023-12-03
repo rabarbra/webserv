@@ -31,6 +31,8 @@ class Route
 		CGI							*cgi; // NULL by default
 		Logger						logger;
 		char						**ev;
+		// Private
+		void						handle_delete(Request &req, Response &resp);
 		void						handle_path(Request req);
 		void						handle_cgi(Request req);
 		void						handle_redirection(Request req);
