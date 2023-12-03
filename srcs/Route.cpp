@@ -224,12 +224,14 @@ bool Route::isRouteValid()
 std::string Route::build_absolute_path(Request req)
 {
 	better_string	root(this->root_directory);
-	std::string		req_path(req.getPath());
+	better_string	req_path(req.getPath());
 
 	if (root.ends_with("/"))
 		root.erase(root.size() - 1);
 	if (!root.size())
 		root = "html";
+	if (req_path.starts_with(this->path))
+		req_path.erase(0, this->path.size());
 	return root + req_path;
 }
 
@@ -271,6 +273,7 @@ void Route::handle_path(Request req)
 {
 	Response resp;
 	better_string	req_path(req.getPath());
+	// delete this->path from req path; 
 	std::string full_path = this->build_absolute_path(req);
 	this->logger.INFO << "Trying to send: " << full_path;
 	struct stat st;
