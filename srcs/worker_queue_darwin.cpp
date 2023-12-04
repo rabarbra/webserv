@@ -27,6 +27,21 @@ void Worker::addSocketToQueue(int sock)
 	}
 }
 
+void Worker::addResponseToQueue(Response *resp)
+{
+	struct kevent	evSet;
+
+	EV_SET(&evSet, resp->getFd(), EVFILT_WRITE, EV_ADD | EV_CLEAR, 0, 0, resp);
+    if (kevent(this->queue, &evSet, 1, NULL, 0, NULL) < 0)
+	{
+		throw std::runtime_error(
+			"Error adding connection socket to kqueue: " +
+			std::string(strerror(errno))
+		);
+	}
+	this->log.INFO << "Added response to file descriptor " <<  resp->getFd();
+}
+
 void Worker::deleteSocketFromQueue(int sock)
 {
 	struct kevent	evSet;
@@ -47,6 +62,11 @@ int Worker::getEventSock(int num_event)
 	return this->evList[num_event].ident;
 }
 
+Response *Worker::getResponse(int num_event)
+{
+	return reinterpret_cast<Response *>(this->evList[num_event].udata);
+}
+
 EventType Worker::getEventType(int num_event)
 {
 	if (this->find_connection(evList[num_event].ident) >= 0)
@@ -55,6 +75,8 @@ EventType Worker::getEventType(int num_event)
 		return EOF_CONN;
 	if (evList[num_event].filter == EVFILT_READ)
 		return READ_AVAIL;
+	if (evList[num_event].filter == EVFILT_WRITE)
+		return WRITE_AVAIL;
 	throw std::runtime_error("Unknown event!");
 }
 

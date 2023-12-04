@@ -11,6 +11,7 @@
 # include <ctime>
 // .h headers
 # include <netdb.h>
+# include <unistd.h>
 # include <sys/time.h>
 # include <sys/types.h>
 # include <sys/socket.h>
@@ -35,10 +36,13 @@ class Response
 		better_string						body;
 		std::string							_plain;
 		size_t								body_size;
+		size_t								sent;
+		int									fd;
 		Logger								log;
 		void								_build();
-	public:
 		Response();
+	public:
+		Response(int fd);
 		~Response();
 		Response(const Response &other);
 		Response	operator=(const Response &other);
@@ -48,13 +52,16 @@ class Response
 		void		setStatusCode(std::string code);
 		void		setReason(std::string reason);
 		void		setContentTypes(std::string filename);
+		void		setFd(int fd);
 		// Getters
 		std::string getBody() const;
+		int			getFd() const;
 		// Public
 		void		build_error(std::string status_code);
 		void		build_ok(std::string statuscode);
 		void		build_dir_listing(std::string full_path, std::string content);
 		void		build_redirect(std::string location, std::string status_code);
-		void		run(int fd);
+		void		run();
+		void		_send();
 };
 #endif

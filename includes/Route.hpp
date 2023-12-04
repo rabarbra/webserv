@@ -33,12 +33,13 @@ class Route
 		char						**ev;
 		// Private
 		void						handle_delete(Request &req, Response &resp);
-		void						handle_path(Request req);
-		void						handle_cgi(Request req);
+		void						handle_path(Request req, Response *resp);
+		void						handle_cgi(Response &resp, Request req);
 		void						handle_redirection(Request req);
 		void						handle_dir_listing(Request req, std::string full_path);
 		std::string					build_absolute_path(Request req);
-		void						sendFile(std::string filename, Response &resp, int fd); 
+		void						sendFile(std::string filename, Response &resp); 
+		void						sendError(Response &resp, std::string error, std::string error_message);
 	public:
 		Route();
 		~Route();
@@ -69,9 +70,9 @@ class Route
 		CGI							*getCGI() const;
 		// Public
 		void						printRoute();
-		void						handle_request(Request req);
+		void						handle_request(Request req, Response *resp);
 		size_t						match(std::string path);
-		int						child_process(Request &req, Response &resp, int *fd, std::string full_path);
+		int							child_process(Response &resp, int *fd, std::string full_path);
 		void 						configureCGI(Request &req, Response &resp, std::string &cgiPath, std::string &req_path);
 };
 

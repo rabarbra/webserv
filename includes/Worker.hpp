@@ -12,6 +12,7 @@ typedef enum	e_event_type
 {
 	NEW_CONN,
 	READ_AVAIL,
+	WRITE_AVAIL,
 	EOF_CONN
 }				EventType;
 class Worker
@@ -22,7 +23,7 @@ class Worker
 		std::map<int, int>		conn_map;
 		Logger					log;
 		int						queue;
-    char					**ev;
+    	char					**ev;
 		static const int		max_events = 128;
 		// Os specific
 		#ifdef __APPLE__
@@ -36,6 +37,7 @@ class Worker
 		int						getNewEventsCount();
 		int						getEventSock(int num_event);
 		EventType				getEventType(int num_event);
+		Response				*getResponse(int num_event);
 		// Private
 		void					create_connections();
 		int						find_connection(int sock);
@@ -47,6 +49,7 @@ class Worker
 	public:
 		~Worker();
 		Worker(char *path_to_conf, char **ev);
+		void					addResponseToQueue(Response *resp);
 		void	run();
 };
 

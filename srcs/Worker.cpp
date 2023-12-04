@@ -35,6 +35,7 @@ Worker::Worker(char *path_to_conf, char **env): queue(-1), ev(env)
 	}
 	this->config.setEnv(this->ev);
 	this->config.parse(conf);
+	this->config.setWorker(this);
 	this->initQueue();
 	this->create_connections();
 }
@@ -53,10 +54,6 @@ int Worker::find_connection(int sock)
 
 void Worker::create_connections()
 {
-    struct addrinfo		hints;
-	int					error;
-	struct addrinfo		*addr;
-
 	std::vector<Server> servers = this->config.getServers();
 	for (size_t i = 0; i < servers.size(); i++)
 	{
@@ -67,12 +64,7 @@ void Worker::create_connections()
 			it++
 		)
 		{
-			std::memset(&hints, 0, sizeof(addrinfo));
-			hints.ai_family = AF_INET;
-			hints.ai_socktype = SOCK_STREAM;
-    		error = getaddrinfo(it->first.c_str(), it->second.c_str(), &hints, &addr);
-			if (error)
-				throw std::runtime_error("Wrong address: " + std::string(gai_strerror(error)));
+			Address address(it->first, it->second);
 			bool already_exists = false;
 			for (
 				std::vector<Connection>::iterator it = this->connections.begin();
@@ -80,17 +72,16 @@ void Worker::create_connections()
 				it++
 			)
 			{
-				if (it->compare_addr(addr))
+				if (it->getAddress() == address)
 				{
 					it->addServer(servers[i]);
 					already_exists = true;
-					freeaddrinfo(addr);
 					break ;
 				}
 			}
 			if (!already_exists)
 			{
-				Connection conn(addr);
+				Connection conn(address);
 				conn.addServer(servers[i]);
 				this->connections.push_back(conn);
 			}
@@ -133,8 +124,7 @@ void Worker::accept_connection(int sock)
 		this->log.INFO 
 			<< "[" << conn_fd << "]: connected to sock " << sock << " "
 			<< this->find_connection(sock)
-			<< this->connections[this->find_connection(sock)].getHost() << ":"
-			<< this->connections[this->find_connection(sock)].getPort();
+			<< this->connections[this->find_connection(sock)].getAddress().getHost();
 	}
 }
 
@@ -142,6 +132,7 @@ void Worker::run()
 {
 	int	num_events;
 	int	event_sock;
+	Response *resp;
 
 	for (
 		std::vector<Connection>::iterator it = this->connections.begin();
@@ -172,6 +163,11 @@ void Worker::run()
 						break;
 					case READ_AVAIL:
 						this->connections[this->conn_map[event_sock]].handleRequest(Request(event_sock));
+						break;
+					case WRITE_AVAIL:
+						resp = this->getResponse(i);
+						//resp->setFd(event_sock);
+						resp->_send();
 						break;
 					default:
 						break;
