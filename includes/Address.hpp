@@ -1,8 +1,12 @@
 #ifndef ADDRESS_HPP
 # define ADDRESS_HPP
+// cpp libs
 # include <string>
 # include <sstream>
 # include <stdexcept>
+// c libs
+# include <cstring>
+// .h headers
 # include <netdb.h>
 # include <sys/types.h>
 # include <sys/socket.h>
