@@ -1,8 +1,12 @@
 #ifndef CGI_HPP
 # define CGI_HPP
 # include <vector>
+# include <unistd.h>
 # include "better_string.hpp"
 # include "Request.hpp"
+
+class Route;
+
 class CGI
 {
 	private:
@@ -28,9 +32,10 @@ class CGI
 		std::string						getExecutablePath(std::string full_path);
 		char							**getArgs(std::string full_path);
 		// Public
-		void							execute(std::string path);
+		int 							execute(Request &req, Response &resp, int *sv, std::string full_path);
 };
 
-char *ft_getEnv(char **env);
-std::string findExecutablePath(std::vector<std::string> paths, std::string handler);
+char		*ft_getEnv(char **env);
+std::string	findExecutablePath(std::vector<std::string> paths, std::string handler);
+void		sendError(Request &req, Response &resp, std::string error, std::string error_message);
 #endif

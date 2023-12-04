@@ -154,3 +154,21 @@ void CGI::setExecutablePath()
 		this->executablePath = handler[0];
 	std::cout << "executablePath: " << this->executablePath << std::endl;
 }
+
+// Public
+int CGI::execute(Request &req, Response &resp, int *sv, std::string full_path)
+{
+	close(sv[0]);
+	dup2(sv[1], 1);
+	close(sv[1]);
+	int pos = full_path.find_last_of('/');
+	std::string dir = full_path.substr(0, pos);
+	if (req.getBody().size())
+		write(1, req.getBody().c_str(), req.getBody().size());
+	if (chdir(dir.c_str()) == -1)
+		return(sendError(req, resp, "503", "chdir failed"), -1);
+	char **args = this->getArgs(full_path);
+	if (execve(args[0], args, this->getEnv()) == -1)
+		return(sendError(req, resp, "503", "execve failed"), -1);
+	return 0;
+}

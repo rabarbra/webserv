@@ -1,4 +1,5 @@
 #include "../includes/Route.hpp"
+#include <sys/unistd.h>
 
 Route::Route():
 	type(PATH_), allowed_methods(std::vector<Method>()),
@@ -260,7 +261,7 @@ void Route::sendFile(std::string filename, Response &resp, int fd)
 	resp.run(fd);
 }
 
-void Route::sendError(Request &req, Response &resp, std::string error, std::string error_message)
+void sendError(Request &req, Response &resp, std::string error, std::string error_message)
 {
 	std::cerr << "[ERROR] "  << error_message << std::endl;
 	resp.build_error(error);
@@ -304,10 +305,53 @@ void Route::handle_path(Request req)
 	resp.run(req.getFd());
 }
 
+void Route::configureCGI(Request &req, Response &resp, int *sv, std::string full_path)
+{
+	pid_t pid;
+
+	this->cgi->createEnv(req, this->root_directory);
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == -1)
+		return(sendError(req, resp, "501", "socketpair failed"));
+	if ((pid = fork()) == -1)
+		return(sendError(req, resp, "502", "fork failed"));
+	if (pid == 0)
+	{
+		if (this->cgi->execute(req, resp, sv, full_path) == -1 && access(full_path.c_str(), R_OK) == 0)
+			return (sendError(req, resp, "500", "child_process failed"));
+	}
+	else
+	{
+		close(sv[1]);
+		char buffer[1024];
+		int bytes_read;
+		std::string body;
+		while ((bytes_read = read(sv[0], buffer, 1024)) > 0)
+		{
+			body += std::string(buffer, bytes_read);
+			bzero(buffer, 1024);
+		}
+		close(sv[0]);
+		int status;
+		waitpid(pid, &status, 0);
+		if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+		{
+			resp.setBody(body);
+			resp.run(req.getFd());
+			return ;
+		}
+		else
+		{
+			this->logger.ERROR << "CGI failed";
+			resp.build_error("500");
+			resp.run(req.getFd());
+			return ;
+		}
+	}
+}
+
 void Route::handle_cgi(Request req)
 {
 	int sv[2];
-	pid_t pid;
 	Response resp;
 	better_string	req_path(req.getPath());
 	std::string full_path = this->build_absolute_path(req);
@@ -328,54 +372,30 @@ void Route::handle_cgi(Request req)
 		}
 		else if (S_ISDIR(st.st_mode))
 		{
-			if (this->index != "index.html")
+			MimeTypes mime;
+			full_path += "/" + this->index;
+			if (access(full_path.c_str(), F_OK) == -1)
 			{
 				resp.build_error("404");
 				resp.run(req.getFd());
 				return ;
 			}
+			if (mime.isMimeTypeValid(full_path))
+			{
+				this->sendFile(full_path, resp, req.getFd());
+				return;
+			}
+			return (this->configureCGI(req, resp, sv, full_path));
 		}	
 		else if (S_ISREG(st.st_mode))	
 		{
-			this->cgi->createEnv(req, this->root_directory);
-			if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == -1)
-				return(this->sendError(req, resp, "501", "socketpair failed"));
-			if ((pid = fork()) == -1)
-				return(this->sendError(req, resp, "502", "fork failed"));
-			if (pid == 0)
+			MimeTypes mime;
+			if (mime.isMimeTypeValid(full_path))
 			{
-				if (this->child_process(req, resp, sv, full_path) == -1 && access(full_path.c_str(), R_OK) == 0)
-					return (this->sendError(req, resp, "500", "child_process failed"));
+				this->sendFile(full_path, resp, req.getFd());
+				return;
 			}
-			else
-			{
-				close(sv[1]);
-				char buffer[1024];
-				int bytes_read;
-				std::string body;
-				while ((bytes_read = read(sv[0], buffer, 1024)) > 0)
-				{
-					body += std::string(buffer, bytes_read);
-					bzero(buffer, 1024);
-				}
-				close(sv[0]);
-				int status;
-				waitpid(pid, &status, 0);
-				if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
-				{
-					resp.setBody(body);
-					resp.run(req.getFd());
-					return ;
-				}
-				else
-				{
-					this->logger.ERROR << "CGI failed";
-					resp.build_error("500");
-					resp.run(req.getFd());
-					return ;
-				}
-			}
-
+			return (this->configureCGI(req, resp, sv, full_path));
 		}
 	}
 	resp.build_error("404");
@@ -456,19 +476,6 @@ void Route::handle_dir_listing(Request req, std::string full_path)
 }
 
 // Public
-
-int Route::child_process(Request &req, Response &resp, int *sv, std::string full_path)
-{
-	close(sv[0]);
-	dup2(sv[1], 1);
-	close(sv[1]);
-	if (chdir(this->root_directory.c_str()) == -1)
-		return(this->sendError(req, resp, "503", "chdir failed"), -1);
-	char **args = this->cgi->getArgs(full_path);
-	if (execve(args[0], args, this->cgi->getEnv()) == -1)
-		return(this->sendError(req, resp, "503", "execve failed"), -1);
-	return 0;
-}
 
 size_t Route::match(std::string path)
 {

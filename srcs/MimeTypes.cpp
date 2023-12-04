@@ -111,6 +111,30 @@ MimeTypes::MimeTypes() {
 	this->mime_types["asf"] = "video/x-ms-asf";
 	this->mime_types["wmv"] = "video/x-ms-wmv";
 	this->mime_types["avi"] = "video/x-msvideo";
+
+	// Executables
+	
+	this->mime_types["bin"] = "application/octet-stream";
+	this->mime_types["elf"] = "application/x-executable";
+	this->mime_types["jar"] = "application/java-archive";
+	this->mime_types["pl"] = "application/x-perl";
+	this->mime_types["py"] = "text/x-python";
+	this->mime_types["rb"] = "application/x-ruby";
+	this->mime_types["sh"] = "application/x-sh";
+	this->mime_types["js"] = "application/javascript";
+	this->mime_types["bat"] = "application/bat";
+	this->mime_types["ps1"] = "application/x-powershell";
+	this->mime_types["avi"] = "video/x-msvideo";
+	this->mime_types["php"] = "application/x-httpd-php";
+	this->mime_types["c"] = "text/x-c";
+	this->mime_types["cpp"] = "text/x-c++";
+	this->mime_types["java"] = "text/x-java-source";
+	this->mime_types["cs"] = "text/x-csharp";
+	this->mime_types["swift"] = "text/x-swift";
+	this->mime_types["go"] = "text/x-go";
+	this->mime_types["rust"] = "text/rust";
+	this->mime_types["dart"] = "application/dart";
+	this->mime_types["kotlin"] = "text/x-kotlin";
 }
 
 MimeTypes::~MimeTypes() {}
@@ -126,6 +150,7 @@ MimeTypes &MimeTypes::operator=(const MimeTypes &other) {
 	return (*this);
 }
 
+// GETTERS
 std::string MimeTypes::getMimeType(std::string filename)
 {
 	std::string extension;
@@ -139,3 +164,40 @@ std::string MimeTypes::getMimeType(std::string filename)
 	return (this->mime_types[extension]);
 }
 
+// PUBLIC
+
+bool MimeTypes::isMimeTypeValid(std::string filename)
+{
+	std::string extension;
+	size_t dot_pos;
+
+	dot_pos = filename.find_last_of(".");
+	if (dot_pos != std::string::npos)
+		extension = filename.substr(dot_pos + 1);
+	else
+		return (false);
+	if (
+			extension != "c" 
+			&& extension != "cpp" 
+			&& extension != "java" 
+			&& extension != "cs" 
+			&& extension != "swift" 
+			&& extension != "go" 
+			&& extension != "rust" 
+			&& extension != "dart" 
+			&& extension != "kotlin" 
+			&& extension != "py" 
+			&& extension != "rb" 
+			&& extension != "sh" 
+			&& extension != "bat" 
+			&& extension != "ps1" 
+			&& extension != "php" 
+			&& extension != "pl" 
+			&& extension != "bin" 
+			&& extension != "elf" 
+			&& extension != "jar" 
+			&& extension != "avi"
+			&& extension != "cgi")
+		return (true);
+	return (false);
+}

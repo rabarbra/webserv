@@ -13,6 +13,7 @@ class MimeTypes
 		MimeTypes(const MimeTypes &other);
 		MimeTypes	&operator=(const MimeTypes &other);
 		std::string	getMimeType(std::string filename);
+		bool		isMimeTypeValid(std::string filename);
 };
 
 #endif
