@@ -1,5 +1,7 @@
 #include "../includes/Route.hpp"
 #include <sys/unistd.h>
+#include <cstdio>
+#include <sys/stat.h>
 
 Route::Route():
 	type(PATH_), allowed_methods(std::vector<Method>()),
@@ -225,12 +227,14 @@ bool Route::isRouteValid()
 std::string Route::build_absolute_path(Request req)
 {
 	better_string	root(this->root_directory);
-	std::string		req_path(req.getPath());
+	better_string	req_path(req.getPath());
 
 	if (root.ends_with("/"))
 		root.erase(root.size() - 1);
 	if (!root.size())
 		root = "html";
+	if (req_path.starts_with(this->path))
+		req_path.erase(0, this->path.size());
 	return root + req_path;
 }
 
@@ -268,10 +272,62 @@ void sendError(Request &req, Response &resp, std::string error, std::string erro
 	resp.run(req.getFd());
 }
 
+
+void Route::handle_delete(Request &req, Response &resp)
+{
+	std::string full_path = this->build_absolute_path(req);
+	struct stat st;
+	if (stat(full_path.c_str(), &st) == 0 )
+	{
+		if (S_ISDIR(st.st_mode))
+		{
+			if (access(full_path.c_str(), R_OK) == 0 && access(full_path.c_str(), W_OK) == 0)
+			{
+				if (std::remove(full_path.c_str()) != 0)
+					return (sendError(req, resp, "500", "remove failed"));
+				resp.build_error("200");
+				resp.run(req.getFd());
+				return ;
+			}
+			else {
+				resp.build_error("403");
+				resp.run(req.getFd());
+				return ;
+			}
+		}
+		else if (S_ISREG(st.st_mode))
+		{
+			better_string directory;
+			directory = full_path.substr(0, full_path.find_last_of("/"));
+			if (
+					access(directory.c_str(), R_OK) == 0 &&
+					access(directory.c_str(), W_OK) == 0 &&
+					access(full_path.c_str(), R_OK) == 0 &&
+					access(full_path.c_str(), W_OK) == 0
+					)
+			{
+				if (std::remove(full_path.c_str()) != 0)
+					return (sendError(req, resp, "500", "remove failed"));
+				resp.build_error("200");
+				resp.run(req.getFd());
+				return ;
+			}
+			else {
+				resp.build_error("403");
+				resp.run(req.getFd());
+				return ;
+			}
+		}
+	}
+	resp.build_error("404");
+	resp.run(req.getFd());
+}
+
 void Route::handle_path(Request req)
 {
 	Response resp;
 	better_string	req_path(req.getPath());
+	// delete this->path from req path; 
 	std::string full_path = this->build_absolute_path(req);
 	this->logger.INFO << "Trying to send: " << full_path;
 	struct stat st;
@@ -494,7 +550,7 @@ size_t Route::match(std::string path)
 
 void Route::handle_request(Request req)
 {
-	
+	Response resp;
 	if (
 		this->allowed_methods.size() &&
 		std::find(
@@ -509,7 +565,8 @@ void Route::handle_request(Request req)
 		resp.run(req.getFd());
 		return ;
 	}
-	std::cout << "Route type: " << this->getType() << std::endl;
+	if (req.getMethodString() == "DELETE")
+		return (this->handle_delete(req, resp));
 	if (this->type == PATH_)
 		this->handle_path(req);
 	else if (this->type == CGI_)
