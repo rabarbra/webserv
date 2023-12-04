@@ -151,25 +151,30 @@ void Worker::run()
 			for (int i = 0; i < num_events; i++)
 			{
 				event_sock = this->getEventSock(i);
+				this->log.INFO << "Event sock: " << event_sock;
 				switch (this->getEventType(i))
 				{
 					case NEW_CONN:
+						this->log.INFO << "NEW conn";
 						this->accept_connection(event_sock);
 						break;
 					case EOF_CONN:
-						this->deleteSocketFromQueue(event_sock);
+						this->log.INFO << "EOF conn";
+						this->deleteSocketFromQueue(i);
 						this->conn_map.erase(event_sock);
 						close(event_sock);
 						break;
 					case READ_AVAIL:
+						this->log.INFO << "Read available";
 						this->connections[this->conn_map[event_sock]].handleRequest(Request(event_sock));
 						break;
 					case WRITE_AVAIL:
+						this->log.INFO << "Write available";
 						resp = this->getResponse(i);
-						//resp->setFd(event_sock);
 						resp->_send();
 						break;
 					default:
+						this->log.INFO << "Unknown event type!";
 						break;
 				}
 			}

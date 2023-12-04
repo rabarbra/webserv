@@ -33,7 +33,7 @@ class Worker
 		#endif
 		void					initQueue();
 		void					addSocketToQueue(int sock);
-		void					deleteSocketFromQueue(int sock);
+		void					deleteSocketFromQueue(int num_event);
 		int						getNewEventsCount();
 		int						getEventSock(int num_event);
 		EventType				getEventType(int num_event);

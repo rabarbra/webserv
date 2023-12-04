@@ -42,10 +42,11 @@ void Worker::addResponseToQueue(Response *resp)
 	this->log.INFO << "Added response to file descriptor " <<  resp->getFd();
 }
 
-void Worker::deleteSocketFromQueue(int sock)
+void Worker::deleteSocketFromQueue(int num_event)
 {
 	struct kevent	evSet;
 
+	int sock = this->getEventSock(num_event);
 	EV_SET(&evSet, sock, EVFILT_READ, EV_DELETE, 0, 0, NULL);
     if (kevent(this->queue, &evSet, 1, NULL, 0, NULL) < 0)
 		throw std::runtime_error("Kevent error 4: "
