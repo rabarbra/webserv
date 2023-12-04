@@ -53,9 +53,9 @@ int Worker::find_connection(int sock)
 
 void Worker::create_connections()
 {
-	struct addrinfo		*addr;
     struct addrinfo		hints;
 	int					error;
+	struct addrinfo		*addr;
 
 	std::vector<Server> servers = this->config.getServers();
 	for (size_t i = 0; i < servers.size(); i++)
@@ -84,6 +84,7 @@ void Worker::create_connections()
 				{
 					it->addServer(servers[i]);
 					already_exists = true;
+					freeaddrinfo(addr);
 					break ;
 				}
 			}
@@ -92,7 +93,6 @@ void Worker::create_connections()
 				Connection conn(addr);
 				conn.addServer(servers[i]);
 				this->connections.push_back(conn);
-				this->addSocketToQueue(this->connections.back().getSocket());
 			}
 		}
 	}
@@ -130,7 +130,11 @@ void Worker::accept_connection(int sock)
 		#endif
 		this->addSocketToQueue(conn_fd);
 		this->conn_map[conn_fd] = this->find_connection(sock);
-		this->log.INFO << "[" << conn_fd << "]: connected";
+		this->log.INFO 
+			<< "[" << conn_fd << "]: connected to sock " << sock << " "
+			<< this->find_connection(sock)
+			<< this->connections[this->find_connection(sock)].getHost() << ":"
+			<< this->connections[this->find_connection(sock)].getPort();
 	}
 }
 
@@ -139,6 +143,12 @@ void Worker::run()
 	int	num_events;
 	int	event_sock;
 
+	for (
+		std::vector<Connection>::iterator it = this->connections.begin();
+		it != this->connections.end();
+		it++
+	)
+		this->addSocketToQueue(it->getSocket());
 	while (1)
 	{
 		try

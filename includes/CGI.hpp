@@ -4,9 +4,6 @@
 # include <unistd.h>
 # include "better_string.hpp"
 # include "Request.hpp"
-
-class Route;
-
 class CGI
 {
 	private:

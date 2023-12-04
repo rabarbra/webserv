@@ -25,8 +25,6 @@ char **CGI::getEnv()
 void CGI::createEnv(Request &req, std::string root_directory, std::string cgiPath, std::string req_path)
 {
 	(void)root_directory;
-	std::cout << "cgiPath: " << cgiPath << std::endl;
-	std::cout << "req_path: " << req_path << std::endl;
 	std::vector<std::string> envp;
 	int i = -1;
 	std::string SCRIPT_NAME = "/" + cgiPath.substr(cgiPath.find_last_of('/') + 1);
@@ -156,7 +154,6 @@ void CGI::setExecutablePath()
 	}
 	else
 		this->executablePath = handler[0];
-	std::cout << "executablePath: " << this->executablePath << std::endl;
 }
 
 // Public
