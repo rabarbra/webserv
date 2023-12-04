@@ -1,13 +1,22 @@
 #include "../includes/Response.hpp"
 
-Response::Response(): httpVersion("HTTP/1.1"), statusCode("200"), reason("OK")
+Response::Response():
+	httpVersion("HTTP/1.1"), statusCode("200"), reason("OK"),
+	sent(0), fd(-1)
 {}
 
-Response::Response(int fd): httpVersion("HTTP/1.1"), statusCode("200"), reason("OK"), sent(0), fd(fd)
+Response::Response(int fd):
+	httpVersion("HTTP/1.1"), statusCode("200"), reason("OK"),
+	sent(0), fd(fd)
 {}
 
 Response::~Response()
-{}
+{
+	//if (this->data_fd >= 0)
+	//	close(this->data_fd);
+	//if (this->fd)
+	//	close(this->fd);
+}
 
 Response::Response(const Response &other)
 {
@@ -26,6 +35,7 @@ Response Response::operator=(const Response &other)
 		this->sent = other.sent;
 		this->fd = other.fd;
 		this->error_pages = other.error_pages;
+		this->file = other.file;
 	}
 	return *this;
 }
@@ -68,6 +78,11 @@ void Response::setErrorPages(std::map<int, std::string> map)
 	this->error_pages = map;
 }
 
+void Response::setFile(std::string file)
+{
+	this->file = file;
+}
+
 // Getters
 
 std::string Response::getBody() const
@@ -84,7 +99,6 @@ int Response::getFd() const
 
 void Response::_build()
 {
-
 	this->_plain = this->httpVersion + " "
 		+ this->statusCode + " "
 		+ this->reason + "\r\n";
@@ -99,19 +113,20 @@ void Response::_build()
 	{
 		this->_plain += (it->first + ": " + it->second + "\r\n");
 	}
+	this->_plain += "\r\n";
 	if (this->body_size)
-		this->_plain += ("\r\n" + this->body);
+		this->_plain += this->body;
 }
 
 // Public
 
-void Response::_send()
+bool Response::_send()
 {
 	size_t	left;
 	size_t	chunk_size;
 	ssize_t	chunk;
 
-	chunk_size = 536;
+	chunk_size = 2048;
 	left = this->_plain.size() - this->sent;
 	if (left < chunk_size)
 		chunk_size = left;
@@ -124,21 +139,53 @@ void Response::_send()
 			std::stringstream left_s;
 			sent_s << this->sent;
 			left_s << left;
-			throw std::runtime_error(
-				"Cannot send (sent: " + sent_s.str()
-				+ ", left: " + left_s.str() + "): "
-				+ std::string(strerror(errno))
-			);
+			return false;
 		}
 		this->sent += chunk;
 		left -= chunk;
 		if (left < chunk_size)
 			chunk_size = left;
 	}
-	close(this->fd);
+	if (this->file.size())
+	{
+		std::ifstream file_s(this->file.c_str(), std::ios::binary | std::ios::ate);
+		std::streamsize size = file_s.tellg();
+		left = this->_plain.size() + size - sent;
+		chunk_size = 8192;
+		if (left < chunk_size)
+				chunk_size = left;
+		file_s.seekg(this->sent - this->_plain.size(), std::ios::beg);
+		char *buffer = new char[chunk_size];
+		chunk = 1;
+		while (file_s.is_open() && chunk && this->sent < this->_plain.size() + size && !file_s.eof())
+		{
+			this->log.INFO <<"Sent: " << this->sent << ", left: " << left;
+    		file_s.read(buffer, chunk_size);
+			chunk = send(this->fd, buffer, file_s.gcount(), SEND_FLAGS);
+			if (chunk < 0)
+			{
+				std::stringstream sent_s;
+				std::stringstream left_s;
+				sent_s << this->sent;
+				left_s << left;
+				delete []buffer;
+				file_s.close();
+				return false;
+			}
+			this->sent += chunk;
+			left -= chunk;
+			if (left < chunk_size)
+				chunk_size = left;
+		}
+		delete []buffer;
+		file_s.close();
+	}
+	if (this->fd > 0)
+		close(this->fd);
+	return true;
 }
 
-void Response::run()
+bool Response::run()
 {
 	char	buffer[80];
 
@@ -148,7 +195,7 @@ void Response::run()
 	this->setHeader("Date", buffer);
 	this->setHeader("Server", "Webserv42");
 	this->_build();
-	this->_send();
+	return this->_send();
 }
 
 void Response::build_ok(std::string statuscode)

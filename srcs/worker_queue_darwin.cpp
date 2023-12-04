@@ -20,11 +20,15 @@ void Worker::addSocketToQueue(int sock)
 	EV_SET(&evSet, sock, EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, NULL);
     if (kevent(this->queue, &evSet, 1, NULL, 0, NULL) < 0)
 	{
+		std::stringstream ss;
+		ss << sock;
 		throw std::runtime_error(
-			"Error adding connection socket to kqueue: " +
+			"Error adding EVFILT_READ for socket " +
+			ss.str() + "to kqueue: " +
 			std::string(strerror(errno))
 		);
 	}
+	this->log.INFO << "Added EVFILT_READ for socket " << sock;
 }
 
 void Worker::addResponseToQueue(Response *resp)
@@ -34,12 +38,33 @@ void Worker::addResponseToQueue(Response *resp)
 	EV_SET(&evSet, resp->getFd(), EVFILT_WRITE, EV_ADD | EV_CLEAR, 0, 0, resp);
     if (kevent(this->queue, &evSet, 1, NULL, 0, NULL) < 0)
 	{
+		std::stringstream ss;
+		ss << resp->getFd();
 		throw std::runtime_error(
-			"Error adding connection socket to kqueue: " +
+			"Error adding response connection socket " +
+			ss.str() + " to kqueue: " +
 			std::string(strerror(errno))
 		);
 	}
 	this->log.INFO << "Added response to file descriptor " <<  resp->getFd();
+}
+
+void Worker::listenWriteAvailable(int socket)
+{
+	struct kevent	evSet;
+
+	EV_SET(&evSet, socket, EVFILT_WRITE, EV_ADD | EV_CLEAR, 0, 0, NULL);
+    if (kevent(this->queue, &evSet, 1, NULL, 0, NULL) < 0)
+	{
+		std::stringstream ss;
+		ss << socket;
+		throw std::runtime_error(
+			"Error adding EVFILT_WRITE for socket " +
+			ss.str() + " to kqueue: " +
+			std::string(strerror(errno))
+		);
+	}
+	this->log.INFO << "Added EVFILT_WRITE for socket " << socket;
 }
 
 void Worker::deleteSocketFromQueue(int num_event)

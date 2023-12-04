@@ -305,7 +305,7 @@ void Route::handle_path(Request req, Response *resp)
 			return (this->handle_delete(full_path, *resp));
 	}
 	resp->build_error("404");
-	resp->run();
+	return resp->run();
 }
 
 void Route::handle_cgi(Response *resp, Request req)
@@ -367,14 +367,15 @@ void Route::configureCGI(Request &req, Response *resp, std::string &cgiPath, std
 		else
 		{
 			this->logger.ERROR << "CGI failed";
-			resp->build_error("500");
-			resp->run();
-			return ;
+			resp.build_error("500");
+			return resp.run();
 		}
 	}
+	resp.build_error("500");
+	return resp.run();
 }
 
-void Route::handle_redirection(Request req)
+bool Route::handle_redirection(Request req)
 {
 	Response resp(req.getFd());
 	std::cout << "redirecting to: " << this->redirect_url << "with code " << this->redirectStatusCode << std::endl;
@@ -382,10 +383,10 @@ void Route::handle_redirection(Request req)
 		resp.build_redirect(this->redirect_url, this->redirectStatusCode);
 	else
 		resp.build_redirect(this->redirect_url, "302");
-	resp.run();
+	return resp.run();
 }
 
-void Route::handle_dir_listing(Request req, std::string full_path)
+bool Route::handle_dir_listing(Request req, std::string full_path)
 {
 	Response resp(req.getFd());
 	DIR *dir;
@@ -397,8 +398,7 @@ void Route::handle_dir_listing(Request req, std::string full_path)
 	if (dir == NULL)
 	{
 		resp.build_error("404");
-		resp.run();
-		return ;
+		return resp.run();
 	}
 
 	better_string path = req.getUrl().getPath().substr(this->path.size(), req.getUrl().getPath().size());
@@ -444,8 +444,7 @@ void Route::handle_dir_listing(Request req, std::string full_path)
 	}
 	closedir(dir);
 	resp.build_dir_listing(full_path, dir_content);
-	resp.run();
-	return ;
+	return resp.run();
 }
 
 // Public
@@ -469,7 +468,7 @@ size_t Route::match(std::string path)
 	return 0;
 }
 
-void Route::handle_request(Request req, Response *resp)
+bool Route::handle_request(Request req, Response *resp)
 {
 	if (
 		this->allowed_methods.size() &&
@@ -481,15 +480,16 @@ void Route::handle_request(Request req, Response *resp)
 	)
 	{
 		resp->build_error("405");
-		resp->run();
-		return ;
+		return resp->run();
 	}
 	if (this->type == PATH_)
-		this->handle_path(req, resp);
+		return this->handle_path(req, resp);
 	else if (this->type == CGI_)
-		this->handle_cgi(resp, req);
+		return this->handle_cgi(*resp, req);
 	else if (this->type == REDIRECTION_)
-		this->handle_redirection(req);
+		return this->handle_redirection(req);
+	resp->build_error("500");
+	return resp->run();
 }
 
 void Route::printRoute()

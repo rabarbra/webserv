@@ -70,6 +70,13 @@ Connection &Connection::operator=(const Connection &other)
 	return *this;
 }
 
+// Setters
+
+void Connection::setResponse(Response *resp)
+{
+	this->pending_responses[resp->getFd()] = resp;
+}
+
 // Getters
 
 int Connection::getSocket() const
@@ -80,6 +87,11 @@ int Connection::getSocket() const
 Address Connection::getAddress() const
 {
 	return this->address;
+}
+
+Response *Connection::getResponse(int fd)
+{
+	return this->pending_responses[fd];
 }
 
 // Public
@@ -126,4 +138,15 @@ void Connection::handleRequest(Request req)
 		this->servers["default"].handle_request(req);
 	else
 		it->second.handle_request(req);
+}
+
+bool Connection::continueResponse(int fd)
+{
+	if (this->pending_responses[fd]->_send())
+	{
+		delete this->pending_responses[fd];
+		this->pending_responses.erase(fd);
+		return true;
+	}
+	return false;
 }

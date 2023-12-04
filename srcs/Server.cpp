@@ -204,12 +204,14 @@ void Server::handle_request(Request req)
 		{
 			resp->build_error("413");
 			resp->run();
+			delete resp;
 			return ;
 		}
 		else if (req.getUrl().getPath().find("..") != std::string::npos)
 		{
 			resp->build_error("403");
 			resp->run();
+			delete resp;
 			return ;
 		}
 		Route 		r;
@@ -221,22 +223,30 @@ void Server::handle_request(Request req)
 		{
 			resp->build_error("404");
 			resp->run();
+			delete resp;
 			return ;
 		}
-		r.handle_request(req, resp);
+		if (r.handle_request(req, resp))
+			delete resp;
+		else if (resp->getFd() > 0)
+			this->worker->sheduleResponse(resp);
+		else
+			delete resp;
+
 	}
 	catch(const std::exception& e)
 	{
 		better_string errors_msg(e.what());
-		if (!errors_msg.starts_with("Cannot send"))
-		{
+		//if (!errors_msg.starts_with("Cannot send"))
+		//{
 			resp->build_error("400");
 			resp->run();
-		}
-		else
-		{
-			this->worker->addResponseToQueue(resp);
-		}
+			delete resp;
+		//}
+		//else
+		//{
+		//	this->worker->sheduleResponse(resp);
+		//}
 		this->log.ERROR << errors_msg << '\n';
 	}
 }
