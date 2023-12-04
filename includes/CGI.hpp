@@ -34,5 +34,5 @@ class CGI
 
 char		*ft_getEnv(char **env);
 std::string	findExecutablePath(std::vector<std::string> paths, std::string handler);
-void		sendError(Request &req, Response &resp, std::string error, std::string error_message);
+void		sendError(Response &resp, std::string error, std::string error_message);
 #endif

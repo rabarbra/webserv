@@ -39,7 +39,6 @@ class Route
 		void						handle_dir_listing(Request req, std::string full_path);
 		std::string					build_absolute_path(Request req);
 		void						sendFile(std::string filename, Response &resp); 
-		void						sendError(Response &resp, std::string error, std::string error_message);
 	public:
 		Route();
 		~Route();

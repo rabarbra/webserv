@@ -233,7 +233,7 @@ std::string Route::build_absolute_path(Request req)
 		root.erase(root.size() - 1);
 	if (!root.size())
 		root = "html";
-	if (req_path.starts_with(this->path))
+	if (req_path.starts_with(this->path) && this->path != "/")
 		req_path.erase(0, this->path.size());
 	return root + req_path;
 }
@@ -262,13 +262,6 @@ void Route::sendFile(std::string filename, Response &resp)
 	std::string	body(buffer, size);
 	delete []buffer;
 	resp.setBody(body);
-	resp.run();
-}
-
-void Route::sendError(Response &resp, std::string error, std::string error_message)
-{
-	std::cerr << "[ERROR] "  << error_message << std::endl;
-	resp.build_error(error);
 	resp.run();
 }
 
@@ -522,10 +515,10 @@ int Route::child_process(Response &resp, int *sv, std::string full_path)
 	dup2(sv[1], 1);
 	close(sv[1]);
 	if (chdir(this->root_directory.c_str()) == -1)
-		return(this->sendError(resp, "503", "chdir failed"), -1);
+		return(sendError(resp, "503", "chdir failed"), -1);
 	char **args = this->cgi->getArgs(full_path);
 	if (execve(args[0], args, this->cgi->getEnv()) == -1)
-		return(this->sendError(resp, "503", "execve failed"), -1);
+		return(sendError(resp, "503", "execve failed"), -1);
 	return 0;
 }
 
