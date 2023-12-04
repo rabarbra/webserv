@@ -127,6 +127,7 @@ void Response::build_ok(std::string statuscode)
 	StatusCodes		status;
 	this->setStatusCode(statuscode);
 	this->setReason(status.getDescription(statuscode));
+	this->setBody("");
 }
 
 void Response::build_error(std::string status_code)

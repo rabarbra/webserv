@@ -281,19 +281,9 @@ void Route::handle_delete(Request &req, Response &resp)
 	{
 		if (S_ISDIR(st.st_mode))
 		{
-			if (access(full_path.c_str(), R_OK) == 0 && access(full_path.c_str(), W_OK) == 0)
-			{
-				if (std::remove(full_path.c_str()) != 0)
-					return (sendError(req, resp, "500", "remove failed"));
-				resp.build_error("200");
-				resp.run(req.getFd());
-				return ;
-			}
-			else {
-				resp.build_error("403");
-				resp.run(req.getFd());
-				return ;
-			}
+			resp.build_error("403");
+			resp.run(req.getFd());
+			return ;
 		}
 		else if (S_ISREG(st.st_mode))
 		{
@@ -308,7 +298,7 @@ void Route::handle_delete(Request &req, Response &resp)
 			{
 				if (std::remove(full_path.c_str()) != 0)
 					return (sendError(req, resp, "500", "remove failed"));
-				resp.build_error("200");
+				resp.build_ok("200");
 				resp.run(req.getFd());
 				return ;
 			}
@@ -361,18 +351,110 @@ void Route::handle_path(Request req)
 	resp.run(req.getFd());
 }
 
-void Route::configureCGI(Request &req, Response &resp, int *sv, std::string full_path)
+//void Route::configureCGI(Request &req, Response &resp, int *sv, std::string full_path)
+//{
+//	pid_t pid;
+//
+//	this->cgi->createEnv(req, this->root_directory);
+//	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == -1)
+//		return(sendError(req, resp, "501", "socketpair failed"));
+//	if ((pid = fork()) == -1)
+//		return(sendError(req, resp, "502", "fork failed"));
+//	if (pid == 0)
+//	{
+//		if (this->cgi->execute(req, resp, sv, full_path) == -1 && access(full_path.c_str(), R_OK) == 0)
+//			return (sendError(req, resp, "500", "child_process failed"));
+//	}
+//	else
+//	{
+//		close(sv[1]);
+//		char buffer[1024];
+//		int bytes_read;
+//		std::string body;
+//		while ((bytes_read = read(sv[0], buffer, 1024)) > 0)
+//		{
+//			body += std::string(buffer, bytes_read);
+//			bzero(buffer, 1024);
+//		}
+//		close(sv[0]);
+//		int status;
+//		waitpid(pid, &status, 0);
+//		if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+//		{
+//			resp.setBody(body);
+//			resp.run(req.getFd());
+//			return ;
+//		}
+//		else
+//		{
+//			this->logger.ERROR << "CGI failed";
+//			resp.build_error("500");
+//			resp.run(req.getFd());
+//			return ;
+//		}
+//	}
+//}
+
+void Route::handle_cgi(Request req)
+{
+	std::string cgiPath = this->root_directory;
+	std::string req_path = req.getPath().substr(this->path.size() + 1, req.getPath().size());
+	std::string token;
+	std::stringstream ss;
+	Response resp;
+	ss << req_path;
+	while (std::getline(ss, token, '/')) {
+			cgiPath +=  "/" + token;
+			struct stat st;
+			std::cout << "cgiPath: " << cgiPath << std::endl;
+			std::cout << "absolute path: " << this->build_absolute_path(req) << std::endl;
+			if (stat(cgiPath.c_str(), &st) == 0)
+			{
+				if (S_ISDIR(st.st_mode) && (cgiPath + "/") == this->build_absolute_path(req))
+				{
+					if (this->dir_listing)
+					{
+						this->handle_dir_listing(req, cgiPath);
+						return;
+					}
+					return (sendError(req, resp, "403", "access_failed"));
+				}
+				else if (S_ISDIR(st.st_mode))
+					continue;
+				else if (S_ISREG(st.st_mode))
+				{
+					if (this->cgi->getHandler()[0] == "$self") 
+					{
+						if (access(cgiPath.c_str(), X_OK) == 0)
+							return (this->configureCGI(req, resp, cgiPath, req_path));
+						else
+							return (sendError(req, resp, "403", "access_failed"));
+					}
+					else {
+						if (access(cgiPath.c_str(), R_OK) == 0)
+							return (this->configureCGI(req, resp, cgiPath, req_path));
+						else
+							return (sendError(req, resp, "403", "access_failed"));
+					}
+				}
+			}
+
+	}
+}
+
+void Route::configureCGI(Request &req, Response &resp, std::string &cgiPath, std::string &req_path)
 {
 	pid_t pid;
+	int sv[2];
 
-	this->cgi->createEnv(req, this->root_directory);
+	this->cgi->createEnv(req, this->root_directory, cgiPath, req_path);
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == -1)
 		return(sendError(req, resp, "501", "socketpair failed"));
 	if ((pid = fork()) == -1)
 		return(sendError(req, resp, "502", "fork failed"));
 	if (pid == 0)
 	{
-		if (this->cgi->execute(req, resp, sv, full_path) == -1 && access(full_path.c_str(), R_OK) == 0)
+		if (this->cgi->execute(req, resp, sv, cgiPath) == -1)
 			return (sendError(req, resp, "500", "child_process failed"));
 	}
 	else
@@ -405,58 +487,59 @@ void Route::configureCGI(Request &req, Response &resp, int *sv, std::string full
 	}
 }
 
-void Route::handle_cgi(Request req)
-{
-	int sv[2];
-	Response resp;
-	better_string	req_path(req.getPath());
-	std::string full_path = this->build_absolute_path(req);
-	struct stat st;
-	if (stat(full_path.c_str(), &st) == 0 )
-	{
-		if (full_path[full_path.size() - 1] == '/' && S_ISDIR(st.st_mode))
-		{
-			if (this->dir_listing)
-			{
-				this->handle_dir_listing(req, full_path);
-				return;
-			}
-			full_path += this->index;
-			this->sendFile(full_path, resp, req.getFd());
-			return;
-
-		}
-		else if (S_ISDIR(st.st_mode))
-		{
-			MimeTypes mime;
-			full_path += "/" + this->index;
-			if (access(full_path.c_str(), F_OK) == -1)
-			{
-				resp.build_error("404");
-				resp.run(req.getFd());
-				return ;
-			}
-			if (mime.isMimeTypeValid(full_path))
-			{
-				this->sendFile(full_path, resp, req.getFd());
-				return;
-			}
-			return (this->configureCGI(req, resp, sv, full_path));
-		}	
-		else if (S_ISREG(st.st_mode))	
-		{
-			MimeTypes mime;
-			if (mime.isMimeTypeValid(full_path))
-			{
-				this->sendFile(full_path, resp, req.getFd());
-				return;
-			}
-			return (this->configureCGI(req, resp, sv, full_path));
-		}
-	}
-	resp.build_error("404");
-	resp.run(req.getFd());
-}
+//void Route::handle_cgi(Request req)
+////{
+//	int sv[2];
+//	Response resp;
+//	better_string	req_path(req.getPath());
+//	std::string full_path = this->build_absolute_path(req);
+//	struct stat st;
+//	if (stat(full_path.c_str(), &st) == 0 )
+//	{
+//		if (full_path[full_path.size() - 1] == '/' && S_ISDIR(st.st_mode))
+//		{
+//			if (this->dir_listing)
+//			{
+//				this->handle_dir_listing(req, full_path);
+//				return;
+//			}
+//			full_path += this->index;
+//			this->sendFile(full_path, resp, req.getFd());
+//			return;
+//
+//		}
+//	}
+//		else if (S_ISDIR(st.st_mode))
+//		{
+//			MimeTypes mime;
+//			full_path += "/" + this->index;
+//			if (access(full_path.c_str(), F_OK) == -1)
+//			{
+//				resp.build_error("404");
+//				resp.run(req.getFd());
+//				return ;
+//			}
+//			if (mime.isMimeTypeValid(full_path))
+//			{
+//				this->sendFile(full_path, resp, req.getFd());
+//				return;
+//			}
+//			return (this->configureCGI(req, resp, sv, full_path));
+//		}	
+//		else if (S_ISREG(st.st_mode))	
+//		{
+//			MimeTypes mime;
+//			if (mime.isMimeTypeValid(full_path))
+//			{
+//				this->sendFile(full_path, resp, req.getFd());
+//				return;
+//			}
+//			return (this->configureCGI(req, resp, sv, full_path));
+//		}
+//	}
+//	resp.build_error("404");
+//	resp.run(req.getFd());
+//}
 
 void Route::handle_redirection(Request req)
 {
@@ -485,7 +568,9 @@ void Route::handle_dir_listing(Request req, std::string full_path)
 		resp.run(req.getFd());
 		return ;
 	}
-	dir_content += ("<script>start(\"" + req.getPath() + "\");</script>\n");
+
+	better_string path = req.getPath().substr(this->path.size(), req.getPath().size());
+	dir_content += ("<script>start(\"" + path + "\");</script>\n");
 	better_string route_path(this->getPath());
 	if (!route_path.ends_with("/"))
 		route_path += "/";

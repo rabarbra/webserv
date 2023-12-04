@@ -22,23 +22,27 @@ char **CGI::getEnv()
 	return this->env;
 }
 #include <string>
-void CGI::createEnv(Request &req, std::string root_directory)
+void CGI::createEnv(Request &req, std::string root_directory, std::string cgiPath, std::string req_path)
 {
-	(void)req;
+	(void)root_directory;
+	std::cout << "cgiPath: " << cgiPath << std::endl;
+	std::cout << "req_path: " << req_path << std::endl;
 	std::vector<std::string> envp;
 	int i = -1;
-	std::string PATH_INFO = req.getPath();
-	std::string SCRIPT_NAME = req.getPath();
-	std::string SCRIPT_FILENAME = root_directory + req.getPath();
+	std::string SCRIPT_NAME = "/" + cgiPath.substr(cgiPath.find_last_of('/') + 1);
+	std::string PATH_INFO = req_path.substr(req_path.find(SCRIPT_NAME) + SCRIPT_NAME.size());
+	std::string PATH_TRANSLATED = cgiPath.substr(0, cgiPath.find_last_of("/") + 1) + req_path.substr(req_path.find(SCRIPT_NAME) + SCRIPT_NAME.size() + 1);
 	envp.push_back("GATEWAY_INTERFACE=CGI/1.1");
+	envp.push_back("REDIRECT_STATUS=200");
+	envp.push_back("REDIRECT_URI=" + req_path.substr(req_path.find(SCRIPT_NAME)));
+	envp.push_back("DOCUMENT_ROOT=" + cgiPath.substr(0, cgiPath.find_last_of('/')));
 	envp.push_back("SERVER_NAME=webserv");
 	envp.push_back("SERVER_PORT=" + req.getPort());
 	envp.push_back("SERVER_PROTOCOL=HTTP/1.1");
 	envp.push_back("SERVER_SOFTWARE=webserv 1.0");
 	envp.push_back("SCRIPT_NAME=" + SCRIPT_NAME);
 	envp.push_back("PATH_INFO=" + PATH_INFO);
-	envp.push_back("PATH_TRANSLATED=");
-	envp.push_back("SCRIPT_FILENAME=" + SCRIPT_FILENAME);
+	envp.push_back("PATH_TRANSLATED=" + PATH_TRANSLATED);
 	envp.push_back("QUERY_STRING=" + req.getQuery());
 	envp.push_back("REQUEST_METHOD=" + req.getMethodString());
 	envp.push_back("AUTH_TYPE=Basic");

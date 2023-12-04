@@ -72,7 +72,7 @@ class Route
 		void						handle_request(Request req);
 		size_t						match(std::string path);
 		int						child_process(Request &req, Response &resp, int *fd, std::string full_path);
-		void						configureCGI(Request &req, Response &resp, int *sv,  std::string full_path);
+		void 						configureCGI(Request &req, Response &resp, std::string &cgiPath, std::string &req_path);
 };
 
 std::string	convertSize(size_t size);
