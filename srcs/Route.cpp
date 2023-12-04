@@ -524,10 +524,10 @@ int Route::child_process(Request &req, Response &resp, int *sv, std::string full
 	dup2(sv[1], 1);
 	close(sv[1]);
 	if (chdir(this->root_directory.c_str()) == -1)
-		return(this->sendError(req, resp, "503", "chdir failed"), -1);
+		return(sendError(req, resp, "503", "chdir failed"), -1);
 	char **args = this->cgi->getArgs(full_path);
 	if (execve(args[0], args, this->cgi->getEnv()) == -1)
-		return(this->sendError(req, resp, "503", "execve failed"), -1);
+		return(sendError(req, resp, "503", "execve failed"), -1);
 	return 0;
 }
 
