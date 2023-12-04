@@ -13,3 +13,6 @@ YoupiBanane
 a.out
 test*
 *.drawio
+example/venv/
+*.pyc
+__pycache__

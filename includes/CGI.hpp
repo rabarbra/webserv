@@ -1,6 +1,7 @@
 #ifndef CGI_HPP
 # define CGI_HPP
 # include <vector>
+# include <unistd.h>
 # include "better_string.hpp"
 # include "Request.hpp"
 class CGI
@@ -11,7 +12,7 @@ class CGI
 		std::vector<std::string>				paths;
 		std::string						executablePath;
 	public:
-		void							createEnv(Request &req, std::string root_directory);
+		void							createEnv(Request &req, std::string root_directory, std::string cgiPath, std::string req_path);
 		CGI();
 		CGI(std::vector<std::string> handler, char **env);
 		CGI(const CGI &copy);
@@ -28,9 +29,10 @@ class CGI
 		std::string						getExecutablePath(std::string full_path);
 		char							**getArgs(std::string full_path);
 		// Public
-		void							execute(std::string path);
+		int 							execute(Request &req, Response &resp, int *sv, std::string full_path);
 };
 
-char *ft_getEnv(char **env);
-std::string findExecutablePath(std::vector<std::string> paths, std::string handler);
+char		*ft_getEnv(char **env);
+std::string	findExecutablePath(std::vector<std::string> paths, std::string handler);
+void		sendError(Request &req, Response &resp, std::string error, std::string error_message);
 #endif
