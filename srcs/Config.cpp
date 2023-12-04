@@ -39,6 +39,12 @@ void Config::setEnv(char **env)
 	this->env = env;
 }
 
+void Config::setWorker(Worker *worker)
+{
+	for (size_t i = 0; i < this->servers.size(); i++)
+		this->servers[i].setWorker(worker);
+}
+
 // Private
 
 std::string createFile(std::ifstream &conf)

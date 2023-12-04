@@ -10,7 +10,8 @@ INC_DIR =		includes
 
 SRC =			main Worker Server Connection Route Request Response \
 				worker_queue_darwin worker_queue_linux better_string \
-				ParseUtils cgi StatusCodes MimeTypes Config Method
+				ParseUtils cgi StatusCodes MimeTypes Config Method \
+				Address
 OBJ =			$(addprefix $(OBJ_DIR)/, $(addsuffix .o, $(SRC)))
 
 LIBLOGGING =	liblogging
