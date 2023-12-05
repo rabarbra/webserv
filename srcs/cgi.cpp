@@ -167,9 +167,16 @@ int CGI::execute(Request &req, Response &resp, int *sv, std::string full_path)
 	if (req.getBody().size())
 		write(1, req.getBody().c_str(), req.getBody().size());
 	if (chdir(dir.c_str()) == -1)
-		return(sendError(req, resp, "503", "chdir failed"), -1);
+		return(sendError(resp, "503", "chdir failed"), -1);
 	char **args = this->getArgs(full_path);
 	if (execve(args[0], args, this->getEnv()) == -1)
-		return(sendError(req, resp, "503", "execve failed"), -1);
+		return(sendError(resp, "503", "execve failed"), -1);
 	return 0;
+}
+
+void sendError(Response &resp, std::string error, std::string error_message)
+{
+	std::cerr << "[ERROR] "  << error_message << std::endl;
+	resp.build_error(error);
+	resp.run();
 }
