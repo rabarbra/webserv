@@ -1,4 +1,5 @@
 #include "../includes/CGI.hpp"
+#include <cstdio>
 #include <set>
 #include <sstream>
  
@@ -30,6 +31,7 @@ void CGI::createEnv(Request &req, std::string absolute_path, std::string cgiPath
 	std::string SCRIPT_NAME;
 	std::string PATH_INFO;
 	std::string PATH_TRANSLATED;
+	std::string SCRIPT_FILENAME;
 	pos = req_path.find_first_of('/');
 	if (pos != std::string::npos)
 		SCRIPT_NAME = "/" + req_path.substr(0, pos);
@@ -47,14 +49,16 @@ void CGI::createEnv(Request &req, std::string absolute_path, std::string cgiPath
 	pos = absolute_path.find(SCRIPT_NAME);
 	if (pos != std::string::npos)
 		PATH_TRANSLATED = absolute_path.erase(pos, SCRIPT_NAME.size());
-	envp.push_back("GATEWAY_INTERFACE=CGI/1.1");
-	envp.push_back("REDIRECT_STATUS=200");
-	envp.push_back(("REQUEST_URI=/" + req_path));
 	pos = cgiPath.find_last_of('/');
 	if (pos != std::string::npos)
 		envp.push_back("DOCUMENT_ROOT=" + cgiPath.substr(0, cgiPath.find_last_of('/')));
 	else
 		envp.push_back("DOCUMENT_ROOT=/");
+	SCRIPT_NAME = absolute_path.erase(0, absolute_path.find(SCRIPT_NAME) + SCRIPT_NAME.size());
+	envp.push_back("SCRIPT_FILENAME=" + SCRIPT_FILENAME);
+	envp.push_back("GATEWAY_INTERFACE=CGI/1.1");
+	envp.push_back("REDIRECT_STATUS=200");
+	envp.push_back(("REQUEST_URI=/" + req_path));
 	envp.push_back("SERVER_NAME=webserv");
 	envp.push_back("SERVER_PORT=" + req.getPort());
 	envp.push_back("SERVER_PROTOCOL=HTTP/1.1");
@@ -194,7 +198,7 @@ int CGI::execute(Request &req, Response &resp, int *sv, std::string full_path)
 		return(sendError(resp, "503", "chdir failed"), -1);
 	char **args = this->getArgs(full_path);
 	if (execve(args[0], args, this->getEnv()) == -1)
-		return(sendError(resp, "503", "execve failed"), -1);
+		return(sendError(resp, "503", "execve failed " + std::string(strerror(errno))), -1);
 	return 0;
 }
 
