@@ -195,8 +195,8 @@ void Server::handle_request(Request req)
 {
 	Response	*resp = new Response(req.getFd());
 	resp->setErrorPages(this->getErrorPages());
-	try
-	{
+//	try
+//	{
 		if (
 			this->max_body_size >= 0 &&
 			req.getBody().size() > static_cast<size_t>(this->max_body_size)	
@@ -224,19 +224,19 @@ void Server::handle_request(Request req)
 			return ;
 		}
 		r.handle_request(req, resp);
-	}
-	catch(const std::exception& e)
-	{
-		better_string errors_msg(e.what());
-		if (!errors_msg.starts_with("Cannot send"))
-		{
-			resp->build_error("400");
-			resp->run();
-		}
-		else
-		{
-			this->worker->addResponseToQueue(resp);
-		}
-		this->log.ERROR << errors_msg << '\n';
-	}
+//	}
+//	catch(const std::exception& e)
+//	{
+//		better_string errors_msg(e.what());
+//		if (!errors_msg.starts_with("Cannot send"))
+//		{
+//			resp->build_error("400");
+//			resp->run();
+//		}
+//		else
+//		{
+//			this->worker->addResponseToQueue(resp);
+//		}
+//		this->log.ERROR << errors_msg << '\n';
+//	}
 }

@@ -115,7 +115,7 @@ void Response::_send()
 	left = this->_plain.size() - this->sent;
 	if (left < chunk_size)
 		chunk_size = left;
-	while (this->sent < this->_plain.size())
+	while (this->_plain.size() && this->sent < this->_plain.size())
 	{
 		chunk = send(this->fd, this->_plain.c_str() + this->sent, chunk_size, SEND_FLAGS);
 		if (chunk < 0)
@@ -285,8 +285,6 @@ void Response::build_cgi_response(std::string response)
 //		this->body += key;
 //		this->body += "\n";
 //	}
-	std::cout << "repsonse: " << new_response << std::endl;
 	new_response.find_and_replace("Status:", this->httpVersion);
 	this->_plain = new_response;
-	std::cout << "plain: " << this->_plain << std::endl;
 }

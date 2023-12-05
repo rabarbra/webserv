@@ -12,7 +12,7 @@ class CGI
 		std::vector<std::string>				paths;
 		std::string						executablePath;
 	public:
-		void							createEnv(Request &req, std::string root_directory, std::string cgiPath, std::string req_path);
+		void							createEnv(Request &req, std::string absolute_path, std::string cgiPath, std::string req_path);
 		CGI();
 		CGI(std::vector<std::string> handler, char **env);
 		CGI(const CGI &copy);

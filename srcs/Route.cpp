@@ -345,15 +345,21 @@ void Route::handle_path(Request req, Response *resp)
 void Route::handle_cgi(Response &resp, Request req)
 {
 	std::string cgiPath = this->root_directory;
-	std::string req_path = req.getPath().substr(this->path.size() + 1, req.getPath().size());
+	std::string req_path = this->build_absolute_path(req);
+	if (req_path[req_path.size() - 1] != '/')
+		req_path += "/";
+	req_path.erase(0, this->root_directory.size());
+	std::cout << "req_path: " << req_path << std::endl;
+	std::cout << "root_directory: " << this->root_directory << std::endl;
+	if (req_path[0] == '/')
+		req_path.erase(0, 1);
+	std::cout << "req_path: " << req_path << std::endl;
 	std::string token;
 	std::stringstream ss;
 	ss << req_path;
 	while (std::getline(ss, token, '/')) {
 			cgiPath +=  "/" + token;
 			struct stat st;
-			std::cout << "cgiPath: " << cgiPath << std::endl;
-			std::cout << "absolute path: " << this->build_absolute_path(req) << std::endl;
 			if (stat(cgiPath.c_str(), &st) == 0)
 			{
 				if (S_ISDIR(st.st_mode) && (cgiPath + "/") == this->build_absolute_path(req))
@@ -372,7 +378,6 @@ void Route::handle_cgi(Response &resp, Request req)
 						this->handle_dir_listing(req, cgiPath);
 						return;
 					}
-					return (sendError(resp, "403", "access_failed"));
 				}
 				else if (S_ISREG(st.st_mode))
 				{
@@ -393,6 +398,11 @@ void Route::handle_cgi(Response &resp, Request req)
 			}
 
 	}
+	if (this->dir_listing)
+	{
+		this->handle_dir_listing(req, cgiPath + "/");
+		return;
+	}
 }
 
 void Route::configureCGI(Request &req, Response &resp, std::string &cgiPath, std::string &req_path)
@@ -400,7 +410,7 @@ void Route::configureCGI(Request &req, Response &resp, std::string &cgiPath, std
 	pid_t pid;
 	int sv[2];
 
-	this->cgi->createEnv(req, this->root_directory, cgiPath, req_path);
+	this->cgi->createEnv(req, this->build_absolute_path(req), cgiPath, req_path);
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == -1)
 		return(sendError(resp, "501", "socketpair failed"));
 	if ((pid = fork()) == -1)

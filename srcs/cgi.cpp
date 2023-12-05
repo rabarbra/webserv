@@ -22,18 +22,39 @@ char **CGI::getEnv()
 	return this->env;
 }
 #include <string>
-void CGI::createEnv(Request &req, std::string root_directory, std::string cgiPath, std::string req_path)
+void CGI::createEnv(Request &req, std::string absolute_path, std::string cgiPath, std::string req_path)
 {
-	(void)root_directory;
 	std::vector<std::string> envp;
 	int i = -1;
-	std::string SCRIPT_NAME = "/" + cgiPath.substr(cgiPath.find_last_of('/') + 1);
-	std::string PATH_INFO = req_path.substr(req_path.find(SCRIPT_NAME) + SCRIPT_NAME.size());
-	std::string PATH_TRANSLATED = cgiPath.substr(0, cgiPath.find_last_of("/") + 1) + req_path.substr(req_path.find(SCRIPT_NAME) + SCRIPT_NAME.size() + 1);
+	size_t pos;
+	std::string SCRIPT_NAME;
+	std::string PATH_INFO;
+	std::string PATH_TRANSLATED;
+	pos = req_path.find_first_of('/');
+	if (pos != std::string::npos)
+		SCRIPT_NAME = "/" + req_path.substr(0, pos);
+	else
+	 	SCRIPT_NAME = "/" + req_path;
+	pos = req_path.find(SCRIPT_NAME);
+	if (pos + SCRIPT_NAME.size() < req_path.size())
+	{
+		PATH_INFO = req_path.substr(req_path.find(SCRIPT_NAME) + SCRIPT_NAME.size());
+		if (PATH_INFO[PATH_INFO.size() - 1] == '/')
+			PATH_INFO.erase(PATH_INFO.size() - 1);
+	}
+	else
+	 	PATH_INFO = "/";
+	pos = absolute_path.find(SCRIPT_NAME);
+	if (pos != std::string::npos)
+		PATH_TRANSLATED = absolute_path.erase(pos, SCRIPT_NAME.size());
 	envp.push_back("GATEWAY_INTERFACE=CGI/1.1");
 	envp.push_back("REDIRECT_STATUS=200");
-	envp.push_back("REDIRECT_URI=" + req_path.substr(req_path.find(SCRIPT_NAME)));
-	envp.push_back("DOCUMENT_ROOT=" + cgiPath.substr(0, cgiPath.find_last_of('/')));
+	envp.push_back(("REQUEST_URI=/" + req_path));
+	pos = cgiPath.find_last_of('/');
+	if (pos != std::string::npos)
+		envp.push_back("DOCUMENT_ROOT=" + cgiPath.substr(0, cgiPath.find_last_of('/')));
+	else
+		envp.push_back("DOCUMENT_ROOT=/");
 	envp.push_back("SERVER_NAME=webserv");
 	envp.push_back("SERVER_PORT=" + req.getPort());
 	envp.push_back("SERVER_PROTOCOL=HTTP/1.1");
@@ -112,7 +133,6 @@ void	CGI::setPaths(char *path)
 		if (token[token.length() - 1] == '/')
 			token.erase(token.length() - 1);
 		this->paths.push_back(token);
-		std::cout << "path: " << token << std::endl;
 	}
 }
 
@@ -146,7 +166,10 @@ char **CGI::getArgs(std::string full_path)
 void CGI::setExecutablePath()
 {
 	if (this->handler[0].compare("$self") == 0)
+	{
+		std::cout << "Executable path: " << this->handler[0] << std::endl;
 		return;
+	}
 	if (this->handler[0][0] != '/')
 	{
 		this->executablePath = findExecutablePath(this->paths, this->handler[0]);
@@ -154,6 +177,7 @@ void CGI::setExecutablePath()
 	}
 	else
 		this->executablePath = handler[0];
+	std::cout << "Executable path: " << this->executablePath << std::endl;
 }
 
 // Public
