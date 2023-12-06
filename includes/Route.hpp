@@ -32,13 +32,13 @@ class Route
 		Logger						logger;
 		char						**ev;
 		// Private
-		void						handle_delete(Request &req, Response &resp);
+void								handle_delete(std::string full_path, Response &resp);
 		void						handle_path(Request req, Response *resp);
 		void						handle_cgi(Response &resp, Request req);
 		void						handle_redirection(Request req);
 		void						handle_dir_listing(Request req, std::string full_path);
 		std::string					build_absolute_path(Request req);
-		void						sendFile(std::string filename, Response &resp); 
+
 	public:
 		Route();
 		~Route();
@@ -57,6 +57,7 @@ class Route
 		void						setCGI(CGI *cgi);
 		void						setAllowedMethod(Method method);
 		void						setFileExtensions(std::string &allowed_methods);
+		void						setCGIExt(std::string cgi_ext);
 		// Getters
 		std::string					getRootDir() const;
 		bool						getDirListing() const;
@@ -67,11 +68,11 @@ class Route
 		std::string					getStaticDir() const;
 		char						**getEv() const;
 		CGI							*getCGI() const;
+		std::string					getCGIExt() const;
 		// Public
 		void						printRoute();
 		void						handle_request(Request req, Response *resp);
 		size_t						match(std::string path);
-		int							child_process(Response &resp, int *fd, std::string full_path);
 		void 						configureCGI(Request &req, Response &resp, std::string &cgiPath, std::string &req_path);
 };
 

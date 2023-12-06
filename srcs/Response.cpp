@@ -263,28 +263,8 @@ void Response::build_redirect(std::string location, std::string status_code)
 void Response::build_cgi_response(std::string response)
 {
 	better_string new_response(response);
-//	std::stringstream ss(response);
-//	better_string key;
-//	better_string value;
-//	std::getline(ss, key);
-//	std::getline(ss, value);
-//	value.trim();
-//	std::cout << "value: " << value << std::endl;
-//	this->setStatusCode(value);
-//	while (std::getline(ss, key, ':') && key != "\r\n")
-//	{
-//		std::getline(ss, value);
-//		key.trim();
-//		value.trim();
-//		std::cout << "key: " << key << " value: " << value <<std::endl;
-//		this->setHeader(key, value);
-//	}
-//	std::cout << "Body" << std::endl;
-//	while (std::getline(ss, key, '\n'))
-//	{
-//		this->body += key;
-//		this->body += "\n";
-//	}
+	if (!new_response.starts_with("Status:"))
+		new_response = "Status: 200 OK\r\n" + new_response;
 	new_response.find_and_replace("Status:", this->httpVersion);
 	this->_plain = new_response;
 }

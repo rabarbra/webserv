@@ -18,81 +18,80 @@ CGI::~CGI()
 {
 }
 
-char **CGI::getEnv()
-{
-	return this->env;
-}
-#include <string>
 void CGI::createEnv(Request &req, std::string absolute_path, std::string cgiPath, std::string req_path)
 {
-	std::vector<std::string> envp;
-	int i = -1;
-	size_t pos;
-	std::string SCRIPT_NAME;
-	std::string PATH_INFO;
-	std::string PATH_TRANSLATED;
-	std::string SCRIPT_FILENAME;
-	pos = req_path.find_first_of('/');
-	if (pos != std::string::npos)
-		SCRIPT_NAME = "/" + req_path.substr(0, pos);
-	else
-	 	SCRIPT_NAME = "/" + req_path;
-	pos = req_path.find(SCRIPT_NAME);
-	if (pos + SCRIPT_NAME.size() < req_path.size())
-	{
-		PATH_INFO = req_path.substr(req_path.find(SCRIPT_NAME) + SCRIPT_NAME.size());
-		if (PATH_INFO[PATH_INFO.size() - 1] == '/')
-			PATH_INFO.erase(PATH_INFO.size() - 1);
-	}
-	else
-	 	PATH_INFO = "/";
-	pos = absolute_path.find(SCRIPT_NAME);
-	if (pos != std::string::npos)
-		PATH_TRANSLATED = absolute_path.erase(pos, SCRIPT_NAME.size());
-	pos = cgiPath.find_last_of('/');
-	if (pos != std::string::npos)
-		envp.push_back("DOCUMENT_ROOT=" + cgiPath.substr(0, cgiPath.find_last_of('/')));
-	else
-		envp.push_back("DOCUMENT_ROOT=/");
-	SCRIPT_NAME = absolute_path.erase(0, absolute_path.find(SCRIPT_NAME) + SCRIPT_NAME.size());
-	envp.push_back("SCRIPT_FILENAME=" + SCRIPT_FILENAME);
-	envp.push_back("GATEWAY_INTERFACE=CGI/1.1");
-	envp.push_back("REDIRECT_STATUS=200");
-	envp.push_back(("REQUEST_URI=/" + req_path));
-	envp.push_back("SERVER_NAME=webserv");
-	envp.push_back("SERVER_PORT=" + req.getPort());
-	envp.push_back("SERVER_PROTOCOL=HTTP/1.1");
-	envp.push_back("SERVER_SOFTWARE=webserv 1.0");
-	envp.push_back("SCRIPT_NAME=" + SCRIPT_NAME);
-	envp.push_back("PATH_INFO=" + PATH_INFO);
-	envp.push_back("PATH_TRANSLATED=" + PATH_TRANSLATED);
-	envp.push_back("QUERY_STRING=" + req.getQuery());
-	envp.push_back("REQUEST_METHOD=" + req.getMethodString());
-	envp.push_back("AUTH_TYPE=Basic");
-	envp.push_back("GATEWAY_INTERFACE=CGI/1.1");
-	std::stringstream ss;
-    	ss << req.getBody().size();
-    	std::string result = ss.str();
-	envp.push_back("CONTENT_LENGTH=" + result);
-	std::map<std::string, std::string> headers = req.getHeaders();
-	for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
-	{
-		std::string key = it->first;
-		if (key.compare("Content-Type"))
-			key = "HTTP_" + key;
-		std::transform(key.begin(), key.end(), key.begin(), ::toupper);
-		std::replace(key.begin(), key.end(), '-', '_');
-		std::string header = key + "=" + it->second;
-		envp.push_back(header);
-	}
-	char **ev = new char*[envp.size() + 1];
-	while (++i < (int)envp.size())
-	{
-		ev[i] = new char[envp[i].size() + 1];
-		std::strcpy(ev[i], envp[i].c_str());
-	}
-	ev[i] = NULL;
-	this->setEnv(ev);
+        std::vector<std::string> envp;
+        int i = -1;
+        size_t pos;
+        std::string SCRIPT_NAME;
+        std::string PATH_INFO;
+        std::string PATH_TRANSLATED;
+        std::string SCRIPT_FILENAME;
+        std::string DOCUMENT_ROOT;
+        pos = req_path.find_first_of('/');
+        if (pos != std::string::npos)
+                SCRIPT_NAME = "/" + req_path.substr(0, pos);
+        else
+                SCRIPT_NAME = "/" + req_path;
+        pos = req_path.find(SCRIPT_NAME);
+        if (pos + SCRIPT_NAME.size() < req_path.size())
+        {
+                PATH_INFO = req_path.substr(req_path.find(SCRIPT_NAME) + SCRIPT_NAME.size());
+                if (PATH_INFO[PATH_INFO.size() - 1] == '/')
+                        PATH_INFO.erase(PATH_INFO.size() - 1);
+        }
+        else
+                PATH_INFO = "/";
+        pos = absolute_path.find(SCRIPT_NAME);
+        if (pos != std::string::npos)
+                PATH_TRANSLATED = absolute_path.erase(pos, SCRIPT_NAME.size());
+        pos = cgiPath.find_last_of('/');
+        if (pos != std::string::npos)
+                DOCUMENT_ROOT = cgiPath.substr(0, cgiPath.find_last_of('/'));
+        else
+                DOCUMENT_ROOT = "/";
+        envp.push_back("DOCUMENT_ROOT=" + DOCUMENT_ROOT);
+        if (DOCUMENT_ROOT[DOCUMENT_ROOT.size() - 1] == '/')
+                DOCUMENT_ROOT.erase(DOCUMENT_ROOT.size() - 1, 1); 
+        SCRIPT_FILENAME = DOCUMENT_ROOT + SCRIPT_NAME; 
+        envp.push_back("SCRIPT_FILENAME=" + SCRIPT_FILENAME);
+        envp.push_back("GATEWAY_INTERFACE=CGI/1.1");
+        envp.push_back("REDIRECT_STATUS=200");
+        envp.push_back(("REQUEST_URI=/" + req_path));
+        envp.push_back("SERVER_NAME=webserv");
+        envp.push_back("SERVER_PORT=" + req.getUrl().getPort());
+        envp.push_back("SERVER_PROTOCOL=HTTP/1.1");
+        envp.push_back("SERVER_SOFTWARE=webserv 1.0");
+        envp.push_back("SCRIPT_NAME=" + SCRIPT_NAME);
+        envp.push_back("PATH_INFO=" + PATH_INFO);
+        envp.push_back("PATH_TRANSLATED=" + PATH_TRANSLATED);
+        envp.push_back("QUERY_STRING=" + req.getUrl().getQuery());
+        envp.push_back("REQUEST_METHOD=" + req.getMethodString());
+        envp.push_back("AUTH_TYPE=Basic");
+        envp.push_back("GATEWAY_INTERFACE=CGI/1.1");
+        std::stringstream ss;
+        ss << req.getBody().size();
+        std::string result = ss.str();
+        envp.push_back("CONTENT_LENGTH=" + result);
+        std::map<std::string, std::string> headers = req.getHeaders();
+        for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
+        {
+                std::string key = it->first;
+                if (key.compare("Content-Type"))
+                        key = "HTTP_" + key;
+                std::transform(key.begin(), key.end(), key.begin(), ::toupper);
+                std::replace(key.begin(), key.end(), '-', '_');
+                std::string header = key + "=" + it->second;
+                envp.push_back(header);
+        }
+        char **ev = new char*[envp.size() + 1];
+        while (++i < (int)envp.size())
+        {
+                ev[i] = new char[envp[i].size() + 1];
+                std::strcpy(ev[i], envp[i].c_str());
+        }
+        ev[i] = NULL;
+        this->setEnv(ev);
 }
 
 CGI::CGI(const CGI &other)
@@ -113,6 +112,15 @@ CGI	&CGI::operator=(const CGI &other)
 std::vector<std::string>	CGI::getHandler()
 {
 	return (this->handler);
+}
+
+char **CGI::getEnv()
+{
+	return this->env;
+}
+
+std::string CGI::getCgiExt() const {
+        return (this->cgiExt);
 }
 
 // Setters
@@ -177,23 +185,29 @@ void CGI::setExecutablePath()
 	if (this->handler[0][0] != '/')
 	{
 		this->executablePath = findExecutablePath(this->paths, this->handler[0]);
-		this->handler[0] = this->executablePath;
+                if (!this->executablePath.empty())
+		        this->handler[0] = this->executablePath;
 	}
 	else
 		this->executablePath = handler[0];
 	std::cout << "Executable path: " << this->executablePath << std::endl;
 }
 
+void    CGI::setCgiExt(std::string ext)
+{
+        this->cgiExt = ext;
+}
+
 // Public
 int CGI::execute(Request &req, Response &resp, int *sv, std::string full_path)
 {
+	(void)req;
 	close(sv[0]);
+	dup2(sv[1], 0);
 	dup2(sv[1], 1);
 	close(sv[1]);
 	int pos = full_path.find_last_of('/');
 	std::string dir = full_path.substr(0, pos);
-	if (req.getBody().size())
-		write(1, req.getBody().c_str(), req.getBody().size());
 	if (chdir(dir.c_str()) == -1)
 		return(sendError(resp, "503", "chdir failed"), -1);
 	char **args = this->getArgs(full_path);
