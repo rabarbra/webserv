@@ -47,7 +47,6 @@ Route &Route::operator=(const Route &other)
 		this->logger = other.logger;
 		this->path = other.path;
 		this->ev = other.ev;
-		this->cgi_ext = other.cgi_ext;
 	}
 	return *this;
 }
@@ -190,7 +189,7 @@ std::string Route::getPath() const
 
 std::string Route::getCGIExt() const
 {
-	return this->cgi_ext;
+	return this->cgi->getCgiExt();
 }
 
 // Private
@@ -309,83 +308,34 @@ void Route::handle_path(Request req, Response *resp)
 	resp->run();
 }
 
-better_string CGI::PashToScript(Response &resp, Request req)
+void Route::handle_cgi(Response *resp, Request req)
 {
-	better_string cgiPath = this->root_directory; // root directory
-	better_string filePath = this->build_absolute_path(req); //absolute filesystem path
-	filePath = URL::removeFromStart(filePath, this->root_directory);
-	filePath = URL::removeFromStart(filePath, "/");
-	// std::cout << "req_path: " << req_path << std::endl;
-	std::string token;
-	std::stringstream ss;
-	ss << filePath;
-	while (std::getline(ss, token, '/')) {
-			cgiPath +=  "/" + token;
-			struct stat st;
-			if (stat(cgiPath.c_str(), &st) == 0)
-			{
-				if (S_ISREG(st.st_mode))
-				{
-					if (this->cgi->getHandler()[0] == "$self") 
-					{
-						if (cgiPath.ends_with(this->cgi_ext))
-						{
-							if (access(cgiPath.c_str(), X_OK) == 0)
-								return (cgiPath);
-							else
-								return (sendError(resp, "403", "access_failed"));
-						}
-							return "HandlePath";
-					}
-					else {
-						if (!this->cgi_ext.empty() && cgiPath.ends_with(this->cgi_ext))
-						{
-							if (access(cgiPath.c_str(), R_OK) == 0)
-								return (cgiPath);
-							else
-								return (sendError(resp, "403", "access_failed"));
-						}
-						else
-						{
-							resp.build_file(cgiPath);
-							return (resp.run());
-						}	
-					}
-				}
-			}
-			else
-				return "404";
-	}
-	cgiPath = URL::concatPaths(cgiPath, this->index);
-	if (this->cgi->getHandler()[0] == "$self") 
+	better_string path = this->cgi->pathToScript(this->root_directory, this->index, this->build_absolute_path(req));
+	this->logger.DEBUG << "cgi path after finding" << path;
+	if (path.empty())
 	{
-		if (cgiPath.ends_with(this->cgi_ext))
-		{
-			if (access(cgiPath.c_str(), X_OK) == 0)
-				return (cgiPath);
-			else
-				return ("403");
-		}
-			return "HandlePath";
+		resp->build_error("500");
+		return (resp->run());
+	}	
+	if (path == "404" && path == "403")
+	{
+		resp->build_error(path);
+		return (resp->run());
 	}
-	else {
-		if (!this->cgi_ext.empty() && cgiPath.ends_with(this->cgi_ext))
-		{
-			if (access(cgiPath.c_str(), R_OK) == 0)
-				return (cgiPath);
-			else
-				return ("403");
-		}
-		else
-			return ("HandlePath");
+	else if (path == "HandlePath")
+	{
+		this->handle_path(req, resp);
 	}
+	std::string req_path = this->build_absolute_path(req).erase(0, this->root_directory.size());
+	this->configureCGI(req, resp, path, req_path);
 }
 
-void Route::configureCGI(Request &req, Response &resp, std::string &cgiPath, std::string &req_path)
+void Route::configureCGI(Request &req, Response *resp, std::string &cgiPath, std::string &req_path)
 {
 	pid_t pid;
 	int sv[2];
 
+	this->logger.DEBUG << "cgi path" << cgiPath;
 	this->cgi->createEnv(req, this->build_absolute_path(req), cgiPath, req_path);
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == -1)
 		return(sendError(resp, "501", "socketpair failed"));
@@ -414,15 +364,15 @@ void Route::configureCGI(Request &req, Response &resp, std::string &cgiPath, std
 		waitpid(pid, &status, 0);
 		if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
 		{
-			resp.build_cgi_response(response);
-			resp._send();
+			resp->build_cgi_response(response);
+			resp->_send();
 			return ;
 		}
 		else
 		{
 			this->logger.ERROR << "CGI failed";
-			resp.build_error("500");
-			resp.run();
+			resp->build_error("500");
+			resp->run();
 			return ;
 		}
 	}
@@ -541,7 +491,7 @@ void Route::handle_request(Request req, Response *resp)
 	if (this->type == PATH_)
 		this->handle_path(req, resp);
 	else if (this->type == CGI_)
-		this->handle_cgi(*resp, req);
+		this->handle_cgi(resp, req);
 	else if (this->type == REDIRECTION_)
 		this->handle_redirection(req);
 }

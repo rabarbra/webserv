@@ -38,7 +38,7 @@ URL &URL::operator=(const URL &other)
 	return *this;
 }
 
-URL &URL::operator+(const URL &other)
+URL URL::operator+(const URL &other)
 {
 	URL new_url = *this;
 	new_url.path = URL::concatPaths(new_url.path, other.path);

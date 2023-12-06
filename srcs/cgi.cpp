@@ -199,7 +199,7 @@ void    CGI::setCgiExt(std::string ext)
 }
 
 // Public
-int CGI::execute(Request &req, Response &resp, int *sv, std::string full_path)
+int CGI::execute(Request &req, Response *resp, int *sv, std::string full_path)
 {
 	(void)req;
 	close(sv[0]);
@@ -216,9 +216,60 @@ int CGI::execute(Request &req, Response &resp, int *sv, std::string full_path)
 	return 0;
 }
 
-void sendError(Response &resp, std::string error, std::string error_message)
+void sendError(Response *resp, std::string error, std::string error_message)
 {
 	std::cerr << "[ERROR] "  << error_message << std::endl;
-	resp.build_error(error);
-	resp.run();
+	resp->build_error(error);
+	resp->run();
+}
+
+better_string CGI::checkRegFile(better_string cgiPath)
+{
+
+	if (this->handler[0] == "$self") 
+	{
+		if (cgiPath.ends_with(this->cgiExt))
+		{
+			if (access(cgiPath.c_str(), X_OK) == 0)
+				return (cgiPath);
+			else
+				return ("403");
+		}
+		return "HandlePath";
+	}
+	else {
+		if (!this->cgiExt.empty() && cgiPath.ends_with(this->cgiExt))
+		{
+			if (access(cgiPath.c_str(), R_OK) == 0)
+				return (cgiPath);
+			else
+				return ("403");
+		}
+                return "HandlePath";
+	}
+}
+
+better_string CGI::pathToScript(better_string cgiPath, better_string index, better_string filePath)
+{
+	filePath = URL::removeFromStart(filePath, cgiPath);
+	filePath = URL::removeFromStart(filePath, "/");
+        std::cout << "file path: " << filePath;
+        std::cout << "cgi path: " << cgiPath;
+	std::string token;
+	std::stringstream ss;
+	ss << filePath;
+	while (std::getline(ss, token, '/')) {
+			cgiPath +=  "/" + token;
+			struct stat st;
+                        std::cout << "path: " << cgiPath;
+			if (stat(cgiPath.c_str(), &st) == 0)
+                        {
+				if (S_ISREG(st.st_mode))
+                                        return (this->checkRegFile(cgiPath));
+                        }
+			else
+				return "404";
+	}
+	cgiPath = URL::concatPaths(cgiPath, index);
+        return (this->checkRegFile(cgiPath));
 }

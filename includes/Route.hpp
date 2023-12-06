@@ -4,7 +4,6 @@
 # include <ctime>
 // .h headers
 # include <dirent.h>
-# include <sys/stat.h>
 # include <sys/wait.h>
 // Our headers
 # include "CGI.hpp"
@@ -32,9 +31,9 @@ class Route
 		Logger						logger;
 		char						**ev;
 		// Private
-void								handle_delete(std::string full_path, Response &resp);
+		void						handle_delete(std::string full_path, Response &resp);
 		void						handle_path(Request req, Response *resp);
-		void						handle_cgi(Response &resp, Request req);
+		void						handle_cgi(Response *resp, Request req);
 		void						handle_redirection(Request req);
 		void						handle_dir_listing(Request req, std::string full_path);
 		std::string					build_absolute_path(Request req);
@@ -73,8 +72,8 @@ void								handle_delete(std::string full_path, Response &resp);
 		void						printRoute();
 		void						handle_request(Request req, Response *resp);
 		size_t						match(std::string path);
-		void 						configureCGI(Request &req, Response &resp, std::string &cgiPath, std::string &req_path);
+		void 						configureCGI(Request &req, Response *resp, std::string &cgiPath, std::string &req_path);
 };
 
-std::string	convertSize(size_t size);
+std::string							convertSize(size_t size);
 #endif

@@ -4,6 +4,7 @@
 # include <unistd.h>
 # include "better_string.hpp"
 # include "Request.hpp"
+# include <sys/stat.h>
 class CGI
 {
 	private:
@@ -12,6 +13,7 @@ class CGI
 		std::vector<std::string>		paths;
 		std::string						executablePath;
 		std::string						cgiExt;
+		better_string					checkRegFile(better_string cgiPath);
 	public:
 		void							createEnv(Request &req, std::string absolute_path, std::string cgiPath, std::string req_path);
 		CGI();
@@ -33,11 +35,11 @@ class CGI
 		std::string						getCgiExt(void) const;
 		// Public
 		void							configure(Request &req, std::string root, std::string index);
-		int 							execute(Request &req, Response &resp, int *sv, std::string full_path);
-		better_string					checkIfCgi(std::string root, Request &req);
+		int 							execute(Request &req, Response *resp, int *sv, std::string full_path);
+		better_string					pathToScript(better_string root_directory, better_string index, better_string sPath);
 };
 
 char		*ft_getEnv(char **env);
 std::string	findExecutablePath(std::vector<std::string> paths, std::string handler);
-void		sendError(Response &resp, std::string error, std::string error_message);
+void		sendError(Response *resp, std::string error, std::string error_message);
 #endif

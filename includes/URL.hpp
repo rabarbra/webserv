@@ -20,7 +20,7 @@ class URL {
 		URL(const URL &);
 		// Operators
 		URL 						&operator=(const URL &);
-		URL							&operator+(const URL &);
+		URL							operator+(const URL &);
 		// Setters
 		void    					setDomain(better_string domain);
 		void    					setPort(better_string port);
