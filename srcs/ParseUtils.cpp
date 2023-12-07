@@ -50,5 +50,16 @@ std::string findExecutablePath(std::vector<std::string> paths, std::string handl
 		if (access(path.c_str(), X_OK) == 0)
 			return (path);
 	}
-	return (NULL);
+	return ("");
+}
+
+std::string mergePaths(std::string path1, std::string path2)
+{
+	if (path1.empty() && path2.empty())
+		return ("");
+	if (path1[path1.size() - 1] != '/')
+		path1 += "/";
+	if (path2[0] == '/')
+		path2.erase(0, 1);
+	return (path1 + path2);
 }

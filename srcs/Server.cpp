@@ -1,14 +1,20 @@
 #include "../includes/Server.hpp"
+#include "../includes/Worker.hpp"
 
 Server::Server():
 	routes(), hosts(), server_names(), error_pages(), max_body_size(-1),
-	log(Logger(_INFO, "Server"))
+	log(Logger(_INFO, "Server")), worker(NULL)
+{}
+
+Server::Server(Worker *worker):
+	routes(), hosts(), server_names(), error_pages(), max_body_size(-1),
+	log(Logger(_INFO, "Server")), worker(worker)
 {}
 
 Server::~Server()
 {}
 
-Server::Server(const Server &other) : env(NULL)
+Server::Server(const Server &other): env(NULL), worker(NULL)
 {
 	*this = other;
 }
@@ -24,6 +30,7 @@ Server &Server::operator=(const Server &other)
 		this->max_body_size = other.max_body_size;
 		this->log = other.log;
 		this->env = other.env;
+		this->worker = other.worker;
 	}
 	return (*this);
 }
@@ -62,6 +69,11 @@ void Server::setErrorPage(int code, std::string path)
 	this->error_pages[code] = path;
 }
 
+void Server::setWorker(Worker *worker)
+{
+	this->worker = worker;
+}
+
 // Getters
 
 char **Server::getEnv() const
@@ -84,6 +96,11 @@ std::multimap<std::string, std::string> Server::getHosts() const
 	return this->hosts;
 }
 
+std::map<int, std::string> Server::getErrorPages() const
+{
+	return (this->error_pages);
+}
+
 // Private
 
 Route &Server::select_route(const Request &req)
@@ -97,7 +114,7 @@ Route &Server::select_route(const Request &req)
 		it++
 	)
 	{
-		curr_size = it->match(req.getPath());
+		curr_size = it->match(req.getUrl().getPath());
 		if (curr_size > max_size)
 		{
 			max_size = curr_size;
@@ -176,22 +193,23 @@ std::string Server::printHosts()
 
 void Server::handle_request(Request req)
 {
-	Response	resp;
-	try
-	{
+	Response	*resp = new Response(req.getFd());
+	resp->setErrorPages(this->getErrorPages());
+//	try
+//	{
 		if (
 			this->max_body_size >= 0 &&
 			req.getBody().size() > static_cast<size_t>(this->max_body_size)	
 		)
 		{
-			resp.build_error("413");
-			resp.run(req.getFd());
+			resp->build_error("413");
+			resp->run();
 			return ;
 		}
-		else if (req.getPath().find("..") != std::string::npos)
+		else if (req.getUrl().getPath().find("..") != std::string::npos)
 		{
-			resp.build_error("403");
-			resp.run(req.getFd());
+			resp->build_error("403");
+			resp->run();
 			return ;
 		}
 		Route 		r;
@@ -201,20 +219,24 @@ void Server::handle_request(Request req)
 		}
 		catch(const std::exception& e)
 		{
-			resp.build_error("404");
-			resp.run(req.getFd());
+			resp->build_error("404");
+			resp->run();
 			return ;
 		}
-		r.handle_request(req);
-	}
-	catch(const std::exception& e)
-	{
-		better_string errors_msg(e.what());
-		if (!errors_msg.starts_with("Cannot send"))
-		{
-			resp.build_error("400");
-			resp.run(req.getFd());
-		}
-		this->log.ERROR << errors_msg << '\n';
-	}
+		r.handle_request(req, resp);
+//	}
+//	catch(const std::exception& e)
+//	{
+//		better_string errors_msg(e.what());
+//		if (!errors_msg.starts_with("Cannot send"))
+//		{
+//			resp->build_error("400");
+//			resp->run();
+//		}
+//		else
+//		{
+//			this->worker->addResponseToQueue(resp);
+//		}
+//		this->log.ERROR << errors_msg << '\n';
+//	}
 }

@@ -1,27 +1,25 @@
 #ifndef CONNECTION_HPP
 # define CONNECTION_HPP
 # include "Server.hpp"
+# include "Address.hpp"
 class Connection
 {
 	private:
 		std::map<std::string, Server>	servers;
-		addrinfo						*addr;
+		Address							address;
 		int								sock;
 		Logger							log;
-		void							clone_addrinfo(addrinfo *dst) const;
 	public:
 		Connection();
 		~Connection();
-		Connection(struct addrinfo *addr);
+		Connection(Address &addr);
 		Connection(const Connection &other);
 		Connection 						&operator=(const Connection &other);
 		// Getters
-		std::string						getHost() const;
-		std::string						getPort() const;
 		int								getSocket() const;
+		Address							getAddress() const;
 		// Public
 		void							addServer(Server server);
 		void							handleRequest(Request req);
-		bool							compare_addr(addrinfo *addr);
 };
 #endif

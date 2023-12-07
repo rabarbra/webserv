@@ -3,6 +3,9 @@
 Response::Response(): httpVersion("HTTP/1.1"), statusCode("200"), reason("OK")
 {}
 
+Response::Response(int fd): httpVersion("HTTP/1.1"), statusCode("200"), reason("OK"), sent(0), fd(fd)
+{}
+
 Response::~Response()
 {}
 
@@ -20,6 +23,9 @@ Response Response::operator=(const Response &other)
 		this->reason = other.reason;
 		this->headers = other.headers;
 		this->body = other.body;
+		this->sent = other.sent;
+		this->fd = other.fd;
+		this->error_pages = other.error_pages;
 	}
 	return *this;
 }
@@ -52,11 +58,26 @@ void Response::setContentTypes(std::string filename)
 	this->setHeader("Content-Type", mime_types.getMimeType(filename));
 }
 
+void Response::setFd(int fd)
+{
+	this->fd = fd;
+}
+
+void Response::setErrorPages(std::map<int, std::string> map)
+{
+	this->error_pages = map;
+}
+
 // Getters
 
 std::string Response::getBody() const
 {
 	return this->body;
+}
+
+int Response::getFd() const
+{
+	return this->fd;
 }
 
 // Private
@@ -84,12 +105,41 @@ void Response::_build()
 
 // Public
 
-void Response::run(int fd)
+void Response::_send()
 {
-	size_t	sent = 0;
 	size_t	left;
 	size_t	chunk_size;
 	ssize_t	chunk;
+
+	chunk_size = 536;
+	left = this->_plain.size() - this->sent;
+	if (left < chunk_size)
+		chunk_size = left;
+	while (this->_plain.size() && this->sent < this->_plain.size())
+	{
+		chunk = send(this->fd, this->_plain.c_str() + this->sent, chunk_size, SEND_FLAGS);
+		if (chunk < 0)
+		{
+			std::stringstream sent_s;
+			std::stringstream left_s;
+			sent_s << this->sent;
+			left_s << left;
+			throw std::runtime_error(
+				"Cannot send (sent: " + sent_s.str()
+				+ ", left: " + left_s.str() + "): "
+				+ std::string(strerror(errno))
+			);
+		}
+		this->sent += chunk;
+		left -= chunk;
+		if (left < chunk_size)
+			chunk_size = left;
+	}
+	close(this->fd);
+}
+
+void Response::run()
+{
 	char	buffer[80];
 
 	time_t timestamp = time(NULL);
@@ -98,28 +148,7 @@ void Response::run(int fd)
 	this->setHeader("Date", buffer);
 	this->setHeader("Server", "Webserv42");
 	this->_build();
-	chunk_size = 536;
-	left = this->_plain.size();
-	if (left < chunk_size)
-		chunk_size = left;
-	this->log.INFO << "To send: " << left;
-	while (sent < this->_plain.size())
-	{
-		chunk = send(fd, this->_plain.c_str() + sent, chunk_size, SEND_FLAGS);
-		this->log.INFO << "Sent: " << chunk;
-		if (chunk < 0)
-		{
-			std::stringstream sent_s;
-			std::stringstream left_s;
-			sent_s << sent;
-			left_s << left;
-			throw std::runtime_error("Cannot send (sent: " + sent_s.str() + ", left: " + left_s.str() + "): " + std::string(strerror(errno)));
-		}
-		sent += chunk;
-		left -= chunk;
-		if (left < chunk_size)
-			chunk_size = left;
-	}
+	this->_send();
 }
 
 void Response::build_ok(std::string statuscode)
@@ -127,7 +156,30 @@ void Response::build_ok(std::string statuscode)
 	StatusCodes		status;
 	this->setStatusCode(statuscode);
 	this->setReason(status.getDescription(statuscode));
-	this->setBody("");
+}
+
+void Response::build_file(std::string filename)
+{
+	std::ifstream file(filename.c_str(), std::ios::binary | std::ios::ate);
+	if (!file.is_open())
+	{
+		this->build_error("404");
+		this->run();
+	}
+	if (!file.good())
+	{
+		this->build_error("500");
+		this->run();
+	}
+	this->setContentTypes(filename);
+	std::streamsize size = file.tellg();
+	file.seekg(0, std::ios::beg);
+	char *buffer = new char[size];
+    file.read(buffer, size);
+	file.close();
+	std::string	body(buffer, size);
+	delete []buffer;
+	this->setBody(body);
 }
 
 void Response::build_error(std::string status_code)
@@ -135,6 +187,10 @@ void Response::build_error(std::string status_code)
 	StatusCodes		status;
 	this->setStatusCode(status_code);
 	this->setReason(status.getDescription(status_code));
+	int statusInt = std::atoi(status_code.c_str());
+	std::map<int , std::string>::iterator it = this->error_pages.find(statusInt);
+	if (it != this->error_pages.end())
+		return (this->build_file(this->error_pages[statusInt]));
 	this->setContentTypes("error.html");
 	std::fstream	error_page("static/error.html");
 	if (error_page.is_open())
@@ -202,4 +258,14 @@ void Response::build_redirect(std::string location, std::string status_code)
 		+ "</title></head><body><h1>"
 		+ status.getFullStatus(status_code)
 		+ "</h1></body></html>";
+}
+
+void Response::build_cgi_response(std::string response)
+{
+	better_string new_response(response);
+	if (!new_response.starts_with("Status:"))
+		new_response = "Status: 200 OK\r\n" + new_response;
+	new_response.find_and_replace("Status:", this->httpVersion);
+	this->log.INFO << "CGI RESPONSE: " << new_response;
+	this->_plain = new_response;
 }
