@@ -266,5 +266,6 @@ void Response::build_cgi_response(std::string response)
 	if (!new_response.starts_with("Status:"))
 		new_response = "Status: 200 OK\r\n" + new_response;
 	new_response.find_and_replace("Status:", this->httpVersion);
+	this->log.INFO << "CGI RESPONSE: " << new_response;
 	this->_plain = new_response;
 }

@@ -312,7 +312,8 @@ void Route::handle_cgi(Response *resp, Request req)
 {
 	better_string path = this->cgi->pathToScript(this->root_directory, this->index, this->build_absolute_path(req));
 	this->logger.INFO << "cgi path after finding" << path;
-	if (path == "404" && path == "403")
+	this->logger.INFO << "cgi path after finding" << path;
+	if (!path.compare("404") || !path.compare("403"))
 	{
 		resp->build_error(path);
 		return (resp->run());
@@ -339,7 +340,7 @@ void Route::configureCGI(Request &req, Response *resp, std::string &cgiPath, std
 	if (pid == 0)
 	{
 		if (this->cgi->execute(req, resp, sv, cgiPath) == -1)
-			return (sendError(resp, "500", "child_process failed"));
+			return ;
 	}
 	else
 	{

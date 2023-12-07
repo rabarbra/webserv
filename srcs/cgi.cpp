@@ -215,7 +215,7 @@ int CGI::execute(Request &req, Response *resp, int *sv, std::string full_path)
 	if (chdir(dir.c_str()) == -1)
 		return(sendError(resp, "503", "chdir failed"), -1);
 	char **args = this->getArgs(full_path);
-	if (execve(args[0], args, this->getEnv()) == -1)
+	if (execve(args[0], args, NULL) == -1)
 		return(sendError(resp, "503", "execve failed " + std::string(strerror(errno))), -1);
 	return 0;
 }
@@ -237,7 +237,11 @@ better_string CGI::checkRegFile(better_string cgiPath)
 			log.INFO << "------------------";
 			log.INFO << "ext " << this->cgiExt;
 			if (access(cgiPath.c_str(), X_OK) == 0)
+			{
+				log.INFO << "Access X_OK == 0 for " << cgiPath;
+				log.INFO << "Access X_OK == 0 for " << cgiPath;
 				return (cgiPath);
+			}
 			else
 				return ("403");
 		}
@@ -266,19 +270,29 @@ better_string CGI::pathToScript(better_string cgiPath, better_string index, bett
 	ss << filePath;
 	while (std::getline(ss, token, '/')) {
 		cgiPath +=  "/" + token;
-		log.INFO << "cgiPath: " << cgiPath;
+		log.INFO << "testing cgiPath: " << cgiPath;
 		struct stat st;
 		if (stat(cgiPath.c_str(), &st) == 0)
         {
+			log.INFO << "path exists";
 			if (S_ISREG(st.st_mode)) {
 				better_string result = this->checkRegFile(cgiPath);
 				log.INFO << "result: " << result;
 				return (result);
 			}
+			else if (!S_ISDIR(st.st_mode))
+			{
+				log.INFO << "Strange file: " << st.st_mode;
+				return "403";
+			}
       	}
 		else
+		{
+			log.INFO << "path doesn't exists";
 			return "404";
+		}
 	}
+	log.INFO << "After checking all directories";
 	cgiPath = URL::concatPaths(cgiPath, index);
         return (this->checkRegFile(cgiPath));
 }
