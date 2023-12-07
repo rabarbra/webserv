@@ -138,7 +138,6 @@ void Worker::run()
 {
 	int	num_events;
 	int	event_sock;
-	//Response *resp;
 
 	for (
 		std::vector<Connection>::iterator it = this->connections.begin();
@@ -178,8 +177,6 @@ void Worker::run()
 						this->log.INFO << "Write available";
 						if (this->connections[this->conn_map[event_sock]].continueResponse(event_sock))
 							this->deleteSocketFromQueue(event_sock);
-						//resp = this->getResponse(i);
-						//resp->_send();
 						break;
 					default:
 						this->log.INFO << "Unknown event type!";
