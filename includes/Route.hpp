@@ -27,7 +27,7 @@ class Route
 		bool						dir_listing; // false by default
 		std::string					index; // index.html by default
 		std::string					static_dir; // Empty string by default (don't accept files)
-		CGI							*cgi; // NULL by default
+		CGI							cgi; // NULL by default
 		Logger						logger;
 		char						**ev;
 		// Private
@@ -53,7 +53,7 @@ class Route
 		void						setPath(std::string path);
 		void						setStaticDir(std::string static_dir);
 		void						setEv(char **env);
-		void						setCGI(CGI *cgi);
+		void						setCGI(CGI &cgi);
 		void						setAllowedMethod(Method method);
 		void						setFileExtensions(std::string &allowed_methods);
 		void						setCGIExt(std::string cgi_ext);
@@ -66,13 +66,14 @@ class Route
 		std::string					getPath() const;
 		std::string					getStaticDir() const;
 		char						**getEv() const;
-		CGI							*getCGI() const;
+		CGI							getCGI() const;
 		std::string					getCGIExt() const;
 		// Public
 		void						printRoute();
 		bool						handle_request(Request req, Response *resp);
 		size_t						match(std::string path);
-		bool 						configureCGI(Request &req, Response *resp, std::string &cgiPath, std::string &req_path);
+		bool 						configureCGI(Request &req, Response *resp, std::string &cgiPath);
+		bool						isCgiEnabled() const;
 };
 
 std::string							convertSize(size_t size);

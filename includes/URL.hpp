@@ -21,6 +21,7 @@ class URL {
 		// Operators
 		URL 						&operator=(const URL &);
 		URL							operator+(const URL &);
+		bool						operator==(const URL &);
 		// Setters
 		void    					setDomain(better_string domain);
 		void    					setPort(better_string port);

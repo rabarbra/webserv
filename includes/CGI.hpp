@@ -13,9 +13,20 @@ class CGI
 		std::vector<std::string>		paths;
 		std::string						executablePath;
 		std::string						cgiExt;
-		better_string					checkRegFile(better_string cgiPath);
+		bool							enabled;
+
+		// ENV vars
+		better_string					scriptName;
+		better_string					scriptFilename;
+		better_string					pathInfo;
+		better_string					pathTranslated;
+		better_string					documentRoot;
+		better_string					requestURI;
+		URL								prevURL;
+		std::string						prevExecPath;
+		better_string					checkRegFile(better_string cgiPath, Request &req);
 	public:
-		void							createEnv(Request &req, std::string absolute_path, std::string cgiPath, std::string req_path);
+		void							createEnv(Request &req);
 		CGI();
 		CGI(std::vector<std::string> handler, char **env);
 		CGI(const CGI &copy);
@@ -33,13 +44,17 @@ class CGI
 		std::string						getExecutablePath(std::string full_path);
 		char							**getArgs(std::string full_path);
 		std::string						getCgiExt(void) const;
+		URL								getPrevURL(void) const;
+		std::string						getPrevExecPath(void) const;
 		// Public
 		void							configure(Request &req, std::string root, std::string index);
 		int 							execute(Request &req, Response *resp, int *sv, std::string full_path);
-		better_string					pathToScript(better_string root_directory, better_string index, better_string sPath);
+		better_string					pathToScript(better_string cgiPath, better_string index, better_string filePath, Request &req);
+		bool							isEnabled() const;
+		void							setupCGI(better_string cgiPath, better_string scriptName, better_string filePath);
 };
 
-char		*ft_getEnv(char **env);
-std::string	findExecutablePath(std::vector<std::string> paths, std::string handler);
-bool		sendError(Response *resp, std::string error, std::string error_message);
+char									*ft_getEnv(char **env);
+std::string								findExecutablePath(std::vector<std::string> paths, std::string handler);
+bool									sendError(Response *resp, std::string error, std::string error_message);
 #endif

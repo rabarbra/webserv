@@ -214,10 +214,14 @@ void Server::handle_request(Request req)
 			delete resp;
 			return ;
 		}
-		Route 		r;
 		try
 		{
-			r = this->select_route(req);
+			if (this->select_route(req).handle_request(req, resp))
+				delete resp;
+			else if (resp->getFd() > 0)
+				this->worker->sheduleResponse(resp);
+			else
+				delete resp;
 		}
 		catch(const std::exception& e)
 		{
@@ -226,13 +230,6 @@ void Server::handle_request(Request req)
 			delete resp;
 			return ;
 		}
-		if (r.handle_request(req, resp))
-			delete resp;
-		else if (resp->getFd() > 0)
-			this->worker->sheduleResponse(resp);
-		else
-			delete resp;
-
 	}
 	catch(const std::exception& e)
 	{
