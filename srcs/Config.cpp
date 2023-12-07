@@ -452,7 +452,7 @@ void Config::parseOption(Route &route, std::string &param)
 		}
 		else if (word == "cgi")
 		{
-			if (route.getCGI())
+			if (route.isCgiEnabled())
 				throw std::runtime_error("cgi already set\n");
 			ss >> word;
 			std::vector<std::string> handler;
@@ -468,7 +468,8 @@ void Config::parseOption(Route &route, std::string &param)
 			handler.insert(handler.end(), word);
 			if (checkCgiHandler(handler))
 				throw std::runtime_error("Invalid cgi handler\n");
-			route.setCGI(new CGI(handler, route.getEv()));
+			CGI cgi(handler, route.getEv());
+			route.setCGI(cgi);
 			route.setType(CGI_);
 		}
 		else if (word == "cgi_ext")

@@ -13,6 +13,7 @@ class better_string: virtual public std::string
 		bool	ends_with(const std::string other) const;
 		bool	contains(const better_string substr) const;
 		void	find_and_replace(better_string old_val, better_string new_val);
+		void	find_first_and_replace(better_string old_val, better_string new_val);
 		void	trim();
 };
 #endif

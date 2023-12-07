@@ -39,6 +39,17 @@ void better_string::find_and_replace(better_string old_val, better_string new_va
 	}	
 }
 
+void better_string::find_first_and_replace(better_string old_val, better_string new_val)
+{
+	size_t	pos;
+	size_t	delta = 0;
+	if (!old_val.size())
+		return ;
+	pos = this->find(old_val, delta);
+	if (pos != this->npos)
+		*this = this->replace(pos, old_val.size(), new_val, 0, new_val.size());
+}
+
 void better_string::trim()
 {
 	if (!this->size())

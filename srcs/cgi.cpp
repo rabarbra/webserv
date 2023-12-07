@@ -3,11 +3,11 @@
 #include <set>
 #include <sstream>
  
-CGI::CGI() : handler(), env(NULL), executablePath()
+CGI::CGI() : handler(), env(NULL), executablePath(), enabled(false)
 {
 }
 
-CGI::CGI(std::vector<std::string> handler, char **env): handler(handler), env(NULL)
+CGI::CGI(std::vector<std::string> handler, char **env): handler(handler), env(NULL), enabled(true)
 {
 	char *path = ft_getEnv(env);
 	this->setPaths(path);
@@ -16,82 +16,6 @@ CGI::CGI(std::vector<std::string> handler, char **env): handler(handler), env(NU
 
 CGI::~CGI()
 {
-}
-
-void CGI::createEnv(Request &req, std::string absolute_path, std::string cgiPath, std::string req_path)
-{
-        std::vector<std::string> envp;
-        int i = -1;
-        size_t pos;
-        std::string SCRIPT_NAME;
-        std::string PATH_INFO;
-        std::string PATH_TRANSLATED;
-        std::string SCRIPT_FILENAME;
-        std::string DOCUMENT_ROOT;
-        pos = req_path.find_first_of('/');
-        if (pos != std::string::npos)
-                SCRIPT_NAME = "/" + req_path.substr(0, pos);
-        else
-                SCRIPT_NAME = "/" + req_path;
-        pos = req_path.find(SCRIPT_NAME);
-        if (pos + SCRIPT_NAME.size() < req_path.size())
-        {
-                PATH_INFO = req_path.substr(req_path.find(SCRIPT_NAME) + SCRIPT_NAME.size());
-                if (PATH_INFO[PATH_INFO.size() - 1] == '/')
-                        PATH_INFO.erase(PATH_INFO.size() - 1);
-        }
-        else
-                PATH_INFO = "/";
-        pos = absolute_path.find(SCRIPT_NAME);
-        if (pos != std::string::npos)
-                PATH_TRANSLATED = absolute_path.erase(pos, SCRIPT_NAME.size());
-        pos = cgiPath.find_last_of('/');
-        if (pos != std::string::npos)
-                DOCUMENT_ROOT = cgiPath.substr(0, cgiPath.find_last_of('/'));
-        else
-                DOCUMENT_ROOT = "/";
-        envp.push_back("DOCUMENT_ROOT=" + DOCUMENT_ROOT);
-        if (DOCUMENT_ROOT[DOCUMENT_ROOT.size() - 1] == '/')
-                DOCUMENT_ROOT.erase(DOCUMENT_ROOT.size() - 1, 1); 
-        SCRIPT_FILENAME = DOCUMENT_ROOT + SCRIPT_NAME; 
-        envp.push_back("SCRIPT_FILENAME=" + SCRIPT_FILENAME);
-        envp.push_back("GATEWAY_INTERFACE=CGI/1.1");
-        envp.push_back("REDIRECT_STATUS=200");
-        envp.push_back(("REQUEST_URI=/" + req_path));
-        envp.push_back("SERVER_NAME=webserv");
-        envp.push_back("SERVER_PORT=" + req.getUrl().getPort());
-        envp.push_back("SERVER_PROTOCOL=HTTP/1.1");
-        envp.push_back("SERVER_SOFTWARE=webserv 1.0");
-        envp.push_back("SCRIPT_NAME=" + SCRIPT_NAME);
-        envp.push_back("PATH_INFO=" + PATH_INFO);
-        envp.push_back("PATH_TRANSLATED=" + PATH_TRANSLATED);
-        envp.push_back("QUERY_STRING=" + req.getUrl().getQuery());
-        envp.push_back("REQUEST_METHOD=" + req.getMethodString());
-        envp.push_back("AUTH_TYPE=Basic");
-        envp.push_back("GATEWAY_INTERFACE=CGI/1.1");
-        std::stringstream ss;
-        ss << req.getBody().size();
-        std::string result = ss.str();
-        envp.push_back("CONTENT_LENGTH=" + result);
-        std::map<std::string, std::string> headers = req.getHeaders();
-        for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
-        {
-                std::string key = it->first;
-                if (key.compare("Content-Type"))
-                        key = "HTTP_" + key;
-                std::transform(key.begin(), key.end(), key.begin(), ::toupper);
-                std::replace(key.begin(), key.end(), '-', '_');
-                std::string header = key + "=" + it->second;
-                envp.push_back(header);
-        }
-        char **ev = new char*[envp.size() + 1];
-        while (++i < (int)envp.size())
-        {
-                ev[i] = new char[envp[i].size() + 1];
-                std::strcpy(ev[i], envp[i].c_str());
-        }
-        ev[i] = NULL;
-        this->setEnv(ev);
 }
 
 CGI::CGI(const CGI &other)
@@ -108,6 +32,14 @@ CGI	&CGI::operator=(const CGI &other)
 		this->executablePath = other.executablePath;
 		this->env = other.env;
 		this->paths = other.paths;
+		this->scriptName = other.scriptName;
+		this->scriptFilename = other.scriptFilename;
+		this->pathInfo = other.pathInfo;
+		this->pathTranslated = other.pathTranslated;
+		this->documentRoot = other.documentRoot;
+		this->prevURL = other.prevURL;
+		this->prevExecPath = other.prevExecPath;
+		this->enabled = other.enabled;
 	}
 	return (*this);
 }
@@ -127,29 +59,8 @@ std::string CGI::getCgiExt() const {
         return (this->cgiExt);
 }
 
-// Setters
-void CGI::setEnv(char ** envp)
-{
-	this->env = envp;
-}
-
-void CGI::setHandler(std::vector<std::string> handler)
-{
-	this->handler = handler;
-}
-
-void	CGI::setPaths(char *path)
-{
-	if (path == NULL)
-		return ;
-	std::stringstream ss(path);
-	std::string token;
-	while (std::getline(ss, token, ':'))
-	{
-		if (token[token.length() - 1] == '/')
-			token.erase(token.length() - 1);
-		this->paths.push_back(token);
-	}
+URL CGI::getPrevURL() const {
+	return (this->prevURL);
 }
 
 std::string CGI::getExecutablePath(std::string full_path)
@@ -177,6 +88,35 @@ char **CGI::getArgs(std::string full_path)
 	}
 	args[i] = NULL;
 	return args;
+}
+
+std::string CGI::getPrevExecPath() const {
+	return (this->prevExecPath);
+}
+
+// Setters
+void CGI::setEnv(char ** envp)
+{
+	this->env = envp;
+}
+
+void CGI::setHandler(std::vector<std::string> handler)
+{
+	this->handler = handler;
+}
+
+void	CGI::setPaths(char *path)
+{
+	if (path == NULL)
+		return ;
+	std::stringstream ss(path);
+	std::string token;
+	while (std::getline(ss, token, ':'))
+	{
+		if (token[token.length() - 1] == '/')
+			token.erase(token.length() - 1);
+		this->paths.push_back(token);
+	}
 }
 
 void CGI::setExecutablePath()
@@ -215,7 +155,7 @@ int CGI::execute(Request &req, Response *resp, int *sv, std::string full_path)
 	if (chdir(dir.c_str()) == -1)
 		return(sendError(resp, "503", "chdir failed"), -1);
 	char **args = this->getArgs(full_path);
-	if (execve(args[0], args, NULL) == -1)
+	if (execve(args[0], args, this->getEnv()) == -1)
 		return(sendError(resp, "503", "execve failed " + std::string(strerror(errno))), -1);
 	return 0;
 }
@@ -227,19 +167,16 @@ bool sendError(Response *resp, std::string error, std::string error_message)
 	return resp->run();
 }
 
-better_string CGI::checkRegFile(better_string cgiPath)
+better_string CGI::checkRegFile(better_string cgiPath, Request &req)
 {
-	Logger log;
 	if (this->handler[0] == "$self") 
 	{
 		if (cgiPath.ends_with(this->cgiExt))
 		{
-			log.INFO << "------------------";
-			log.INFO << "ext " << this->cgiExt;
 			if (access(cgiPath.c_str(), X_OK) == 0)
 			{
-				log.INFO << "Access X_OK == 0 for " << cgiPath;
-				log.INFO << "Access X_OK == 0 for " << cgiPath;
+				this->prevURL = req.getUrl();
+				this->prevExecPath = cgiPath;
 				return (cgiPath);
 			}
 			else
@@ -251,7 +188,11 @@ better_string CGI::checkRegFile(better_string cgiPath)
 		if (!this->cgiExt.empty() && cgiPath.ends_with(this->cgiExt))
 		{
 			if (access(cgiPath.c_str(), R_OK) == 0)
+			{
+				this->prevURL = req.getUrl();
+				this->prevExecPath = cgiPath;
 				return (cgiPath);
+			}
 			else
 				return ("403");
 		}
@@ -259,40 +200,114 @@ better_string CGI::checkRegFile(better_string cgiPath)
 	}
 }
 
-better_string CGI::pathToScript(better_string cgiPath, better_string index, better_string filePath)
+void CGI::createEnv(Request &req)
 {
-	Logger log;
+		int i = -1;
+		std::vector<std::string> envp;
+        envp.push_back("SCRIPT_FILENAME=" + this->scriptFilename);
+		envp.push_back("SCRIPT_NAME=" + this->scriptName);
+		if (!this->pathInfo.empty())
+		{
+        	envp.push_back("PATH_INFO=" + this->pathInfo);
+        	envp.push_back("PATH_TRANSLATED=" + this->pathTranslated);
+		}
+		envp.push_back("DOCUMENT_ROOT=" + this->documentRoot);
+        envp.push_back("QUERY_STRING=" + this->prevURL.getQuery());
+        envp.push_back(("REQUEST_URI=/" + this->requestURI));
+        envp.push_back("GATEWAY_INTERFACE=CGI/1.1");
+        envp.push_back("REDIRECT_STATUS=200");
+        envp.push_back("SERVER_NAME=" + this->prevURL.getDomain());
+        envp.push_back("SERVER_PORT=" + this->prevURL.getPort());
+        envp.push_back("SERVER_PROTOCOL=HTTP/1.1");
+        envp.push_back("SERVER_SOFTWARE=webserv 1.0");
+        envp.push_back("REQUEST_METHOD=" + req.getMethodString());
+        envp.push_back("AUTH_TYPE=Basic");
+        envp.push_back("GATEWAY_INTERFACE=CGI/1.1");
+        std::stringstream ss;
+        ss << req.getBody().size();
+        std::string result = ss.str();
+        envp.push_back("CONTENT_LENGTH=" + result);
+        std::map<std::string, std::string> headers = req.getHeaders();
+        for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
+        {
+                std::string key = it->first;
+                if (key.compare("Content-Type"))
+                        key = "HTTP_" + key;
+                std::transform(key.begin(), key.end(), key.begin(), ::toupper);
+                std::replace(key.begin(), key.end(), '-', '_');
+                std::string header = key + "=" + it->second;
+                envp.push_back(header);
+        }
+        char **ev = new char*[envp.size() + 1];
+        while (++i < (int)envp.size())
+        {
+                ev[i] = new char[envp[i].size() + 1];
+                std::strcpy(ev[i], envp[i].c_str());
+        }
+        ev[i] = NULL;
+        this->setEnv(ev);
+}
+
+better_string CGI::pathToScript(better_string cgiPath, better_string index, better_string filePath, Request &req)
+{
 	filePath = URL::removeFromStart(filePath, cgiPath);
 	filePath = URL::removeFromStart(filePath, "/");
-	log.INFO << "filePath: " << filePath;
-	std::string token;
-	std::stringstream ss;
-	ss << filePath;
+	better_string token;
+	std::stringstream ss(filePath);
 	while (std::getline(ss, token, '/')) {
 		cgiPath +=  "/" + token;
-		log.INFO << "testing cgiPath: " << cgiPath;
 		struct stat st;
 		if (stat(cgiPath.c_str(), &st) == 0)
         {
-			log.INFO << "path exists";
 			if (S_ISREG(st.st_mode)) {
-				better_string result = this->checkRegFile(cgiPath);
-				log.INFO << "result: " << result;
+				better_string result = this->checkRegFile(cgiPath, req);
+				if (
+					result.compare("403") && 
+					result.compare("404") && 
+					result.compare("HandlePath")
+					)
+					this->setupCGI(cgiPath, token, filePath); // setup basic variables for the env array
 				return (result);
 			}
 			else if (!S_ISDIR(st.st_mode))
-			{
-				log.INFO << "Strange file: " << st.st_mode;
 				return "403";
-			}
       	}
 		else
-		{
-			log.INFO << "path doesn't exists";
 			return "404";
-		}
 	}
-	log.INFO << "After checking all directories";
 	cgiPath = URL::concatPaths(cgiPath, index);
-        return (this->checkRegFile(cgiPath));
+	better_string result = this->checkRegFile(cgiPath, req);
+	if (
+		result.compare("403") && 
+		result.compare("404") && 
+		result.compare("HandlePath")
+		)
+		this->setupCGI(cgiPath, index, filePath); // setup basic variables for the env array
+    return (this->checkRegFile(cgiPath, req));
+}
+
+void CGI::setupCGI(better_string cgiPath, better_string script, better_string filePath)
+{
+	this->pathInfo.clear();
+	this->pathTranslated.clear();
+	this->documentRoot.clear();
+
+	// Clear previous entries
+
+	this->scriptName = "/" + script;
+	this->requestURI = filePath; // from scriptname onwards;
+	unsigned long pos = cgiPath.find_last_of("/");
+	Logger log;
+	log.INFO << "file name:      " << cgiPath;
+	if (pos != std::string::npos)
+		this->documentRoot = cgiPath.substr(0, pos); // Root location of script;
+	this->scriptFilename = cgiPath;
+	this->pathInfo = URL::removeFromStart(filePath, script);
+	if (!this->pathInfo.empty())
+		this->pathTranslated = this->documentRoot + this->pathInfo; 
+}
+
+bool CGI::isEnabled() const
+{
+	return (this->enabled);
 }

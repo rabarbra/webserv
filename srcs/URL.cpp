@@ -45,6 +45,21 @@ URL URL::operator+(const URL &other)
 	return new_url;
 }
 
+bool URL::operator==(const URL &other)
+{
+	if (this->path.compare(other.path))
+		return false;
+	if (this->anchor.compare(other.anchor))
+		return false;
+	if (this->domain.compare(other.domain))
+		return false;
+	if (this->port.compare(other.port))
+		return false;
+	if (this->query.compare(other.query))
+		return false;
+	return true;
+}
+
 void	URL::parse(better_string url)
 {
 	std::stringstream	s_path(url);

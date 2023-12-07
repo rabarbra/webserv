@@ -6,16 +6,14 @@
 Route::Route():
 	type(PATH_), allowed_methods(std::vector<Method>()),
 	root_directory(""), redirect_url(""), redirectStatusCode(""), dir_listing(false),
-	index("index.html"), static_dir(), cgi(NULL), ev(NULL)
+	index("index.html"), static_dir(), ev(NULL)
 {}
 
 Route::~Route()
 {
-	if (this->cgi)
-		delete this->cgi;
 }
 
-Route::Route(const Route &other): cgi(NULL) , ev(NULL)
+Route::Route(const Route &other): ev(NULL)
 {
 	*this = other;
 }
@@ -25,16 +23,7 @@ Route &Route::operator=(const Route &other)
 
 	if (this != &other)
 	{
-		if (this->cgi)
-		{
-			delete this->cgi;
-			this->cgi = NULL;
-		}
-		if (other.cgi)
-		{
-			this->cgi = new CGI();
-			*(this->cgi) = *(other.cgi);
-		}
+		this->cgi = other.cgi;
 		this->type = other.type;
 		this->allowed_methods = other.allowed_methods;
 		this->file_extensions = other.file_extensions;
@@ -125,7 +114,7 @@ void	Route::setFileExtensions(std::string &extension)
 	this->file_extensions.insert(this->file_extensions.end(), "." + extension);
 }
 
-void Route::setCGI(CGI *cgi)
+void Route::setCGI(CGI &cgi)
 {
 	this->cgi = cgi;
 }
@@ -137,7 +126,7 @@ void Route::setPath(std::string path)
 
 void Route::setCGIExt(std::string cgi_ext)
 {
-	this->cgi->setCgiExt(cgi_ext);
+	this->cgi.setCgiExt(cgi_ext);
 }
 
 // Getters
@@ -162,7 +151,7 @@ std::string Route::getStaticDir() const
 	return this->static_dir;
 }
 
-CGI *Route::getCGI() const
+CGI Route::getCGI() const
 {
 	return this->cgi;
 }
@@ -189,7 +178,7 @@ std::string Route::getPath() const
 
 std::string Route::getCGIExt() const
 {
-	return this->cgi->getCgiExt();
+	return this->cgi.getCgiExt();
 }
 
 // Private
@@ -206,7 +195,7 @@ bool Route::isRouteValid()
 			return false;
 		if (this->redirect_url != "")
 			return false;
-		if (this->cgi)
+		if (this->cgi.isEnabled())
 			return false;
 	}
 	else if (this->type == REDIRECTION_)
@@ -221,7 +210,7 @@ bool Route::isRouteValid()
 			return false;
 		if (this->static_dir != "")
 			return false;
-		if (this->cgi)
+		if (this->cgi.isEnabled())
 			return false;
 	}
 	else if (this->type == CGI_)
@@ -310,9 +299,13 @@ bool Route::handle_path(Request req, Response *resp)
 
 bool Route::handle_cgi(Response *resp, Request req)
 {
-	better_string path = this->cgi->pathToScript(this->root_directory, this->index, this->build_absolute_path(req));
-	this->logger.INFO << "cgi path after finding" << path;
-	this->logger.INFO << "cgi path after finding" << path;
+	std::string req_path = this->build_absolute_path(req).erase(0, this->root_directory.size());
+	if (req.getUrl() == this->cgi.getPrevURL())
+	{
+		better_string path = this->cgi.getPrevExecPath();
+		return this->configureCGI(req, resp, path);
+	}
+	better_string path = this->cgi.pathToScript(this->root_directory, this->index, this->build_absolute_path(req), req);
 	if (!path.compare("404") || !path.compare("403"))
 	{
 		resp->build_error(path);
@@ -320,24 +313,22 @@ bool Route::handle_cgi(Response *resp, Request req)
 	}
 	else if (path == "HandlePath")
 		return this->handle_path(req, resp);
-	std::string req_path = this->build_absolute_path(req).erase(0, this->root_directory.size());
-	return this->configureCGI(req, resp, path, req_path);
-
+	return this->configureCGI(req, resp, path);
 }
 
-bool Route::configureCGI(Request &req, Response *resp, std::string &cgiPath, std::string &req_path)
+bool Route::configureCGI(Request &req, Response *resp, std::string &cgiPath)
 {
 	pid_t pid;
 	int sv[2];
 
-	this->cgi->createEnv(req, this->build_absolute_path(req), cgiPath, req_path);
+	this->cgi.createEnv(req);
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == -1)
 		return(sendError(resp, "501", "socketpair failed"));
 	if ((pid = fork()) == -1)
 		return(sendError(resp, "502", "fork failed"));
 	if (pid == 0)
 	{
-		if (this->cgi->execute(req, resp, sv, cgiPath) == -1)
+		if (this->cgi.execute(req, resp, sv, cgiPath) == -1)
 			return true;
 	}
 	else
@@ -504,4 +495,9 @@ void Route::printRoute()
 		this->logger.INFO << "            file_extension: " << *it;
 	for (std::vector<Method>::iterator it = this->allowed_methods.begin(); it != this->allowed_methods.end(); it++)
 		this->logger.INFO << "            allowed_method: " << *it;
+}
+
+bool Route::isCgiEnabled() const
+{
+	return (this->cgi.isEnabled());
 }
