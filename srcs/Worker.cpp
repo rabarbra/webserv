@@ -128,11 +128,16 @@ void Worker::accept_connection(int sock)
 	}
 }
 
+void Worker::sheduleResponse(Response *resp)
+{
+	this->connections[this->conn_map[resp->getFd()]].setResponse(resp);
+	this->listenWriteAvailable(resp->getFd());
+}
+
 void Worker::run()
 {
 	int	num_events;
 	int	event_sock;
-	Response *resp;
 
 	for (
 		std::vector<Connection>::iterator it = this->connections.begin();
@@ -170,8 +175,8 @@ void Worker::run()
 						break;
 					case WRITE_AVAIL:
 						this->log.INFO << "Write available";
-						resp = this->getResponse(i);
-						resp->_send();
+						if (this->connections[this->conn_map[event_sock]].continueResponse(event_sock))
+							this->deleteSocketFromQueue(event_sock);
 						break;
 					default:
 						this->log.INFO << "Unknown event type!";

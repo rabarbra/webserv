@@ -220,11 +220,11 @@ int CGI::execute(Request &req, Response *resp, int *sv, std::string full_path)
 	return 0;
 }
 
-void sendError(Response *resp, std::string error, std::string error_message)
+bool sendError(Response *resp, std::string error, std::string error_message)
 {
 	std::cerr << "[ERROR] "  << error_message << std::endl;
 	resp->build_error(error);
-	resp->run();
+	return resp->run();
 }
 
 better_string CGI::checkRegFile(better_string cgiPath)

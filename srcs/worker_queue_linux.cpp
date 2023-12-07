@@ -1,11 +1,11 @@
 #ifdef __linux__
 # include "../includes/Worker.hpp"
 
-typedef struct s_epoll_data
-{
-    int			fd;
-    Response	*resp;
-}				EpollData;
+//typedef struct s_epoll_data
+//{
+//    int			fd;
+//    Response	*resp;
+//}				EpollData;
 
 void Worker::initQueue()
 {
@@ -17,38 +17,55 @@ void Worker::initQueue()
 void Worker::addSocketToQueue(int sock)
 {
 	struct epoll_event	conn_event;
-	EpollData			*data;
+	//EpollData			*data;
 
 	conn_event.events = EPOLLIN | EPOLLET;
-	data = new EpollData;
-	data->fd = sock;
-	data->resp = NULL;
-	conn_event.data.ptr = data;
+	//data = new EpollData;
+	//data->fd = sock;
+	//data->resp = NULL;
+	//conn_event.data.ptr = data;
+	conn_event.data.fd = sock;
     if (epoll_ctl(this->queue, EPOLL_CTL_ADD, sock, &conn_event))
 		throw std::runtime_error("Error adding connection socket to epoll: " + std::string(strerror(errno)));
 }
 
-void Worker::addResponseToQueue(Response *resp)
+void Worker::listenWriteAvailable(int socket)
 {
 	struct epoll_event	conn_event;
-	EpollData			*data;
+	//EpollData			*data;
 
 	conn_event.events = EPOLLIN | EPOLLOUT | EPOLLET;
-	data = new EpollData;
-	data->fd = resp->getFd();
-	data->resp = resp;
-	conn_event.data.ptr = data;
-    if (epoll_ctl(this->queue, EPOLL_CTL_MOD, resp->getFd(), &conn_event))
-		throw std::runtime_error("Error adding response to epoll: " + std::string(strerror(errno)));
-	this->log.INFO << "Added response to file descriptor " <<  resp->getFd();
+	//data = new EpollData;
+	//data->fd = socket;
+	//data->resp = NULL;
+	//conn_event.data.ptr = data;
+	conn_event.data.fd = socket;
+    if (epoll_ctl(this->queue, EPOLL_CTL_MOD, socket, &conn_event))
+		throw std::runtime_error("Error adding EPOLLOUT socket: " + std::string(strerror(errno)));
+	this->log.INFO << "Added EVFILT_WRITE for socket " << socket;
 }
+
+//void Worker::addResponseToQueue(Response *resp)
+//{
+//	struct epoll_event	conn_event;
+//	EpollData			*data;
+//
+//	conn_event.events = EPOLLIN | EPOLLOUT | EPOLLET;
+//	data = new EpollData;
+//	data->fd = resp->getFd();
+//	data->resp = resp;
+//	conn_event.data.ptr = data;
+//    if (epoll_ctl(this->queue, EPOLL_CTL_MOD, resp->getFd(), &conn_event))
+//		throw std::runtime_error("Error adding response to epoll: " + std::string(strerror(errno)));
+//	this->log.INFO << "Added response to file descriptor " <<  resp->getFd();
+//}
 
 void Worker::deleteSocketFromQueue(int num_event)
 {
 	int sock = this->getEventSock(num_event);
 	epoll_ctl(this->queue, EPOLL_CTL_DEL, sock, NULL);
-	EpollData *data = static_cast<EpollData *>(this->evList[num_event].data.ptr);
-	delete data;
+	//EpollData *data = static_cast<EpollData *>(this->evList[num_event].data.ptr);
+	//delete data;
 }
 
 int Worker::getNewEventsCount()
@@ -58,15 +75,16 @@ int Worker::getNewEventsCount()
 
 int Worker::getEventSock(int num_event)
 {
-	EpollData *data = static_cast<EpollData *>(this->evList[num_event].data.ptr);
-	return data->fd;
+	//EpollData *data = static_cast<EpollData *>(this->evList[num_event].data.ptr);
+	//return data->fd;
+	return this->evList[num_event].data.fd;
 }
 
-Response *Worker::getResponse(int num_event)
-{
-	EpollData *data = static_cast<EpollData *>(this->evList[num_event].data.ptr);
-	return data->resp;
-}
+//Response *Worker::getResponse(int num_event)
+//{
+//	EpollData *data = static_cast<EpollData *>(this->evList[num_event].data.ptr);
+//	return data->resp;
+//}
 
 EventType Worker::getEventType(int num_event)
 {

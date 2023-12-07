@@ -38,6 +38,7 @@ class Response
 		std::string							_plain;
 		size_t								body_size;
 		size_t								sent;
+		std::string							file;
 		int									fd;
 		Logger								log;
 		void								_build();
@@ -55,6 +56,7 @@ class Response
 		void		setContentTypes(std::string filename);
 		void		setFd(int fd);
 		void		setErrorPages(std::map<int, std::string> map);
+		void		setFile(std::string file);
 		// Getters
 		std::string getBody() const;
 		int			getFd() const;
@@ -65,7 +67,7 @@ class Response
 		void		build_dir_listing(std::string full_path, std::string content);
 		void		build_redirect(std::string location, std::string status_code);
 		void		build_cgi_response(std::string response);
-		void		run();
-		void		_send();
+		bool		run();
+		bool		_send();
 };
 #endif
