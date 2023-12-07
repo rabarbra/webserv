@@ -315,11 +315,12 @@ void Response::build_cgi_response(std::string response)
 		size_t pos = new_response.find("\r\n\r\n");
 		size_t location = new_response.find("Location:");
 		if (location != std::string::npos && location < pos)
-			new_response = "Status: 302 Found\r\n" + new_response;
+			new_response = this->httpVersion + " 302 Found\r\n" + new_response;
 		else
-			new_response = "Status: 200 OK\r\n" + new_response;
+			new_response = this->httpVersion + " 200 OK\r\n" + new_response;
 	}
-	new_response.find_first_and_replace("Status:", this->httpVersion);
+	else
+		new_response.replace(0, 7, this->httpVersion, 0, this->httpVersion.size());
 	this->log.INFO << "CGI RESPONSE: " << new_response;
 	this->_plain = new_response;
 }
