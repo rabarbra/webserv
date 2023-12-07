@@ -149,6 +149,16 @@ bool Response::_send()
 	if (this->file.size())
 	{
 		std::ifstream file_s(this->file.c_str(), std::ios::binary | std::ios::ate);
+		if (!file_s.is_open())
+		{
+			this->build_error("404");
+			return this->run();
+		}
+		if (!file_s.good())
+		{
+			this->build_error("500");
+			return this->run();
+		}
 		std::streamsize size = file_s.tellg();
 		left = this->_plain.size() + size - sent;
 		chunk_size = 8192;
@@ -213,31 +223,14 @@ void Response::build_ok(std::string statuscode)
 
 void Response::build_file(std::string filename)
 {
-	std::ifstream file(filename.c_str(), std::ios::binary | std::ios::ate);
-	if (!file.is_open())
-	{
-		this->build_error("404");
-		this->run();
-	}
-	if (!file.good())
-	{
-		this->build_error("500");
-		this->run();
-	}
 	this->setContentTypes(filename);
-	std::streamsize size = file.tellg();
-	file.seekg(0, std::ios::beg);
-	char *buffer = new char[size];
-    file.read(buffer, size);
-	file.close();
-	std::string	body(buffer, size);
-	delete []buffer;
-	this->setBody(body);
+	this->setFile(filename);
 }
 
 void Response::build_error(std::string status_code)
 {
 	StatusCodes		status;
+	this->_plain = "";
 	this->setStatusCode(status_code);
 	this->setReason(status.getDescription(status_code));
 	int statusInt = std::atoi(status_code.c_str());
@@ -302,6 +295,7 @@ void Response::build_dir_listing(std::string full_path, std::string content)
 void Response::build_redirect(std::string location, std::string status_code)
 {
 	StatusCodes		status;
+	this->_plain = "";
 	this->setStatusCode(status_code);
 	this->setReason(status.getDescription(status_code));
 	this->setHeader("Location", location);

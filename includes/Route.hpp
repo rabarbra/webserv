@@ -37,7 +37,6 @@ class Route
 		bool						handle_redirection(Request req);
 		bool						handle_dir_listing(Request req, std::string full_path);
 		std::string					build_absolute_path(Request req);
-		bool						sendFile(std::string filename, Response &resp); 
 
 	public:
 		Route();
@@ -73,7 +72,7 @@ class Route
 		void						printRoute();
 		bool						handle_request(Request req, Response *resp);
 		size_t						match(std::string path);
-		void 						configureCGI(Request &req, Response *resp, std::string &cgiPath, std::string &req_path);
+		bool 						configureCGI(Request &req, Response *resp, std::string &cgiPath, std::string &req_path);
 };
 
 std::string							convertSize(size_t size);

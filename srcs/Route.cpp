@@ -248,18 +248,18 @@ std::string Route::build_absolute_path(Request req)
 	return root + req_path;
 }
 
-void Route::handle_delete(std::string full_path, Response &resp)
+bool Route::handle_delete(std::string full_path, Response &resp)
 {
 	if (std::remove(full_path.c_str()) == 0)
 	{
 		resp.build_ok("200");
-		resp.run();
+		return resp.run();
 	}
 	resp.build_error("403");
-	resp.run();
+	return resp.run();
 }
 
-void Route::handle_path(Request req, Response *resp)
+bool Route::handle_path(Request req, Response *resp)
 {
 	better_string	req_path(req.getUrl().getPath());
 	std::string full_path = this->build_absolute_path(req);
@@ -294,7 +294,7 @@ void Route::handle_path(Request req, Response *resp)
 		else if (!(S_ISREG(st.st_mode)))
 		{
 			resp->build_error("404");
-			resp->run();
+			return resp->run();
 		}
 		if (req.getMethod() == GET)
 		{
@@ -308,7 +308,7 @@ void Route::handle_path(Request req, Response *resp)
 	return resp->run();
 }
 
-void Route::handle_cgi(Response *resp, Request req)
+bool Route::handle_cgi(Response *resp, Request req)
 {
 	better_string path = this->cgi->pathToScript(this->root_directory, this->index, this->build_absolute_path(req));
 	this->logger.INFO << "cgi path after finding" << path;
@@ -319,15 +319,13 @@ void Route::handle_cgi(Response *resp, Request req)
 		return (resp->run());
 	}
 	else if (path == "HandlePath")
-	{
-		this->handle_path(req, resp);
-		return ;
-	}
+		return this->handle_path(req, resp);
 	std::string req_path = this->build_absolute_path(req).erase(0, this->root_directory.size());
-	this->configureCGI(req, resp, path, req_path);
+	return this->configureCGI(req, resp, path, req_path);
+
 }
 
-void Route::configureCGI(Request &req, Response *resp, std::string &cgiPath, std::string &req_path)
+bool Route::configureCGI(Request &req, Response *resp, std::string &cgiPath, std::string &req_path)
 {
 	pid_t pid;
 	int sv[2];
@@ -340,7 +338,7 @@ void Route::configureCGI(Request &req, Response *resp, std::string &cgiPath, std
 	if (pid == 0)
 	{
 		if (this->cgi->execute(req, resp, sv, cgiPath) == -1)
-			return ;
+			return true;
 	}
 	else
 	{
@@ -361,18 +359,17 @@ void Route::configureCGI(Request &req, Response *resp, std::string &cgiPath, std
 		if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
 		{
 			resp->build_cgi_response(response);
-			resp->_send();
-			return ;
+			return resp->_send();
 		}
 		else
 		{
 			this->logger.ERROR << "CGI failed";
-			resp.build_error("500");
-			return resp.run();
+			resp->build_error("500");
+			return resp->run();
 		}
 	}
-	resp.build_error("500");
-	return resp.run();
+	resp->build_error("500");
+	return resp->run();
 }
 
 bool Route::handle_redirection(Request req)
@@ -485,7 +482,7 @@ bool Route::handle_request(Request req, Response *resp)
 	if (this->type == PATH_)
 		return this->handle_path(req, resp);
 	else if (this->type == CGI_)
-		return this->handle_cgi(*resp, req);
+		return this->handle_cgi(resp, req);
 	else if (this->type == REDIRECTION_)
 		return this->handle_redirection(req);
 	resp->build_error("500");
