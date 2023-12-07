@@ -236,17 +236,9 @@ void Server::handle_request(Request req)
 	}
 	catch(const std::exception& e)
 	{
-		better_string errors_msg(e.what());
-		//if (!errors_msg.starts_with("Cannot send"))
-		//{
-			resp->build_error("400");
-			resp->run();
-			delete resp;
-		//}
-		//else
-		//{
-		//	this->worker->sheduleResponse(resp);
-		//}
-		this->log.ERROR << errors_msg << '\n';
+		resp->build_error("400");
+		resp->run();
+		delete resp;
+		this->log.ERROR << e.what() << '\n';
 	}
 }
