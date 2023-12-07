@@ -161,16 +161,22 @@ bool Response::_send()
 		{
 			this->log.INFO <<"Sent: " << this->sent << ", left: " << left;
     		file_s.read(buffer, chunk_size);
-			chunk = send(this->fd, buffer, file_s.gcount(), SEND_FLAGS);
-			if (chunk < 0)
+			chunk = 0;
+			while (chunk < file_s.gcount())
 			{
-				std::stringstream sent_s;
-				std::stringstream left_s;
-				sent_s << this->sent;
-				left_s << left;
-				delete []buffer;
-				file_s.close();
-				return false;
+				int res = send(this->fd, buffer + chunk, file_s.gcount() - chunk, SEND_FLAGS);
+				if (res < 0)
+				{
+					this->sent += chunk;
+					std::stringstream sent_s;
+					std::stringstream left_s;
+					sent_s << this->sent;
+					left_s << left;
+					delete []buffer;
+					file_s.close();
+					return false;
+				}
+				chunk += res;
 			}
 			this->sent += chunk;
 			left -= chunk;
