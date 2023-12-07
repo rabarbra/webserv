@@ -471,6 +471,18 @@ void Config::parseOption(Route &route, std::string &param)
 			route.setCGI(new CGI(handler, route.getEv()));
 			route.setType(CGI_);
 		}
+		else if (word == "cgi_ext")
+		{
+			if (route.getCGIExt() != "")
+				throw std::runtime_error("cgi_ext already set\n");
+			ss >> word;
+			if (word[0] != '.')
+				throw std::runtime_error("Invalid cgi_ext\n");
+			checkSemiColon(word, "cgi_ext");
+			route.setCGIExt(word);
+			Logger log;
+			log.INFO << route.getCGIExt();
+		}
 		else
 			throw std::runtime_error("Invalid argument\n");
 	}

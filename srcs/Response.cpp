@@ -25,6 +25,7 @@ Response Response::operator=(const Response &other)
 		this->body = other.body;
 		this->sent = other.sent;
 		this->fd = other.fd;
+		this->error_pages = other.error_pages;
 	}
 	return *this;
 }
@@ -60,6 +61,11 @@ void Response::setContentTypes(std::string filename)
 void Response::setFd(int fd)
 {
 	this->fd = fd;
+}
+
+void Response::setErrorPages(std::map<int, std::string> map)
+{
+	this->error_pages = map;
 }
 
 // Getters
@@ -109,7 +115,7 @@ void Response::_send()
 	left = this->_plain.size() - this->sent;
 	if (left < chunk_size)
 		chunk_size = left;
-	while (this->sent < this->_plain.size())
+	while (this->_plain.size() && this->sent < this->_plain.size())
 	{
 		chunk = send(this->fd, this->_plain.c_str() + this->sent, chunk_size, SEND_FLAGS);
 		if (chunk < 0)
@@ -150,7 +156,30 @@ void Response::build_ok(std::string statuscode)
 	StatusCodes		status;
 	this->setStatusCode(statuscode);
 	this->setReason(status.getDescription(statuscode));
-	this->setBody("");
+}
+
+void Response::build_file(std::string filename)
+{
+	std::ifstream file(filename.c_str(), std::ios::binary | std::ios::ate);
+	if (!file.is_open())
+	{
+		this->build_error("404");
+		this->run();
+	}
+	if (!file.good())
+	{
+		this->build_error("500");
+		this->run();
+	}
+	this->setContentTypes(filename);
+	std::streamsize size = file.tellg();
+	file.seekg(0, std::ios::beg);
+	char *buffer = new char[size];
+    file.read(buffer, size);
+	file.close();
+	std::string	body(buffer, size);
+	delete []buffer;
+	this->setBody(body);
 }
 
 void Response::build_error(std::string status_code)
@@ -158,6 +187,10 @@ void Response::build_error(std::string status_code)
 	StatusCodes		status;
 	this->setStatusCode(status_code);
 	this->setReason(status.getDescription(status_code));
+	int statusInt = std::atoi(status_code.c_str());
+	std::map<int , std::string>::iterator it = this->error_pages.find(statusInt);
+	if (it != this->error_pages.end())
+		return (this->build_file(this->error_pages[statusInt]));
 	this->setContentTypes("error.html");
 	std::fstream	error_page("static/error.html");
 	if (error_page.is_open())
@@ -225,4 +258,14 @@ void Response::build_redirect(std::string location, std::string status_code)
 		+ "</title></head><body><h1>"
 		+ status.getFullStatus(status_code)
 		+ "</h1></body></html>";
+}
+
+void Response::build_cgi_response(std::string response)
+{
+	better_string new_response(response);
+	if (!new_response.starts_with("Status:"))
+		new_response = "Status: 200 OK\r\n" + new_response;
+	new_response.find_and_replace("Status:", this->httpVersion);
+	this->log.INFO << "CGI RESPONSE: " << new_response;
+	this->_plain = new_response;
 }

@@ -121,7 +121,7 @@ void Connection::handleRequest(Request req)
 		return ;
 	}
 	std::map<std::string, Server>::iterator it
-		= this->servers.find(req.getHost());
+		= this->servers.find(req.getUrl().getDomain());
 	if (it == this->servers.end())
 		this->servers["default"].handle_request(req);
 	else

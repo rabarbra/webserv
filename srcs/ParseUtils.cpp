@@ -50,5 +50,5 @@ std::string findExecutablePath(std::vector<std::string> paths, std::string handl
 		if (access(path.c_str(), X_OK) == 0)
 			return (path);
 	}
-	return (NULL);
+	return ("");
 }

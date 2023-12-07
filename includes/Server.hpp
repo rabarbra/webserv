@@ -41,6 +41,7 @@ class Server
 		std::multimap<std::string, std::string>	getHosts() const;
 		long long								getMaxBodySize() const;
 		char									**getEnv() const;
+		std::map<int, std::string>				getErrorPages() const;
 		// Public
 		void									handle_request(Request req);
 		void									printServer();

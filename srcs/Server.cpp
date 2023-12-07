@@ -96,6 +96,11 @@ std::multimap<std::string, std::string> Server::getHosts() const
 	return this->hosts;
 }
 
+std::map<int, std::string> Server::getErrorPages() const
+{
+	return (this->error_pages);
+}
+
 // Private
 
 Route &Server::select_route(const Request &req)
@@ -109,7 +114,7 @@ Route &Server::select_route(const Request &req)
 		it++
 	)
 	{
-		curr_size = it->match(req.getPath());
+		curr_size = it->match(req.getUrl().getPath());
 		if (curr_size > max_size)
 		{
 			max_size = curr_size;
@@ -189,6 +194,7 @@ std::string Server::printHosts()
 void Server::handle_request(Request req)
 {
 	Response	*resp = new Response(req.getFd());
+	resp->setErrorPages(this->getErrorPages());
 	try
 	{
 		if (
@@ -200,7 +206,7 @@ void Server::handle_request(Request req)
 			resp->run();
 			return ;
 		}
-		else if (req.getPath().find("..") != std::string::npos)
+		else if (req.getUrl().getPath().find("..") != std::string::npos)
 		{
 			resp->build_error("403");
 			resp->run();

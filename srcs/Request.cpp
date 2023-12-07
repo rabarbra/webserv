@@ -20,30 +20,17 @@ Request &Request::operator=(const Request &other)
 	if (this != &other)
 	{
 		this->_fd = other._fd;
-		this->host = other.host;
-		this->port = other.port;
 		this->method = other.method;
-		this->path = other.path;
 		this->httpVersion = other.httpVersion;
 		this->headers = other.headers;
-		this->query = other.query;
 		this->body = other.body;
 		this->plain = other.plain;
+		this->url = other.url;
 	}
 	return *this;
 }
 
 // Getters
-
-better_string Request::getPath() const
-{
-	return this->path;
-}
-
-better_string Request::getQuery() const
-{
-	return this->query;
-}
 
 better_string Request::getBody() const
 {
@@ -53,16 +40,6 @@ better_string Request::getBody() const
 better_string Request::getVersion() const
 {
 	return this->httpVersion;
-}
-
-better_string Request::getHost() const
-{
-	return this->host;
-}
-
-better_string Request::getPort() const
-{
-	return this->port;
 }
 
 std::map<std::string, std::string> Request::getHeaders() const
@@ -94,6 +71,11 @@ std::string Request::getMethodString() const
 		return "HEAD";
 	else
 		return "UNKNOWN";
+}
+
+URL	Request::getUrl() const
+{
+	return (this->url);
 }
 
 // Private
@@ -131,11 +113,7 @@ void Request::parse()
 	this->method = get_method(key);
 	ss >> pathquery;
 	std::stringstream	s_path(pathquery);
-	std::getline(s_path, this->path, '?');
-	this->path = this->decodeURI(this->path);
-	this->path.trim();
-	std::getline(s_path, this->query, ' ');
-	this->query.trim();
+	this->url = URL(pathquery);
 	std::getline(ss, this->httpVersion, '\n');
 	this->httpVersion.trim();
 	std::getline(ss, line, '\n');
@@ -150,10 +128,10 @@ void Request::parse()
 		if (key == "Host")
 		{
 			std::stringstream	s_host(value);
-			std::getline(s_host, this->host, ':');
-			std::getline(s_host, this->port);
-			this->host.trim();
-			this->port.trim();
+			std::getline(s_host, value, ':');
+			this->url.setDomain(value);
+			std::getline(s_host, value);
+			this->url.setPort(value);
 		}
 		std::getline(ss, line, '\n');
 	}
@@ -162,10 +140,6 @@ void Request::parse()
 	this->log.INFO << "Parsed request:\n"
 		<< "method: \t" << this->method << "\n"
 		<< "version:\t" << this->httpVersion << "\n"
-		<< "path:   \t" << this->path << "\n"
-		<< "query:  \t" << this->query << "\n"
-		<< "host:   \t" << this->host << "\n"
-		<< "port:   \t" << this->port << "\n"
 		<< "headers size:\t" << this->headers.size() << "\n"
 		<< "body:   \t" << this->body << "\n";
 }
