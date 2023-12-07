@@ -44,28 +44,17 @@ URL URL::operator+(const URL &other)
 	new_url.path = URL::concatPaths(new_url.path, other.path);
 	return new_url;
 }
-#include "../liblogging/Logger.hpp"
+
 bool URL::operator==(const URL &other)
 {
-	Logger log;
-	log.INFO << "URL path: "<<this->path << " other: " << other.path;
-	log.INFO << "URL path: "<<this->path << " other: " << other.path;
 	if (this->path.compare(other.path))
 		return false;
-	log.INFO << "URL anchor: "<<this->anchor << " other: " << other.anchor;
-	log.INFO << "URL anchor: "<<this->anchor << " other: " << other.anchor;
 	if (this->anchor.compare(other.anchor))
 		return false;
-	log.INFO << "URL domain: "<<this->domain << " other: " << other.domain;
-	log.INFO << "URL domain: "<<this->domain << " other: " << other.domain;
 	if (this->domain.compare(other.domain))
 		return false;
-	log.INFO << "URL port: "<<this->port << " other: " << other.port;
-	log.INFO << "URL port: "<<this->port << " other: " << other.port;
 	if (this->port.compare(other.port))
 		return false;
-	log.INFO << "URL query: "<<this->query << " other: " << other.query;
-	log.INFO << "URL query: "<<this->query << " other: " << other.query;
 	if (this->query.compare(other.query))
 		return false;
 	return true;
