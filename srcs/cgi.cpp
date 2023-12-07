@@ -103,7 +103,11 @@ CGI	&CGI::operator=(const CGI &other)
 {
 	if (this != &other)
 	{
+		this->cgiExt = other.cgiExt;
 		this->handler = other.handler;
+		this->executablePath = other.executablePath;
+		this->env = other.env;
+		this->paths = other.paths;
 	}
 	return (*this);
 }
@@ -225,11 +229,13 @@ void sendError(Response *resp, std::string error, std::string error_message)
 
 better_string CGI::checkRegFile(better_string cgiPath)
 {
-
+	Logger log;
 	if (this->handler[0] == "$self") 
 	{
 		if (cgiPath.ends_with(this->cgiExt))
 		{
+			log.INFO << "------------------";
+			log.INFO << "ext " << this->cgiExt;
 			if (access(cgiPath.c_str(), X_OK) == 0)
 				return (cgiPath);
 			else
@@ -245,30 +251,33 @@ better_string CGI::checkRegFile(better_string cgiPath)
 			else
 				return ("403");
 		}
-                return "HandlePath";
+        return "HandlePath";
 	}
 }
 
 better_string CGI::pathToScript(better_string cgiPath, better_string index, better_string filePath)
 {
+	Logger log;
 	filePath = URL::removeFromStart(filePath, cgiPath);
 	filePath = URL::removeFromStart(filePath, "/");
-        std::cout << "file path: " << filePath;
-        std::cout << "cgi path: " << cgiPath;
+	log.INFO << "filePath: " << filePath;
 	std::string token;
 	std::stringstream ss;
 	ss << filePath;
 	while (std::getline(ss, token, '/')) {
-			cgiPath +=  "/" + token;
-			struct stat st;
-                        std::cout << "path: " << cgiPath;
-			if (stat(cgiPath.c_str(), &st) == 0)
-                        {
-				if (S_ISREG(st.st_mode))
-                                        return (this->checkRegFile(cgiPath));
-                        }
-			else
-				return "404";
+		cgiPath +=  "/" + token;
+		log.INFO << "cgiPath: " << cgiPath;
+		struct stat st;
+		if (stat(cgiPath.c_str(), &st) == 0)
+        {
+			if (S_ISREG(st.st_mode)) {
+				better_string result = this->checkRegFile(cgiPath);
+				log.INFO << "result: " << result;
+				return (result);
+			}
+      	}
+		else
+			return "404";
 	}
 	cgiPath = URL::concatPaths(cgiPath, index);
         return (this->checkRegFile(cgiPath));

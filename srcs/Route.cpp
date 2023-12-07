@@ -311,12 +311,7 @@ void Route::handle_path(Request req, Response *resp)
 void Route::handle_cgi(Response *resp, Request req)
 {
 	better_string path = this->cgi->pathToScript(this->root_directory, this->index, this->build_absolute_path(req));
-	this->logger.DEBUG << "cgi path after finding" << path;
-	if (path.empty())
-	{
-		resp->build_error("500");
-		return (resp->run());
-	}	
+	this->logger.INFO << "cgi path after finding" << path;
 	if (path == "404" && path == "403")
 	{
 		resp->build_error(path);
@@ -325,6 +320,7 @@ void Route::handle_cgi(Response *resp, Request req)
 	else if (path == "HandlePath")
 	{
 		this->handle_path(req, resp);
+		return ;
 	}
 	std::string req_path = this->build_absolute_path(req).erase(0, this->root_directory.size());
 	this->configureCGI(req, resp, path, req_path);
@@ -335,7 +331,6 @@ void Route::configureCGI(Request &req, Response *resp, std::string &cgiPath, std
 	pid_t pid;
 	int sv[2];
 
-	this->logger.DEBUG << "cgi path" << cgiPath;
 	this->cgi->createEnv(req, this->build_absolute_path(req), cgiPath, req_path);
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == -1)
 		return(sendError(resp, "501", "socketpair failed"));
