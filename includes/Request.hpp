@@ -16,7 +16,6 @@ class Request
 		better_string						plain;
 		Logger								log;
 		URL									url;
-		void								receive();
 		void								parse();
 		Request();
 	public:
@@ -33,6 +32,7 @@ class Request
 		std::map<std::string, std::string>	getHeaders() const;
 		URL									getUrl() const;
 		// Public
+		bool								receive();
 		std::string							decodeURI(std::string str);
 };
 #endif
