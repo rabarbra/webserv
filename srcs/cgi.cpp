@@ -248,7 +248,7 @@ void CGI::createEnv(Request &req)
         this->setEnv(ev);
 }
 
-better_string CGI::pathToScript(better_string cgiPath, better_string index, better_string filePath, Request &req, better_string location_path)
+better_string CGI::pathToScript(better_string cgiPath, better_string index, better_string filePath, Request &req)
 {
 	filePath = URL::removeFromStart(filePath, cgiPath);
 	filePath = URL::removeFromStart(filePath, "/");
@@ -266,7 +266,7 @@ better_string CGI::pathToScript(better_string cgiPath, better_string index, bett
 					result.compare("404") && 
 					result.compare("HandlePath")
 					)
-					this->setupCGI(cgiPath, token, filePath, location_path); // setup basic variables for the env array
+					this->setupCGI(cgiPath, token, filePath); // setup basic variables for the env array
 				return (result);
 			}
 			else if (!S_ISDIR(st.st_mode))
@@ -282,11 +282,11 @@ better_string CGI::pathToScript(better_string cgiPath, better_string index, bett
 		result.compare("404") && 
 		result.compare("HandlePath")
 		)
-		this->setupCGI(cgiPath, index, filePath, location_path); // setup basic variables for the env array
+		this->setupCGI(cgiPath, index, filePath); // setup basic variables for the env array
     return (this->checkRegFile(cgiPath, req));
 }
 
-void CGI::setupCGI(better_string cgiPath, better_string script, better_string filePath, better_string location_path)
+void CGI::setupCGI(better_string cgiPath, better_string script, better_string filePath)
 {
 	this->pathInfo.clear();
 	this->pathTranslated.clear();
@@ -295,10 +295,7 @@ void CGI::setupCGI(better_string cgiPath, better_string script, better_string fi
 	// Clear previous entries
 
 	this->scriptName = "/" + script;
-	if (!location_path.compare("/"))
-		this->requestURI = URL::concatPaths(location_path, filePath);
-	else
-		this->requestURI = filePath; // from scriptname onwards;
+	this->requestURI = filePath; // from scriptname onwards;
 	unsigned long pos = cgiPath.find_last_of("/");
 	Logger log;
 	log.INFO << "file name:      " << cgiPath;

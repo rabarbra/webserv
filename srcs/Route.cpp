@@ -305,7 +305,7 @@ bool Route::handle_cgi(Response *resp, Request req)
 		better_string path = this->cgi.getPrevExecPath();
 		return this->configureCGI(req, resp, path);
 	}
-	better_string path = this->cgi.pathToScript(this->root_directory, this->index, this->build_absolute_path(req), req, this->path);
+	better_string path = this->cgi.pathToScript(this->root_directory, this->index, this->build_absolute_path(req), req);
 	if (!path.compare("404") || !path.compare("403"))
 	{
 		resp->build_error(path);
