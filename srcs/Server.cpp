@@ -1,20 +1,14 @@
 #include "../includes/Server.hpp"
-#include "../includes/Worker.hpp"
 
 Server::Server():
 	routes(), hosts(), server_names(), error_pages(), max_body_size(-1),
-	log(Logger(_INFO, "Server")), worker(NULL)
-{}
-
-Server::Server(Worker *worker):
-	routes(), hosts(), server_names(), error_pages(), max_body_size(-1),
-	log(Logger(_INFO, "Server")), worker(worker)
+	log(Logger(_INFO, "Server"))
 {}
 
 Server::~Server()
 {}
 
-Server::Server(const Server &other): env(NULL), worker(NULL)
+Server::Server(const Server &other): env(NULL)
 {
 	*this = other;
 }
@@ -30,7 +24,6 @@ Server &Server::operator=(const Server &other)
 		this->max_body_size = other.max_body_size;
 		this->log = other.log;
 		this->env = other.env;
-		this->worker = other.worker;
 	}
 	return (*this);
 }
@@ -67,11 +60,6 @@ void Server::setMaxBodySize(long long bodySize)
 void Server::setErrorPage(int code, std::string path)
 {
 	this->error_pages[code] = path;
-}
-
-void Server::setWorker(Worker *worker)
-{
-	this->worker = worker;
 }
 
 // Getters
@@ -191,51 +179,38 @@ std::string Server::printHosts()
 	return res.str();
 }
 
-void Server::handle_request(Request req)
+bool Server::handle_request(Request *req, Response *resp)
 {
-	Response	*resp = new Response(req.getFd());
 	resp->setErrorPages(this->getErrorPages());
 	try
 	{
 		if (
 			this->max_body_size >= 0 &&
-			req.getBody().size() > static_cast<size_t>(this->max_body_size)	
+			req->getBody().size() > static_cast<size_t>(this->max_body_size)	
 		)
 		{
 			resp->build_error("413");
-			resp->run();
-			delete resp;
-			return ;
+			return resp->run();
 		}
-		else if (req.getUrl().getPath().find("..") != std::string::npos)
+		else if (req->getUrl().getPath().find("..") != std::string::npos)
 		{
 			resp->build_error("403");
-			resp->run();
-			delete resp;
-			return ;
+			return resp->run();
 		}
 		try
 		{
-			if (this->select_route(req).handle_request(req, resp))
-				delete resp;
-			else if (resp->getFd() > 0)
-				this->worker->sheduleResponse(resp);
-			else
-				delete resp;
+			return this->select_route(*req).handle_request(*req, resp);
 		}
 		catch(const std::exception& e)
 		{
 			resp->build_error("404");
-			resp->run();
-			delete resp;
-			return ;
+			return resp->run();
 		}
 	}
 	catch(const std::exception& e)
 	{
-		resp->build_error("400");
-		resp->run();
-		delete resp;
 		this->log.ERROR << e.what() << '\n';
+		resp->build_error("400");
+		return resp->run();
 	}
 }

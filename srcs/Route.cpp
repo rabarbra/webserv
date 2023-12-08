@@ -248,9 +248,30 @@ bool Route::handle_delete(std::string full_path, Response &resp)
 	return resp.run();
 }
 
+bool Route::handle_update(Request req, Response *resp)
+{
+	std::string full_path = this->build_absolute_path(req);
+	std::ofstream output;
+	output.open(full_path, std::ios::out | std::ios::binary | std::ios::trunc);
+	output << req.getBody();
+	output.close();
+	resp->build_error("200");
+	return resp->run();
+}
+
+bool Route::handle_create(Request req, Response *resp)
+{
+	std::string full_path = this->build_absolute_path(req);
+	std::ofstream output;
+	output.open(full_path, std::ios::out | std::ios::binary);
+	output << req.getBody();
+	output.close();
+	resp->build_error("201");
+	return resp->run();
+}
+
 bool Route::handle_path(Request req, Response *resp)
 {
-	better_string	req_path(req.getUrl().getPath());
 	std::string full_path = this->build_absolute_path(req);
 	this->logger.INFO << "Trying to send: " << full_path;
 	struct stat st;
@@ -292,7 +313,16 @@ bool Route::handle_path(Request req, Response *resp)
 		}
 		else if (req.getMethod() == DELETE)
 			return (this->handle_delete(full_path, *resp));
+		else if (req.getMethod() == POST)
+		{
+			resp->build_error("405");
+			return resp->run();
+		}
+		else if (req.getMethod() == PUT)
+			this->handle_update(req, resp);
 	}
+	else if (req.getMethod() == PUT || req.getMethod() == POST)
+		return this->handle_create(req, resp);
 	resp->build_error("404");
 	return resp->run();
 }

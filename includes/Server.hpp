@@ -8,8 +8,6 @@
 # include <fcntl.h>
 // Our headers
 # include "Route.hpp"
-
-class Worker;
 class Server
 {
 	private:
@@ -21,10 +19,8 @@ class Server
 		Logger									log;                  
 		Route									&select_route(const Request &req);
 		char									**env;
-		Worker									*worker;
 	public:
 		Server();
-		Server(Worker *worker);
 		~Server();
 		Server(const Server &other);
 		Server									&operator=(const Server &other);
@@ -35,7 +31,6 @@ class Server
 		void									setServerNames(std::stringstream &ss);
 		void									setMaxBodySize(long long bodySize);
 		void									setEnv(char **ev);
-		void									setWorker(Worker *worker);
 		// Getters            
 		std::vector<std::string>                getServerNames() const;
 		std::multimap<std::string, std::string>	getHosts() const;
@@ -43,7 +38,7 @@ class Server
 		char									**getEnv() const;
 		std::map<int, std::string>				getErrorPages() const;
 		// Public
-		void									handle_request(Request req);
+		bool									handle_request(Request *req, Response *resp);
 		void									printServer();
 		std::string								printHosts();
 		bool									hasListenDup();

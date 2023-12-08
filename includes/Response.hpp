@@ -42,6 +42,7 @@ class Response
 		int									fd;
 		Logger								log;
 		void								_build();
+		bool								_send_plain();
 		Response();
 	public:
 		Response(int fd);

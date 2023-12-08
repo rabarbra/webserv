@@ -37,7 +37,6 @@ class Worker
 		int						getNewEventsCount();
 		int						getEventSock(int num_event);
 		void					addResponseToQueue(Response *resp);
-		void					listenWriteAvailable(int socket);
 		EventType				getEventType(int num_event);
 		Response				*getResponse(int num_event);
 		// Private
@@ -52,7 +51,7 @@ class Worker
 		~Worker();
 		Worker(char *path_to_conf, char **ev);
 		void					run();
-		void					sheduleResponse(Response *resp);
+		void					listenWriteAvailable(int socket);
 };
 
 #endif
