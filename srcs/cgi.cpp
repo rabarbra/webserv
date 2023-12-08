@@ -248,7 +248,7 @@ void CGI::createEnv(Request &req)
         this->setEnv(ev);
 }
 
-better_string CGI::pathToScript(better_string cgiPath, better_string index, better_string filePath, Request &req)
+better_string CGI::pathToScript(better_string cgiPath, better_string index, better_string filePath, Request &req, better_string route_path)
 {
 	filePath = URL::removeFromStart(filePath, cgiPath);
 	filePath = URL::removeFromStart(filePath, "/");
@@ -266,7 +266,7 @@ better_string CGI::pathToScript(better_string cgiPath, better_string index, bett
 					result.compare("404") && 
 					result.compare("HandlePath")
 					)
-					this->setupCGI(cgiPath, token, filePath); // setup basic variables for the env array
+					this->setupCGI(cgiPath, token, filePath, route_path); // setup basic variables for the env array
 				return (result);
 			}
 			else if (!S_ISDIR(st.st_mode))
@@ -282,11 +282,11 @@ better_string CGI::pathToScript(better_string cgiPath, better_string index, bett
 		result.compare("404") && 
 		result.compare("HandlePath")
 		)
-		this->setupCGI(cgiPath, index, filePath); // setup basic variables for the env array
+		this->setupCGI(cgiPath, index, filePath, route_path); // setup basic variables for the env array
     return (this->checkRegFile(cgiPath, req));
 }
 
-void CGI::setupCGI(better_string cgiPath, better_string script, better_string filePath)
+void CGI::setupCGI(better_string cgiPath, better_string script, better_string filePath, better_string route_path)
 {
 	this->pathInfo.clear();
 	this->pathTranslated.clear();
@@ -300,7 +300,7 @@ void CGI::setupCGI(better_string cgiPath, better_string script, better_string fi
 	Logger log;
 	log.INFO << "file name:      " << cgiPath;
 	if (pos != std::string::npos)
-		this->documentRoot = cgiPath.substr(0, pos); // Root location of script;
+		this->documentRoot = URL::concatPaths(cgiPath.substr(0, pos), route_path); // Root location of script;
 	this->scriptFilename = cgiPath;
 	this->pathInfo = URL::removeFromStart(filePath, script);
 	if (!this->pathInfo.empty())

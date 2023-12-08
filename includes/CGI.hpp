@@ -49,9 +49,9 @@ class CGI
 		// Public
 		void							configure(Request &req, std::string root, std::string index);
 		int 							execute(Request &req, Response *resp, int *sv, std::string full_path);
-		better_string					pathToScript(better_string cgiPath, better_string index, better_string filePath, Request &req);
+		better_string					pathToScript(better_string cgiPath, better_string index, better_string filePath, Request &req, better_string route_path);
 		bool							isEnabled() const;
-		void							setupCGI(better_string cgiPath, better_string scriptName, better_string filePath);
+		void							setupCGI(better_string cgiPath, better_string scriptName, better_string filePath, better_string route_path);
 };
 
 char									*ft_getEnv(char **env);
