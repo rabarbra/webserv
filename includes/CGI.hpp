@@ -16,12 +16,15 @@ class CGI
 		bool							enabled;
 
 		// ENV vars
+		// Script location in filesystem
 		better_string					scriptName;
 		better_string					scriptFilename;
+		better_string					documentRoot;
+		// Request path and query string for cgi application
 		better_string					pathInfo;
 		better_string					pathTranslated;
-		better_string					documentRoot;
 		better_string					requestURI;
+		// Internal stuff
 		URL								prevURL;
 		std::string						prevExecPath;
 		better_string					checkRegFile(better_string cgiPath, Request &req);
@@ -49,9 +52,9 @@ class CGI
 		// Public
 		void							configure(Request &req, std::string root, std::string index);
 		int 							execute(Request &req, Response *resp, int *sv, std::string full_path);
-		better_string					pathToScript(better_string cgiPath, better_string index, better_string filePath, Request &req, better_string route_path);
+		better_string					pathToScript(better_string cgiPath, better_string index, better_string filePath, Request &req, better_string route_path, better_string route_root);
 		bool							isEnabled() const;
-		void							setupCGI(better_string cgiPath, better_string scriptName, better_string filePath, better_string route_path);
+		void 							setupCGI(better_string cgiPath, better_string script, better_string filePath, better_string route_path, better_string route_root);
 };
 
 char									*ft_getEnv(char **env);
