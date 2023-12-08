@@ -1,6 +1,7 @@
 #include "../includes/Connection.hpp"
+#include "../includes/Worker.hpp"
 
-Connection::Connection(): servers(), sock(-1)
+Connection::Connection(): servers(), sock(-1), worker(NULL)
 {}
 
 Connection::~Connection()
@@ -10,13 +11,13 @@ Connection::~Connection()
 }
 
 Connection::Connection(const Connection &other):
-	servers(), sock(-1)
+	servers(), sock(-1), worker(NULL)
 {
 	*this = other;
 }
 
 Connection::Connection(Address &addr):
-	servers(), address(addr), sock(-1)
+	servers(), address(addr), sock(-1), worker(NULL)
 {
 	this->sock = socket(
 		addr.getAddr()->ai_family,
@@ -66,6 +67,7 @@ Connection &Connection::operator=(const Connection &other)
 		this->sock = dup(other.sock);
 		this->log = other.log;
 		this->address = other.address;
+		this->worker = other.worker;
 	}
 	return *this;
 }
@@ -75,6 +77,11 @@ Connection &Connection::operator=(const Connection &other)
 void Connection::setResponse(Response *resp)
 {
 	this->pending_responses[resp->getFd()] = resp;
+}
+
+void Connection::setWorker(Worker *worker)
+{
+	this->worker = worker;
 }
 
 // Getters
@@ -122,7 +129,7 @@ void Connection::addServer(Server server)
 	}
 }
 
-void Connection::handleRequest(Request req)
+void Connection::handleRequest(int fd)
 {
 	if (!this->servers.size())
 	{
@@ -132,12 +139,25 @@ void Connection::handleRequest(Request req)
 			<< " has no servers!";
 		return ;
 	}
+
+	Request		*req = new Request(fd);
+	Response	*resp = new Response(fd);
+	bool 		result = true;
+
 	std::map<std::string, Server>::iterator it
-		= this->servers.find(req.getUrl().getDomain());
+		= this->servers.find(req->getUrl().getDomain());
 	if (it == this->servers.end())
-		this->servers["default"].handle_request(req);
+		result = this->servers["default"].handle_request(req, resp);
 	else
-		it->second.handle_request(req);
+		result = it->second.handle_request(req, resp);
+	if (!result)
+	{
+		this->setResponse(resp);
+		this->worker->listenWriteAvailable(resp->getFd());
+	}
+	else
+		delete resp;
+	delete req;
 }
 
 bool Connection::continueResponse(int fd)

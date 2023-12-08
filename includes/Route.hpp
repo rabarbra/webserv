@@ -36,6 +36,8 @@ class Route
 		bool						handle_cgi(Response *resp, Request req);
 		bool						handle_redirection(Request req);
 		bool						handle_dir_listing(Request req, std::string full_path);
+		bool						handle_update(Request req, Response *resp);
+		bool						handle_create(Request req, Response *resp);
 		std::string					build_absolute_path(Request req);
 
 	public:

@@ -35,7 +35,6 @@ Worker::Worker(char *path_to_conf, char **env): queue(-1), ev(env)
 	}
 	this->config.setEnv(this->ev);
 	this->config.parse(conf);
-	this->config.setWorker(this);
 	this->initQueue();
 	this->create_connections();
 }
@@ -84,6 +83,7 @@ void Worker::create_connections()
 				Connection conn(address);
 				conn.addServer(servers[i]);
 				this->connections.push_back(conn);
+				this->connections.back().setWorker(this);
 			}
 		}
 	}
@@ -128,12 +128,6 @@ void Worker::accept_connection(int sock)
 	}
 }
 
-void Worker::sheduleResponse(Response *resp)
-{
-	this->connections[this->conn_map[resp->getFd()]].setResponse(resp);
-	this->listenWriteAvailable(resp->getFd());
-}
-
 void Worker::run()
 {
 	int	num_events;
@@ -171,7 +165,7 @@ void Worker::run()
 						break;
 					case READ_AVAIL:
 						this->log.INFO << "Read available";
-						this->connections[this->conn_map[event_sock]].handleRequest(Request(event_sock));
+						this->connections[this->conn_map[event_sock]].handleRequest(event_sock);
 						break;
 					case WRITE_AVAIL:
 						this->log.INFO << "Write available";

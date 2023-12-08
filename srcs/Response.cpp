@@ -118,6 +118,34 @@ void Response::_build()
 		this->_plain += this->body;
 }
 
+bool Response::_send_plain()
+{
+	size_t	sent_local = 0;
+	size_t	left;
+	size_t	chunk_size;
+	ssize_t	chunk;
+
+	chunk_size = 2048;
+	left = this->_plain.size();
+	if (left < chunk_size)
+		chunk_size = left;
+	while (this->_plain.size() && sent_local < this->_plain.size())
+	{
+		chunk = send(this->fd, this->_plain.c_str() + sent_local, chunk_size, SEND_FLAGS);
+		if (chunk < 0)
+		{
+			this->sent += sent_local;
+			return false;
+		}
+		sent_local += chunk;
+		left -= chunk;
+		if (left < chunk_size)
+			chunk_size = left;
+	}
+	this->sent += sent_local;
+	return true;
+}
+
 // Public
 
 bool Response::_send()
@@ -126,6 +154,8 @@ bool Response::_send()
 	size_t	chunk_size;
 	ssize_t	chunk;
 
+	if (this->_plain.empty())
+		this->_build();
 	chunk_size = 2048;
 	left = this->_plain.size() - this->sent;
 	if (left < chunk_size)
@@ -192,6 +222,8 @@ bool Response::_send()
 			left -= chunk;
 			if (left < chunk_size)
 				chunk_size = left;
+			//if (this->sent < this->_plain.size() + size && !file_s.eof())
+			//	return false;
 		}
 		delete []buffer;
 		file_s.close();
@@ -210,7 +242,6 @@ bool Response::run()
 	std::strftime(buffer, 80, "%a, %d %b %Y %H:%M:%S %Z", timeinfo);
 	this->setHeader("Date", buffer);
 	this->setHeader("Server", "Webserv42");
-	this->_build();
 	return this->_send();
 }
 
