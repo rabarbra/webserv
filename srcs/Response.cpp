@@ -11,12 +11,7 @@ Response::Response(int fd):
 {}
 
 Response::~Response()
-{
-	//if (this->data_fd >= 0)
-	//	close(this->data_fd);
-	//if (this->fd)
-	//	close(this->fd);
-}
+{}
 
 Response::Response(const Response &other)
 {

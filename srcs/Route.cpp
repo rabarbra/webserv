@@ -252,7 +252,7 @@ bool Route::handle_update(Request req, Response *resp)
 {
 	std::string full_path = this->build_absolute_path(req);
 	std::ofstream output;
-	output.open(full_path, std::ios::out | std::ios::binary | std::ios::trunc);
+	output.open(full_path.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
 	output << req.getBody();
 	output.close();
 	resp->build_error("200");
@@ -263,7 +263,7 @@ bool Route::handle_create(Request req, Response *resp)
 {
 	std::string full_path = this->build_absolute_path(req);
 	std::ofstream output;
-	output.open(full_path, std::ios::out | std::ios::binary);
+	output.open(full_path.c_str(), std::ios::out | std::ios::binary);
 	output << req.getBody();
 	output.close();
 	resp->build_error("201");
