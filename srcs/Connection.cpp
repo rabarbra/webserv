@@ -140,7 +140,21 @@ void Connection::handleRequest(int fd)
 		return ;
 	}
 
-	Request		*req = new Request(fd);
+	// Receive request to the end
+	Request		*req;
+	if (this->pending_requests.find(fd) != this->pending_requests.end())
+		req = this->pending_requests[fd];
+	else
+		req = new Request(fd);
+	if (!req->receive())
+	{
+		this->pending_requests[fd] = req;
+		return ;
+	}
+	else
+		this->pending_requests.erase(fd);
+
+	// Create response for only completely received request
 	Response	*resp = new Response(fd);
 	bool 		result = true;
 
@@ -152,6 +166,7 @@ void Connection::handleRequest(int fd)
 		result = it->second.handle_request(req, resp);
 	if (!result)
 	{
+		// Shedule response if not sent completely
 		this->setResponse(resp);
 		this->worker->listenWriteAvailable(resp->getFd());
 	}

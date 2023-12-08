@@ -1,11 +1,7 @@
 #include "../includes/Request.hpp"
 
 Request::Request(int fd): _fd(fd)
-{
-	this->receive();
-	this->log.INFO << "Received: " << this->plain;
-	this->parse();
-}
+{}
 
 Request::~Request()
 {}
@@ -80,27 +76,6 @@ URL	Request::getUrl() const
 
 // Private
 
-void Request::receive()
-{
-	int			buf_size = 2048;
-	char		buf[buf_size + 1];
-	int			bytes_read;
-
-	bytes_read = recv(this->_fd, buf, buf_size, 0);
-	if (bytes_read < 0)
-		throw std::runtime_error("Error receiving request: " + std::string(strerror(errno)));
-	buf[bytes_read] = 0;
-	this->plain += std::string(buf);
-	while (bytes_read == buf_size)
-	{
-    	bytes_read = recv(this->_fd, buf, buf_size, 0);
-		if (bytes_read < 0)
-			throw std::runtime_error("Error receiving request: " + std::string(strerror(errno)));
-		buf[bytes_read] = 0;
-		this->plain += std::string(buf);
-	}
-}
-
 void Request::parse()
 {
 	std::stringstream	ss(this->plain);
@@ -145,6 +120,29 @@ void Request::parse()
 }
 
 // Public
+
+bool Request::receive()
+{
+	int			buf_size = 2048;
+	char		buf[buf_size + 1];
+	int			bytes_read;
+
+	bytes_read = recv(this->_fd, buf, buf_size, 0);
+	if (bytes_read < 0)
+		throw std::runtime_error("Error receiving request: " + std::string(strerror(errno)));
+	buf[bytes_read] = 0;
+	this->plain += std::string(buf);
+	while (bytes_read == buf_size)
+	{
+    	bytes_read = recv(this->_fd, buf, buf_size, 0);
+		if (bytes_read < 0)
+			throw std::runtime_error("Error receiving request: " + std::string(strerror(errno)));
+		buf[bytes_read] = 0;
+		this->plain += std::string(buf);
+	}
+	this->parse();
+	return true;
+}
 
 std::string Request::decodeURI(std::string str)
 {
