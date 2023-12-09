@@ -47,27 +47,27 @@ class Response
 		Response(int fd);
 		~Response();
 		Response(const Response &other);
-		Response	operator=(const Response &other);
+		Response							operator=(const Response &other);
 		// Setters
-		void		setBody(std::string body);
-		void		setHeader(std::string key, std::string value);
-		void		setStatusCode(std::string code);
-		void		setReason(std::string reason);
-		void		setContentTypes(std::string filename);
-		void		setFd(int fd);
-		void		setErrorPages(std::map<int, std::string> map);
-		void		setFile(std::string file);
+		void								setBody(std::string body);
+		void								setHeader(std::string key, std::string value);
+		void								setStatusCode(std::string code);
+		void								setReason(std::string reason);
+		void								setContentTypes(std::string filename);
+		void								setFd(int fd);
+		void								setErrorPages(std::map<int, std::string> map);
+		void								setFile(std::string file);
 		// Getters
-		std::string getBody() const;
-		int			getFd() const;
+		std::string 						getBody() const;
+		int									getFd() const;
 		// Public
-		void		build_file(std::string filename);
-		void		build_error(std::string status_code);
-		void		build_ok(std::string statuscode);
-		void		build_dir_listing(std::string full_path, std::string content);
-		void		build_redirect(std::string location, std::string status_code);
-		void		build_cgi_response(std::string response);
-		bool		run();
-		bool		_send();
+		void								build_file(std::string filename);
+		void								build_error(std::string status_code);
+		void								build_ok(std::string statuscode);
+		void								build_dir_listing(std::string full_path, std::string content);
+		void								build_redirect(std::string location, std::string status_code);
+		void								build_cgi_response(std::string response);
+		bool								run();
+		bool								_send();
 };
 #endif

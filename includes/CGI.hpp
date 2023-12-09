@@ -50,7 +50,7 @@ class CGI
 		URL								getPrevURL(void) const;
 		std::string						getPrevExecPath(void) const;
 		// Public
-		void							configure(Request &req, std::string root, std::string index);
+		bool							configure(Request &req, Response *resp, better_string path);
 		int 							execute(Request &req, Response *resp, int *sv, std::string full_path);
 		better_string					pathToScript(better_string cgiPath, better_string index, better_string filePath, Request &req, better_string route_path, better_string route_root);
 		bool							isEnabled() const;

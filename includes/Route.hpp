@@ -71,8 +71,7 @@ class Route
 		// Public
 		void						printRoute();
 		bool						handle_request(Request req, Response *resp);
-		size_t						match(std::string path);
-		bool 						configureCGI(Request &req, Response *resp, std::string &cgiPath);
+		size_t						match(std::string path); 
 		bool						isCgiEnabled() const;
 };
 

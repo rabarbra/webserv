@@ -303,7 +303,7 @@ bool Route::handle_cgi(Response *resp, Request req)
 	if (req.getUrl() == this->cgi.getPrevURL())
 	{
 		better_string path = this->cgi.getPrevExecPath();
-		return this->configureCGI(req, resp, path);
+		return this->cgi.configure(req, resp, path);
 	}
 	better_string path = this->cgi.pathToScript(this->root_directory, this->index, this->build_absolute_path(req), req, this->path, this->root_directory);
 	if (!path.compare("404") || !path.compare("403"))
@@ -313,54 +313,7 @@ bool Route::handle_cgi(Response *resp, Request req)
 	}
 	else if (path == "HandlePath")
 		return this->handle_path(req, resp);
-	return this->configureCGI(req, resp, path);
-}
-
-bool Route::configureCGI(Request &req, Response *resp, std::string &cgiPath)
-{
-	pid_t pid;
-	int sv[2];
-
-	this->cgi.createEnv(req);
-	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == -1)
-		return(sendError(resp, "501", "socketpair failed"));
-	if ((pid = fork()) == -1)
-		return(sendError(resp, "502", "fork failed"));
-	if (pid == 0)
-	{
-		if (this->cgi.execute(req, resp, sv, cgiPath) == -1)
-			return true;
-	}
-	else
-	{
-		if (req.getBody().size())
-			write(sv[0], req.getBody().c_str(), req.getBody().size());
-		close(sv[1]);
-		char buffer[1024];
-		int bytes_read;
-		std::string response;
-		while ((bytes_read = read(sv[0], buffer, 1024)) > 0)
-		{
-			response += std::string(buffer, bytes_read);
-			bzero(buffer, 1024);
-		}
-		close(sv[0]);
-		int status;
-		waitpid(pid, &status, 0);
-		if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
-		{
-			resp->build_cgi_response(response);
-			return resp->_send();
-		}
-		else
-		{
-			this->logger.ERROR << "CGI failed";
-			resp->build_error("500");
-			return resp->run();
-		}
-	}
-	resp->build_error("500");
-	return resp->run();
+	return this->cgi.configure(req, resp, path);
 }
 
 bool Route::handle_redirection(Request req)
