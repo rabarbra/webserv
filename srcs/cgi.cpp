@@ -255,7 +255,8 @@ better_string CGI::pathToScript(better_string cgiPath, better_string index, bett
 	better_string token;
 	std::stringstream ss(filePath);
 	while (std::getline(ss, token, '/')) {
-		cgiPath +=  "/" + token;
+		cgiPath = URL::concatPaths(cgiPath, token);
+		route_path = URL::concatPaths(route_path, token);
 		struct stat st;
 		if (stat(cgiPath.c_str(), &st) == 0)
         {
@@ -276,6 +277,7 @@ better_string CGI::pathToScript(better_string cgiPath, better_string index, bett
 			return "404";
 	}
 	cgiPath = URL::concatPaths(cgiPath, index);
+	route_path = URL::concatPaths(route_path, index);
 	better_string result = this->checkRegFile(cgiPath, req);
 	if (
 		result.compare("403") && 
@@ -294,16 +296,21 @@ void CGI::setupCGI(better_string cgiPath, better_string script, better_string fi
 
         // Clear previous entries
 
-        this->scriptName = URL::concatPaths(route_path, script);
+        this->scriptName = route_path;
         this->requestURI = filePath; // from scriptname onwards;
 		this->documentRoot = route_root;
         this->scriptFilename = cgiPath;
-        this->pathInfo = URL::removeFromStart(filePath, script);
+		size_t pos = filePath.find(script);
+		if (pos != std::string::npos && pos + script.size() != filePath.size())
+		this->pathInfo = filePath.substr(pos + script.size());
         if (!this->pathInfo.empty())
-                this->pathTranslated = this->documentRoot + this->pathInfo; 
+		{
+            this->pathTranslated = this->documentRoot + ("/" + URL::removeFromEnd(filePath, script));
+			this->pathTranslated.find_first_and_replace("/" + script, "");
+		}
 }
 
 bool CGI::isEnabled() const
 {
 	return (this->enabled);
-}
+} 

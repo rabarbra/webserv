@@ -2,9 +2,13 @@ from flask import Flask, render_template, request
 
 app = Flask(__name__)
 
+@app.route('/')
+def index():
+    return render_template('index.html')
+
 # Route for the GET method
 @app.route('/test')
-def index():
+def test():
     return render_template('index.html')
 
 # Route for the POST method

@@ -35,6 +35,7 @@ class URL {
 		// Public
 		static better_string		concatPaths(better_string first, better_string second);
 		static better_string		removeFromStart(better_string first, better_string second);
+		static better_string		removeFromEnd(better_string first, better_string second);
 		// better_string				merge();
 		void						addSegment(better_string);
 
