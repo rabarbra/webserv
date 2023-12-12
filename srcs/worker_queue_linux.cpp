@@ -91,7 +91,7 @@ EventType Worker::getEventType(int num_event)
 	if ((evList[num_event].events & EPOLLERR)
 		|| (evList[num_event].events & EPOLLHUP))
 		return EOF_CONN;
-	if (this->find_connection(this->getEventSock(num_event)) >= 0)
+	if (this->is_socket_accepting_connection(this->getEventSock(num_event)))
 		return NEW_CONN;
 	if (evList[num_event].events & EPOLLOUT)
 		return WRITE_AVAIL;

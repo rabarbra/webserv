@@ -223,10 +223,10 @@ bool Route::isRouteValid()
 	return true;
 }
 
-std::string Route::build_absolute_path(Request req)
+std::string Route::build_absolute_path(RequestHandler req)
 {
 	better_string	root(this->root_directory);
-	better_string	req_path(req.getUrl().getPath());
+	better_string	req_path(req.getRequest().getUrl().getPath());
 
 	if (root.ends_with("/"))
 		root.erase(root.size() - 1);
@@ -248,7 +248,7 @@ bool Route::handle_delete(std::string full_path, Response &resp)
 	return resp.run();
 }
 
-bool Route::handle_update(Request req, Response *resp)
+bool Route::handle_update(RequestHandler req, Response *resp)
 {
 	std::string full_path = this->build_absolute_path(req);
 	std::ofstream output;
@@ -259,78 +259,25 @@ bool Route::handle_update(Request req, Response *resp)
 	return resp->run();
 }
 
-bool Route::handle_create(Request req, Response *resp)
+bool Route::handle_create(RequestHandler req, Response *resp)
 {
 	std::string full_path = this->build_absolute_path(req);
 	std::ofstream output;
+	std::ifstream input;
+	//std::rename(req.getTempFile().c_str(), full_path.c_str());
 	output.open(full_path.c_str(), std::ios::out | std::ios::binary);
-	output << req.getBody();
+	input.open(req.getTempFile().c_str(), std::ios::in | std::ios::binary);
+	output << input.rdbuf();
 	output.close();
+	input.close();
 	resp->build_error("201");
 	return resp->run();
 }
 
-bool Route::handle_path(Request req, Response *resp)
-{
-	std::string full_path = this->build_absolute_path(req);
-	this->logger.INFO << "Trying to send: " << full_path;
-	struct stat st;
-	if (stat(full_path.c_str(), &st) == 0)
-	{
-		if (S_ISDIR(st.st_mode))
-		{
-			if (full_path[full_path.size() - 1] == '/')
-			{
-				if (this->dir_listing)
-					return this->handle_dir_listing(req, full_path);
-				full_path += this->index;
-			}
-			else
-			{
-				URL url = req.getUrl();
-				url.addSegment("/");
-				resp->build_redirect(url.getFullPath(), "302");
-				return resp->run();
-			}
-			if (
-				(req.getMethod() == GET && access(full_path.c_str(), R_OK))
-				|| (req.getMethod() == DELETE && access(full_path.c_str(), W_OK))
-			)
-			{
-				resp->build_error("404");
-				return resp->run();
-			}
-		}
-		else if (!(S_ISREG(st.st_mode)))
-		{
-			resp->build_error("404");
-			return resp->run();
-		}
-		if (req.getMethod() == GET)
-		{
-			resp->build_file(full_path);
-			return (resp->run());
-		}
-		else if (req.getMethod() == DELETE)
-			return (this->handle_delete(full_path, *resp));
-		else if (req.getMethod() == POST)
-		{
-			resp->build_error("405");
-			return resp->run();
-		}
-		else if (req.getMethod() == PUT)
-			this->handle_update(req, resp);
-	}
-	else if (req.getMethod() == PUT || req.getMethod() == POST)
-		return this->handle_create(req, resp);
-	resp->build_error("404");
-	return resp->run();
-}
-
-bool Route::handle_cgi(Response *resp, Request req)
+bool Route::handle_cgi(Response *resp, RequestHandler req)
 {
 	std::string req_path = this->build_absolute_path(req).erase(0, this->root_directory.size());
-	if (req.getUrl() == this->cgi.getPrevURL())
+	if (req.getRequest().getUrl() == this->cgi.getPrevURL())
 	{
 		better_string path = this->cgi.getPrevExecPath();
 		return this->configureCGI(req, resp, path);
@@ -341,12 +288,12 @@ bool Route::handle_cgi(Response *resp, Request req)
 		resp->build_error(path);
 		return (resp->run());
 	}
-	else if (path == "HandlePath")
-		return this->handle_path(req, resp);
+	//else if (path == "HandlePath")
+	//	return this->handle_path(req, resp);
 	return this->configureCGI(req, resp, path);
 }
 
-bool Route::configureCGI(Request &req, Response *resp, std::string &cgiPath)
+bool Route::configureCGI(RequestHandler &req, Response *resp, std::string &cgiPath)
 {
 	pid_t pid;
 	int sv[2];
@@ -393,7 +340,8 @@ bool Route::configureCGI(Request &req, Response *resp, std::string &cgiPath)
 	return resp->run();
 }
 
-bool Route::handle_redirection(Request req)
+/*
+bool Route::handle_redirection(RequestHandler req)
 {
 	Response resp(req.getFd());
 	std::cout << "redirecting to: " << this->redirect_url << "with code " << this->redirectStatusCode << std::endl;
@@ -403,67 +351,7 @@ bool Route::handle_redirection(Request req)
 		resp.build_redirect(this->redirect_url, "302");
 	return resp.run();
 }
-
-bool Route::handle_dir_listing(Request req, std::string full_path)
-{
-	Response resp(req.getFd());
-	DIR *dir;
-	struct dirent *ent;
-	better_string content;
-	better_string dir_content;
-	struct stat st;
-	dir = opendir(full_path.c_str());
-	if (dir == NULL)
-	{
-		resp.build_error("404");
-		return resp.run();
-	}
-
-	better_string path = req.getUrl().getPath().substr(this->path.size(), req.getUrl().getPath().size());
-	dir_content += ("<script>start(\"" + path + "\");</script>\n");
-	better_string route_path(this->getPath());
-	if (!route_path.ends_with("/"))
-		route_path += "/";
-	if (req.getUrl().getPath() != route_path)
-		dir_content += "<script>onHasParentDirectory();</script>\n";
-	while ((ent = readdir(dir)) != NULL) {
-		content = "<script>addRow(\"{{name}}\",\"{{href}}\",{{is_dir}},{{abs_size}},\"{{size}}\",{{timestamp}},\"{{date}}\");</script>";
-		content.find_and_replace("{{name}}", std::string(ent->d_name));
-		if (req.getUrl().getPath()[req.getUrl().getPath().size() - 1] != '/')
-			content.find_and_replace("{{href}}", "/" + std::string(ent->d_name));
-		else
-			content.find_and_replace("{{href}}", std::string(ent->d_name));
-		if (stat((this->build_absolute_path(req) + ent->d_name).c_str(), &st) != 0)
-			continue;
-		std::stringstream ss;
-		if (ent->d_type == DT_DIR)
-		{
-			content.find_and_replace("{{is_dir}}", "1");
-			content.find_and_replace("{{abs_size}}", "0");
-		}
-		else
-		{
-			content.find_and_replace("{{is_dir}}", "0");
-			ss << st.st_size;
-			content.find_and_replace("{{abs_size}}", ss.str());
-			content.find_and_replace("{{size}}", convertSize(st.st_size));
-		}
-		ss.clear();
-		ss << st.st_mtime;
-		content.find_and_replace("{{timestamp}}",ss.str());
-		time_t timestamp = st.st_mtime;
-		struct tm *timeinfo;
-		timeinfo = std::localtime(&timestamp);
-		char buffer[80];
-		std::strftime(buffer, 80, "%Y-%m-%d %H:%M:%S", timeinfo);
-		content.find_and_replace("{{date}}", std::string(buffer));
-		dir_content += content;
-		dir_content += "\n";
-	}
-	closedir(dir);
-	resp.build_dir_listing(full_path, dir_content);
-	return resp.run();
-}
+*/
 
 // Public
 
@@ -486,30 +374,6 @@ size_t Route::match(std::string path)
 	return 0;
 }
 
-bool Route::handle_request(Request req, Response *resp)
-{
-	if (
-		this->allowed_methods.size() &&
-		std::find(
-			this->allowed_methods.begin(),
-			this->allowed_methods.end(),
-			req.getMethod()
-		) == this->allowed_methods.end()
-	)
-	{
-		resp->build_error("405");
-		return resp->run();
-	}
-	if (this->type == PATH_)
-		return this->handle_path(req, resp);
-	else if (this->type == CGI_)
-		return this->handle_cgi(resp, req);
-	else if (this->type == REDIRECTION_)
-		return this->handle_redirection(req);
-	resp->build_error("500");
-	return resp->run();
-}
-
 void Route::printRoute()
 {
 	this->logger.INFO << "            |";
@@ -530,4 +394,42 @@ void Route::printRoute()
 bool Route::isCgiEnabled() const
 {
 	return (this->cgi.isEnabled());
+}
+
+// IRouter impl
+
+IHandler *Route::route(IData &request, StringData &error)
+{
+	Request req = dynamic_cast<Request&>(request);
+	if (
+		this->allowed_methods.size() &&
+		std::find(
+			this->allowed_methods.begin(),
+			this->allowed_methods.end(),
+			req.getMethod()
+		) == this->allowed_methods.end()
+	)
+	{
+		error = StringData("405");
+		return NULL;
+	}
+	if (this->type == PATH_)
+		return new StaticHandler(
+			this->path,
+			this->root_directory,
+			this->dir_listing,
+			this->index,
+			this->static_dir
+		);
+	else if (this->type == CGI_)
+		error = StringData("202");
+		//return this->handle_cgi(resp, req);
+	else if (this->type == REDIRECTION_)
+		return new RedirectHandler(
+			this->redirect_url,
+			this->redirectStatusCode
+		);
+	else
+		error = StringData("500");
+	return NULL;
 }

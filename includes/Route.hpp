@@ -7,14 +7,17 @@
 # include <sys/wait.h>
 // Our headers
 # include "CGI.hpp"
-#include "Request.hpp"
+# include "RequestHandler.hpp"
+# include "interfaces/IRouter.hpp"
+# include "StaticHandler.hpp"
+# include "RedirectHandler.hpp"
 typedef enum e_route_type {
 	PATH_,
 	CGI_,
 	REDIRECTION_
 }			RouteType;
 
-class Route
+class Route: public IRouter
 {
 	private:
 		RouteType					type; // Path by default
@@ -32,13 +35,11 @@ class Route
 		char						**ev;
 		// Private
 		bool						handle_delete(std::string full_path, Response &resp);
-		bool						handle_path(Request req, Response *resp);
-		bool						handle_cgi(Response *resp, Request req);
-		bool						handle_redirection(Request req);
-		bool						handle_dir_listing(Request req, std::string full_path);
-		bool						handle_update(Request req, Response *resp);
-		bool						handle_create(Request req, Response *resp);
-		std::string					build_absolute_path(Request req);
+		bool						handle_cgi(Response *resp, RequestHandler req);
+		//bool						handle_redirection(RequestHandler req);
+		bool						handle_update(RequestHandler req, Response *resp);
+		bool						handle_create(RequestHandler req, Response *resp);
+		std::string					build_absolute_path(RequestHandler req);
 
 	public:
 		Route();
@@ -72,10 +73,11 @@ class Route
 		std::string					getCGIExt() const;
 		// Public
 		void						printRoute();
-		bool						handle_request(Request req, Response *resp);
 		size_t						match(std::string path);
-		bool 						configureCGI(Request &req, Response *resp, std::string &cgiPath);
+		bool 						configureCGI(RequestHandler &req, Response *resp, std::string &cgiPath);
 		bool						isCgiEnabled() const;
+		// IRouter impl
+		IHandler					*route(IData &url, StringData &error);
 };
 
 std::string							convertSize(size_t size);

@@ -8,7 +8,9 @@
 # include <fcntl.h>
 // Our headers
 # include "Route.hpp"
-class Server
+# include "./interfaces/IRouter.hpp"
+# include "./interfaces/IHandler.hpp"
+class Server: public IRouter
 {
 	private:
 		std::vector<Route>						routes;
@@ -17,7 +19,7 @@ class Server
 		std::map<int, std::string>				error_pages; // Key - status code, value - path to error page file for this status code
 		long long								max_body_size;
 		Logger									log;                  
-		Route									&select_route(const Request &req);
+		Route									&select_route(const URL &url);
 		char									**env;
 	public:
 		Server();
@@ -38,9 +40,11 @@ class Server
 		char									**getEnv() const;
 		std::map<int, std::string>				getErrorPages() const;
 		// Public
-		bool									handle_request(Request *req, Response *resp);
+		//bool									handle_request(RequestHandler *req, Response *resp);
 		void									printServer();
 		std::string								printHosts();
 		bool									hasListenDup();
+		// IRouter impl
+		IHandler								*route(IData &url, StringData &error);
 };
 #endif

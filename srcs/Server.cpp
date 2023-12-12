@@ -91,7 +91,7 @@ std::map<int, std::string> Server::getErrorPages() const
 
 // Private
 
-Route &Server::select_route(const Request &req)
+Route &Server::select_route(const URL &url)
 {
 	size_t		max_size = 0;
 	size_t		curr_size;
@@ -102,7 +102,7 @@ Route &Server::select_route(const Request &req)
 		it++
 	)
 	{
-		curr_size = it->match(req.getUrl().getPath());
+		curr_size = it->match(url.getPath());
 		if (curr_size > max_size)
 		{
 			max_size = curr_size;
@@ -179,7 +179,8 @@ std::string Server::printHosts()
 	return res.str();
 }
 
-bool Server::handle_request(Request *req, Response *resp)
+/*
+bool Server::handle_request(RequestHandler *req, Response *resp)
 {
 	resp->setErrorPages(this->getErrorPages());
 	try
@@ -192,14 +193,14 @@ bool Server::handle_request(Request *req, Response *resp)
 			resp->build_error("413");
 			return resp->run();
 		}
-		else if (req->getUrl().getPath().find("..") != std::string::npos)
+		else if (req->getRequest().getUrl().getPath().find("..") != std::string::npos)
 		{
 			resp->build_error("403");
 			return resp->run();
 		}
 		try
 		{
-			return this->select_route(*req).handle_request(*req, resp);
+			return this->select_route(req->getRequest().getUrl()).handle_request(*req, resp);
 		}
 		catch(const std::exception& e)
 		{
@@ -209,8 +210,17 @@ bool Server::handle_request(Request *req, Response *resp)
 	}
 	catch(const std::exception& e)
 	{
-		this->log.ERROR << e.what() << '\n';
+		this->log.ERROR << e.what();
 		resp->build_error("400");
 		return resp->run();
 	}
+}
+*/
+
+// IRouter impl
+
+IHandler *Server::route(IData &request, StringData &error)
+{
+	Request &req = dynamic_cast<Request&>(request);
+	return this->select_route(req.getUrl()).route(request, error);
 }
