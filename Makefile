@@ -2,7 +2,7 @@ NAME =			webserv
 
 CXX =			c++
 
-CXXFLAGS =		-std=c++98 -Wall -Wextra -Werror
+CXXFLAGS =		-std=c++98 -Wall -Wextra -Werror -g
 
 OBJ_DIR =		build
 SRC_DIR =		srcs
@@ -11,7 +11,8 @@ INC_DIR =		includes
 SRC =			main Worker Server Connection Route Request Response \
 				worker_queue_darwin worker_queue_linux better_string \
 				ParseUtils cgi StatusCodes MimeTypes Config Method \
-				Address URL
+				Address URL Channel Data ErrorHandler RequestHandler \
+				StaticHandler RedirectHandler
 OBJ =			$(addprefix $(OBJ_DIR)/, $(addsuffix .o, $(SRC)))
 
 LIBLOGGING =	liblogging

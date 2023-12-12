@@ -2,12 +2,12 @@
 
 Response::Response():
 	httpVersion("HTTP/1.1"), statusCode("200"), reason("OK"),
-	sent(0), fd(-1)
+	sent(0), fd(-1), ready(false), _finished(false)
 {}
 
 Response::Response(int fd):
 	httpVersion("HTTP/1.1"), statusCode("200"), reason("OK"),
-	sent(0), fd(fd)
+	sent(0), fd(fd), ready(false), _finished(false)
 {}
 
 Response::~Response()
@@ -31,6 +31,8 @@ Response Response::operator=(const Response &other)
 		this->fd = other.fd;
 		this->error_pages = other.error_pages;
 		this->file = other.file;
+		this->ready = other.ready;
+		this->_finished = other._finished;
 	}
 	return *this;
 }
@@ -217,8 +219,8 @@ bool Response::_send()
 			left -= chunk;
 			if (left < chunk_size)
 				chunk_size = left;
-			//if (this->sent < this->_plain.size() + size && !file_s.eof())
-			//	return false;
+			if (this->sent < this->_plain.size() + size && !file_s.eof())
+				return false;
 		}
 		delete []buffer;
 		file_s.close();
@@ -256,6 +258,8 @@ void Response::build_file(std::string filename)
 void Response::build_error(std::string status_code)
 {
 	StatusCodes		status;
+	this->log.INFO << "status code: " << status_code;
+	this->log.INFO << "status code: " << status_code;
 	this->_plain = "";
 	this->setStatusCode(status_code);
 	this->setReason(status.getDescription(status_code));
@@ -290,10 +294,9 @@ void Response::build_error(std::string status_code)
 	}
 }
 
-void Response::build_dir_listing(std::string full_path, std::string content)
+void Response::build_dir_listing(std::string content)
 {
 	StatusCodes		status;
-	(void)full_path;
 	this->setContentTypes("dir_list.html");
 	std::fstream	error_page("static/dir_list.html");
 	if (error_page.is_open())
@@ -318,8 +321,10 @@ void Response::build_dir_listing(std::string full_path, std::string content)
 	}
 }
 
-void Response::build_redirect(std::string location, std::string status_code)
+void Response::build_redirect(std::string redirect)
 {
+	std::string	status_code = redirect.substr(0, 3);
+	std::string	location = redirect.substr(3);
 	StatusCodes		status;
 	this->_plain = "";
 	this->setStatusCode(status_code);
@@ -349,4 +354,58 @@ void Response::build_cgi_response(std::string response)
 		new_response.replace(0, 7, this->httpVersion, 0, this->httpVersion.size());
 	this->log.INFO << "CGI RESPONSE: " << new_response;
 	this->_plain = new_response;
+}
+
+void Response::setData(IData &data)
+{
+	try
+	{
+		StringData &d = dynamic_cast<StringData&>(data);
+		this->log.INFO << "Response data: " << d;
+		switch (d.getType())
+		{
+			case D_ERROR:
+				if (!d.empty())
+				{
+					this->build_error(d);
+					this->ready = true;
+				}
+				else
+					this->_finished = true;
+				break;
+			case D_FILEPATH:
+				this->build_file(d);
+				this->ready = true;
+				break;
+			case D_DIRLISTING:
+				this->build_dir_listing(d);
+				this->ready = true;
+				break;
+			case D_REDIR:
+				this->build_redirect(d);
+				this->ready = true;
+				break;
+			default:
+				break;
+		}
+	}
+	catch(const std::bad_cast& e)
+	{
+		std::cerr << e.what() << '\n';
+	}
+}
+
+bool Response::readyToSend()
+{
+	return this->ready;
+}
+
+bool Response::finished()
+{
+	return this->_finished;
+}
+
+void Response::sendData()
+{
+	this->_finished = this->run();
 }

@@ -3,8 +3,9 @@
 # include "better_string.hpp"
 # include <sstream>
 # include <iomanip>
-
-class URL {
+# include "interfaces/IData.hpp"
+class URL
+{
 	private:
 		better_string               domain;
 		better_string               port;

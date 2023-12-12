@@ -95,7 +95,7 @@ Response *Worker::getResponse(int num_event)
 
 EventType Worker::getEventType(int num_event)
 {
-	if (this->find_connection(evList[num_event].ident) >= 0)
+	if (this->is_socket_accepting_connection(evList[num_event].ident))
 		return NEW_CONN;
 	if (evList[num_event].flags & EV_EOF)
 		return EOF_CONN;

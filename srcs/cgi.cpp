@@ -143,7 +143,7 @@ void    CGI::setCgiExt(std::string ext)
 }
 
 // Public
-int CGI::execute(Request &req, Response *resp, int *sv, std::string full_path)
+int CGI::execute(RequestHandler &req, Response *resp, int *sv, std::string full_path)
 {
 	(void)req;
 	close(sv[0]);
@@ -167,7 +167,7 @@ bool sendError(Response *resp, std::string error, std::string error_message)
 	return resp->run();
 }
 
-better_string CGI::checkRegFile(better_string cgiPath, Request &req)
+better_string CGI::checkRegFile(better_string cgiPath, RequestHandler &req)
 {
 	if (this->handler[0] == "$self") 
 	{
@@ -175,7 +175,7 @@ better_string CGI::checkRegFile(better_string cgiPath, Request &req)
 		{
 			if (access(cgiPath.c_str(), X_OK) == 0)
 			{
-				this->prevURL = req.getUrl();
+				this->prevURL = req.getRequest().getUrl();
 				this->prevExecPath = cgiPath;
 				return (cgiPath);
 			}
@@ -189,7 +189,7 @@ better_string CGI::checkRegFile(better_string cgiPath, Request &req)
 		{
 			if (access(cgiPath.c_str(), R_OK) == 0)
 			{
-				this->prevURL = req.getUrl();
+				this->prevURL = req.getRequest().getUrl();
 				this->prevExecPath = cgiPath;
 				return (cgiPath);
 			}
@@ -200,7 +200,7 @@ better_string CGI::checkRegFile(better_string cgiPath, Request &req)
 	}
 }
 
-void CGI::createEnv(Request &req)
+void CGI::createEnv(RequestHandler &req)
 {
 		int i = -1;
 		std::vector<std::string> envp;
@@ -220,14 +220,14 @@ void CGI::createEnv(Request &req)
         envp.push_back("SERVER_PORT=" + this->prevURL.getPort());
         envp.push_back("SERVER_PROTOCOL=HTTP/1.1");
         envp.push_back("SERVER_SOFTWARE=webserv 1.0");
-        envp.push_back("REQUEST_METHOD=" + req.getMethodString());
+        envp.push_back("REQUEST_METHOD=" + getMethodString(req.getRequest().getMethod()));
         envp.push_back("AUTH_TYPE=Basic");
         envp.push_back("GATEWAY_INTERFACE=CGI/1.1");
         std::stringstream ss;
         ss << req.getBody().size();
         std::string result = ss.str();
         envp.push_back("CONTENT_LENGTH=" + result);
-        std::map<std::string, std::string> headers = req.getHeaders();
+        std::map<std::string, std::string> headers = req.getRequest().getHeaders();
         for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
         {
                 std::string key = it->first;
@@ -248,7 +248,7 @@ void CGI::createEnv(Request &req)
         this->setEnv(ev);
 }
 
-better_string CGI::pathToScript(better_string cgiPath, better_string index, better_string filePath, Request &req)
+better_string CGI::pathToScript(better_string cgiPath, better_string index, better_string filePath, RequestHandler &req)
 {
 	filePath = URL::removeFromStart(filePath, cgiPath);
 	filePath = URL::removeFromStart(filePath, "/");

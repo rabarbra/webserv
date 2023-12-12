@@ -6,8 +6,8 @@ Connection::Connection(): servers(), sock(-1), worker(NULL)
 
 Connection::~Connection()
 {
-	if (this->sock >= 0)
-		close(this->sock);
+	//if (this->sock >= 0)
+	//	close(this->sock);
 }
 
 Connection::Connection(const Connection &other):
@@ -64,7 +64,7 @@ Connection &Connection::operator=(const Connection &other)
 	if (this != &other)
 	{
 		this->servers = other.servers;
-		this->sock = dup(other.sock);
+		this->sock = other.sock;//dup(other.sock);
 		this->log = other.log;
 		this->address = other.address;
 		this->worker = other.worker;
@@ -73,11 +73,6 @@ Connection &Connection::operator=(const Connection &other)
 }
 
 // Setters
-
-void Connection::setResponse(Response *resp)
-{
-	this->pending_responses[resp->getFd()] = resp;
-}
 
 void Connection::setWorker(Worker *worker)
 {
@@ -94,11 +89,6 @@ int Connection::getSocket() const
 Address Connection::getAddress() const
 {
 	return this->address;
-}
-
-Response *Connection::getResponse(int fd)
-{
-	return this->pending_responses[fd];
 }
 
 // Public
@@ -129,59 +119,80 @@ void Connection::addServer(Server server)
 	}
 }
 
-void Connection::handleRequest(int fd)
+void Connection::receive(int fd)
 {
-	if (!this->servers.size())
+	if (this->channels.find(fd) != this->channels.end())
+		this->channels[fd]->receive();
+	else
 	{
-		this->log.WARN
-			<< "Connection "
-			<< this->address.getHost()
-			<< " has no servers!";
-		return ;
+		this->channels[fd] = new Channel();
+		this->channels[fd]->setReceiver(new RequestHandler(fd));
+		this->channels[fd]->setSender(new Response(fd));
+		this->channels[fd]->setHandler(new ErrorHandler());
+		this->channels[fd]->receive();
 	}
-
-	// Receive request to the end
-	Request		*req;
-	if (this->pending_requests.find(fd) != this->pending_requests.end())
-		req = this->pending_requests[fd];
-	else
-		req = new Request(fd);
-	if (!req->receive())
+	switch (this->channels[fd]->getReceiver()->getState())
 	{
-		this->pending_requests[fd] = req;
-		return ;
+		case R_WAITING:
+			return ;
+			break;
+		case R_ERROR:
+			this->channels[fd]->send();
+			this->channels[fd]->getHandler()->acceptData(this->channels[fd]->getReceiver()->produceData());
+			this->channels[fd]->getSender()->setData(this->channels[fd]->getHandler()->produceData());
+			this->channels[fd]->send();
+			delete this->channels[fd];
+			this->channels.erase(fd);
+			this->worker->deleteSocketFromQueue(fd);
+			return ;
+			break;
+		case R_REQUEST:
+		{
+			StringData error("");
+			Request req = dynamic_cast<RequestHandler *>(this->channels[fd]->getReceiver())->getRequest();
+			if (this->servers.find(req.getUrl().getDomain()) != this->servers.end())
+				this->channels[fd]->setHandler(this->servers[req.getUrl().getDomain()].route(req, error));
+			else
+				this->channels[fd]->setHandler(this->servers["default"].route(req, error));
+			this->log.INFO << "Error after route selection: " << dynamic_cast<std::string &>(error);
+			this->log.INFO << "Error after route selection: " << dynamic_cast<std::string &>(error);
+			if (!error.empty())
+				this->channels[fd]->getHandler()->acceptData(error);
+			else
+				this->channels[fd]->getHandler()->acceptData(this->channels[fd]->getReceiver()->produceData());
+			this->channels[fd]->getSender()->setData(this->channels[fd]->getHandler()->produceData());
+			this->channels[fd]->send();
+			if (this->channels[fd]->getSender()->finished())
+			{
+				delete this->channels[fd];
+				this->channels.erase(fd);
+				this->worker->deleteSocketFromQueue(fd);
+			}
+			else
+				this->worker->listenWriteAvailable(fd);
+			if (!error.empty())
+			{
+				delete this->channels[fd];
+				this->channels.erase(fd);
+				this->worker->deleteSocketFromQueue(fd);
+			}
+		}
+		default:
+			break;
 	}
-	else
-		this->pending_requests.erase(fd);
-
-	// Create response for only completely received request
-	Response	*resp = new Response(fd);
-	bool 		result = true;
-
-	std::map<std::string, Server>::iterator it
-		= this->servers.find(req->getUrl().getDomain());
-	if (it == this->servers.end())
-		result = this->servers["default"].handle_request(req, resp);
-	else
-		result = it->second.handle_request(req, resp);
-	if (!result)
-	{
-		// Shedule response if not sent completely
-		this->setResponse(resp);
-		this->worker->listenWriteAvailable(resp->getFd());
-	}
-	else
-		delete resp;
-	delete req;
 }
 
-bool Connection::continueResponse(int fd)
+void Connection::send(int fd)
 {
-	if (this->pending_responses[fd]->_send())
+	if (this->channels.find(fd) != this->channels.end())
 	{
-		delete this->pending_responses[fd];
-		this->pending_responses.erase(fd);
-		return true;
+		this->channels[fd]->send();
+		if (this->channels[fd]->senderFinished())
+		{
+			delete this->channels[fd];
+			this->channels.erase(fd);
+			this->worker->deleteSocketFromQueue(fd);
+			//close (fd);
+		}
 	}
-	return false;
 }

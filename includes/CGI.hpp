@@ -3,7 +3,7 @@
 # include <vector>
 # include <unistd.h>
 # include "better_string.hpp"
-# include "Request.hpp"
+# include "RequestHandler.hpp"
 # include <sys/stat.h>
 class CGI
 {
@@ -24,9 +24,9 @@ class CGI
 		better_string					requestURI;
 		URL								prevURL;
 		std::string						prevExecPath;
-		better_string					checkRegFile(better_string cgiPath, Request &req);
+		better_string					checkRegFile(better_string cgiPath, RequestHandler &req);
 	public:
-		void							createEnv(Request &req);
+		void							createEnv(RequestHandler &req);
 		CGI();
 		CGI(std::vector<std::string> handler, char **env);
 		CGI(const CGI &copy);
@@ -47,9 +47,9 @@ class CGI
 		URL								getPrevURL(void) const;
 		std::string						getPrevExecPath(void) const;
 		// Public
-		void							configure(Request &req, std::string root, std::string index);
-		int 							execute(Request &req, Response *resp, int *sv, std::string full_path);
-		better_string					pathToScript(better_string cgiPath, better_string index, better_string filePath, Request &req);
+		void							configure(RequestHandler &req, std::string root, std::string index);
+		int 							execute(RequestHandler &req, Response *resp, int *sv, std::string full_path);
+		better_string					pathToScript(better_string cgiPath, better_string index, better_string filePath, RequestHandler &req);
 		bool							isEnabled() const;
 		void							setupCGI(better_string cgiPath, better_string scriptName, better_string filePath);
 };
