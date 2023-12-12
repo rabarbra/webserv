@@ -25,7 +25,7 @@ StatusCodes::StatusCodes()
 	this->_statusCodes["306"] = "Switch Proxy";
 	this->_statusCodes["307"] = "Temporary Redirect";
 	this->_statusCodes["308"] = "Permanent Redirect";
-	this->_statusCodes["400"] = "Bad RequestHandler";
+	this->_statusCodes["400"] = "Bad Request";
 	this->_statusCodes["401"] = "Unauthorized";
 	this->_statusCodes["402"] = "Payment Required";
 	this->_statusCodes["403"] = "Forbidden";
@@ -33,7 +33,7 @@ StatusCodes::StatusCodes()
 	this->_statusCodes["405"] = "Method Not Allowed";
 	this->_statusCodes["406"] = "Not Acceptable";
 	this->_statusCodes["407"] = "Proxy Authentication Required";
-	this->_statusCodes["408"] = "RequestHandler Timeout";
+	this->_statusCodes["408"] = "Request Timeout";
 	this->_statusCodes["409"] = "Conflict";
 	this->_statusCodes["410"] = "Gone";
 	this->_statusCodes["411"] = "Length Required";
@@ -44,15 +44,15 @@ StatusCodes::StatusCodes()
 	this->_statusCodes["416"] = "Range Not Satisfiable";
 	this->_statusCodes["417"] = "Expectation Failed";
 	this->_statusCodes["418"] = "I'm a teapot";
-	this->_statusCodes["421"] = "Misdirected RequestHandler";
+	this->_statusCodes["421"] = "Misdirected Request";
 	this->_statusCodes["422"] = "Unprocessable Entity";
 	this->_statusCodes["423"] = "Locked";
 	this->_statusCodes["424"] = "Failed Dependency";
 	this->_statusCodes["425"] = "Too Early";
 	this->_statusCodes["426"] = "Upgrade Required";
 	this->_statusCodes["428"] = "Precondition Required";
-	this->_statusCodes["429"] = "Too Many RequestHandlers";
-	this->_statusCodes["431"] = "RequestHandler Header Fields Too Large";
+	this->_statusCodes["429"] = "Too Many Requests";
+	this->_statusCodes["431"] = "Request Header Fields Too Large";
 	this->_statusCodes["451"] = "Unavailable For Legal Reasons";
 	this->_statusCodes["500"] = "Internal Server Error";
 	this->_statusCodes["501"] = "Not Implemented";
