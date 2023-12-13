@@ -16,7 +16,9 @@ class Request: public IData
 		std::map<std::string, std::string>	headers;
 		URL									url;
 	public:
+		ssize_t								content_length;
 		size_t								offset;
+		size_t								body_start;
 		static const size_t					buff_size = 8192;
 		char								buff[Request::buff_size];
 		Request();
@@ -37,5 +39,6 @@ class Request: public IData
 		URL									getUrl() const;
 		// Public
 		std::string							toString() const;
+		void								removeHeader(std::string key);
 };
 #endif

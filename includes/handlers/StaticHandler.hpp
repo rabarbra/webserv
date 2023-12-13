@@ -12,36 +12,45 @@
 # include "interfaces/IHandler.hpp"
 # include "../liblogging/Logger.hpp"
 
+typedef enum e_stat_handler_state
+{
+	SH_START,
+	SH_UPLOADING,
+	SH_FINISHED
+}			StatHandlerState;
 class StaticHandler: public IHandler
 {
 	private:
-		std::string	path;
-		std::string	root_directory;
-		bool		dir_listing;
-		std::string	index;
-		std::string	static_dir;
-		StringData	data;
-		StringData	findFilePath(Request req);
-		std::string build_absolute_path(better_string requestPath);
-		StringData	handle_dir_listing(Request req, std::string full_path);
-		StringData	handle_delete(std::string full_path);
-		StringData	handle_create(Request req, std::string full_path);
-		Logger		log;
+		std::string			path;
+		std::string			root_directory;
+		bool				dir_listing;
+		std::string			index;
+		std::string			static_dir;
+		std::string			full_path;
+		StringData			data;
+		StatHandlerState	state;
+		StringData			findFilePath(Request req);
+		std::string 		build_absolute_path(better_string requestPath);
+		StringData			handle_dir_listing(Request req, std::string full_path);
+		StringData			handle_delete(std::string full_path);
+		StringData			handle_create(Request req, std::string full_path);
+		StringData			save_chunk(Request req);
+		Logger				log;
 	public:
 		StaticHandler();
 		StaticHandler(
-			std::string path,
-			std::string root_directory,
-			bool dir_listing,
-			std::string index,
-			std::string static_dir
+			std::string		path,
+			std::string		root_directory,
+			bool			dir_listing,
+			std::string		index,
+			std::string		static_dir
 		);
 		~StaticHandler();
 		StaticHandler(const StaticHandler &other);
-		StaticHandler	&operator=(const StaticHandler &other);
+		StaticHandler		&operator=(const StaticHandler &other);
 		// IHandler impl
-		IData	&produceData();
-		void	acceptData(IData &data);
+		IData				&produceData();
+		void				acceptData(IData &data);
 };
 
 std::string	convertSize(size_t size);

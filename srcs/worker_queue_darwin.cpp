@@ -17,7 +17,8 @@ void Worker::addSocketToQueue(int sock)
 {
 	struct kevent	evSet;
 
-	EV_SET(&evSet, sock, EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, NULL);
+	//EV_SET(&evSet, sock, EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, NULL);
+	EV_SET(&evSet, sock, EVFILT_READ, EV_ADD, 0, 0, NULL);
     if (kevent(this->queue, &evSet, 1, NULL, 0, NULL) < 0)
 	{
 		std::stringstream ss;

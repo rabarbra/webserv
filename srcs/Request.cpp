@@ -1,12 +1,12 @@
 #include "../includes/Request.hpp"
 
-Request::Request(): offset(0)
+Request::Request(): content_length(0), offset(0), body_start(0)
 {}
 
 Request::~Request()
 {}
 
-Request::Request(const Request &other): offset(0)
+Request::Request(const Request &other): content_length(0), offset(0), body_start(0)
 {
 	*this = other;
 }
@@ -20,6 +20,8 @@ Request &Request::operator=(const Request &other)
 		this->url = other.url;
 		this->headers = other.headers;
 		this->offset = other.offset;
+		this->body_start = other.body_start;
+		this->content_length = other.content_length;
 		std::memcpy(this->buff, other.buff, this->buff_size);
 	}
 	return *this;
@@ -94,4 +96,9 @@ std::string Request::toString() const
 	)
 		ss << "\t" << std::setw(30) << std::left << it->first + ": " << it->second << "\n";
 	return ss.str();
+}
+
+void Request::removeHeader(std::__1::string key)
+{
+	this->headers.erase(key);
 }
