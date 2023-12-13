@@ -1,6 +1,7 @@
 #ifndef STATICHANDLER_HPP
 # define STATICHANDLER_HPP
 // C libs
+# include <ctime>
 # include <unistd.h>
 # include <dirent.h>
 # include <sys/stat.h>
