@@ -3,6 +3,7 @@
 // Cpp libs
 # include <sstream>
 # include <fstream>
+# include <typeinfo>
 // C libs
 # include <cerrno>
 # include <cstdio>
