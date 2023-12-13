@@ -1,4 +1,5 @@
-#pragma once
+#ifndef IROUTER_HPP
+# define IROUTER_HPP
 
 #include "IData.hpp"
 #include "../Data.hpp"
@@ -11,3 +12,4 @@ class IRouter
 		//virtual IHandler *route(IData &data) = 0;
 		virtual IHandler *route(IData &data, StringData &error) = 0;
 };
+#endif

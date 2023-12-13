@@ -361,7 +361,6 @@ void Response::setData(IData &data)
 	try
 	{
 		StringData &d = dynamic_cast<StringData&>(data);
-		this->log.INFO << "Response data: " << d;
 		switch (d.getType())
 		{
 			case D_ERROR:

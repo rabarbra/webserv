@@ -165,14 +165,11 @@ void Worker::run()
 						this->log.INFO << "Read available";
 						this->log.INFO << "Read available";
 						this->connections[event_sock].receive(event_sock);
-						//this->connections[event_sock].handleRequestHandler(event_sock);
 						break;
 					case WRITE_AVAIL:
 						this->log.INFO << "Write available";
 						this->log.INFO << "Write available";
 						this->connections[event_sock].send(event_sock);
-						//if (this->connections[event_sock].continueResponse(event_sock))
-						//	this->deleteSocketFromQueue(event_sock);
 						break;
 					default:
 						this->log.INFO << "Unknown event type!";

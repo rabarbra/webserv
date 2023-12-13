@@ -1,5 +1,5 @@
-#ifndef  REQUESTHANDLER_HPP
-# define  REQUESTHANDLER_HPP
+#ifndef  REQUESTRECEIVER_HPP
+# define  REQUESTRECEIVER_HPP
 # include <iomanip>
 // Our headers
 # include "Method.hpp"
@@ -9,7 +9,7 @@
 # include "URL.hpp"
 # include "Data.hpp"
 
-class RequestHandler: public IReceiver, public IData
+class RequestReceiver: public IReceiver, public IData
 {
 	private:
 		int									_fd;
@@ -28,11 +28,11 @@ class RequestHandler: public IReceiver, public IData
 		bool								receive_body(std::ofstream &tmp);
 		bool								parse_completed_lines();
 	public:
-		RequestHandler();
-		RequestHandler(int	fd);
-		~RequestHandler();
-		RequestHandler(const RequestHandler &other);
-		RequestHandler						&operator=(const RequestHandler &other);
+		RequestReceiver();
+		RequestReceiver(int	fd);
+		~RequestReceiver();
+		RequestReceiver(const RequestReceiver &other);
+		RequestReceiver						&operator=(const RequestReceiver &other);
 		// Getters
 		better_string						getBody() const;
 		std::string							getTempFile() const;

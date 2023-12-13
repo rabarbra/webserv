@@ -1,6 +1,6 @@
 #ifndef CHANNEL_HPP
 # define CHANNEL_HPP
-# include "RequestHandler.hpp"
+# include "RequestReceiver.hpp"
 # include "interfaces/ISender.hpp"
 # include "interfaces/IReceiver.hpp"
 # include "interfaces/IHandler.hpp"

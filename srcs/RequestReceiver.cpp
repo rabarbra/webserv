@@ -1,23 +1,23 @@
-#include "../includes/RequestHandler.hpp"
+#include "../includes/RequestReceiver.hpp"
 
-RequestHandler::RequestHandler(int fd): _fd(fd), state(R_WAITING), _header_pos(0), received(false)
+RequestReceiver::RequestReceiver(int fd): _fd(fd), state(R_WAITING), _header_pos(0), received(false)
 {}
 
-RequestHandler::RequestHandler(): _fd(-1), state(R_WAITING), _header_pos(0), received(false)
+RequestReceiver::RequestReceiver(): _fd(-1), state(R_WAITING), _header_pos(0), received(false)
 {}
 
-RequestHandler::~RequestHandler()
+RequestReceiver::~RequestReceiver()
 {
 	//if (!this->tmp_file.empty())
 	//	std::remove(this->tmp_file.c_str());
 }
 
-RequestHandler::RequestHandler(const RequestHandler &other)
+RequestReceiver::RequestReceiver(const RequestReceiver &other)
 {
 	*this = other;
 }
 
-RequestHandler &RequestHandler::operator=(const RequestHandler &other)
+RequestReceiver &RequestReceiver::operator=(const RequestReceiver &other)
 {
 	if (this != &other)
 	{
@@ -37,34 +37,34 @@ RequestHandler &RequestHandler::operator=(const RequestHandler &other)
 
 // Getters
 
-better_string RequestHandler::getBody() const
+better_string RequestReceiver::getBody() const
 {
 	return this->body;
 }
 
-std::string RequestHandler::getTempFile() const
+std::string RequestReceiver::getTempFile() const
 {
 	return this->tmp_file;
 }
 
-ReceiverState RequestHandler::getState() const
+ReceiverState RequestReceiver::getState() const
 {
 	return this->state;
 }
 
-Request RequestHandler::getRequest() const
+Request RequestReceiver::getRequest() const
 {
 	return this->req;
 }
 
-int RequestHandler::getFd() const
+int RequestReceiver::getFd() const
 {
 	return this->_fd;
 }
 
 // Private
 
-bool RequestHandler::receive_body(std::ofstream &tmp)
+bool RequestReceiver::receive_body(std::ofstream &tmp)
 {
 	size_t		buf_size = 8192;
 	char		buf[buf_size];
@@ -92,7 +92,7 @@ bool RequestHandler::receive_body(std::ofstream &tmp)
 	return true;
 }
 
-bool RequestHandler::parse_completed_lines()
+bool RequestReceiver::parse_completed_lines()
 {
 	std::string			line;
 	better_string		key;
@@ -185,7 +185,7 @@ bool RequestHandler::parse_completed_lines()
 	return false;
 }
 
-bool RequestHandler::finish_request(std::string code)
+bool RequestReceiver::finish_request(std::string code)
 {
 	this->headersOk = false;
 	this->state = R_ERROR;
@@ -196,7 +196,7 @@ bool RequestHandler::finish_request(std::string code)
 
 // Public
 
-bool RequestHandler::receive_headers()
+bool RequestReceiver::receive_headers()
 {
 	ssize_t		bytes_read;
 
@@ -219,7 +219,7 @@ bool RequestHandler::receive_headers()
 	return false;
 }
 
-std::string RequestHandler::decodeURI(std::string str)
+std::string RequestReceiver::decodeURI(std::string str)
 {
 	for (size_t i = 0; i < str.length(); i++)
 	{
@@ -238,7 +238,7 @@ std::string RequestHandler::decodeURI(std::string str)
 	return str;
 }
 
-void RequestHandler::consume()
+void RequestReceiver::consume()
 {
 	//if (this->headersOk)
 	//	this->receive_body();
@@ -247,18 +247,18 @@ void RequestHandler::consume()
 	{
 		this->received = true;
 		this->state = R_REQUEST;
-		this->log.INFO << "RequestHandler will produce request now!";
-		this->log.INFO << "RequestHandler will produce request now!";
+		this->log.INFO << "RequestReceiver will produce request now!";
+		this->log.INFO << "RequestReceiver will produce request now!";
 	}
 	this->log.INFO << this->req.toString();
 }
 
-bool RequestHandler::ready()
+bool RequestReceiver::ready()
 {
 	return this->received;
 }
 
-IData &RequestHandler::produceData()
+IData &RequestReceiver::produceData()
 {
 	switch (this->state)
 	{

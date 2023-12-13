@@ -223,7 +223,7 @@ bool Route::isRouteValid()
 	return true;
 }
 
-std::string Route::build_absolute_path(RequestHandler req)
+std::string Route::build_absolute_path(RequestReceiver req)
 {
 	better_string	root(this->root_directory);
 	better_string	req_path(req.getRequest().getUrl().getPath());
@@ -248,7 +248,7 @@ bool Route::handle_delete(std::string full_path, Response &resp)
 	return resp.run();
 }
 
-bool Route::handle_update(RequestHandler req, Response *resp)
+bool Route::handle_update(RequestReceiver req, Response *resp)
 {
 	std::string full_path = this->build_absolute_path(req);
 	std::ofstream output;
@@ -259,7 +259,7 @@ bool Route::handle_update(RequestHandler req, Response *resp)
 	return resp->run();
 }
 
-bool Route::handle_create(RequestHandler req, Response *resp)
+bool Route::handle_create(RequestReceiver req, Response *resp)
 {
 	std::string full_path = this->build_absolute_path(req);
 	std::ofstream output;
@@ -274,7 +274,7 @@ bool Route::handle_create(RequestHandler req, Response *resp)
 	return resp->run();
 }
 
-bool Route::handle_cgi(Response *resp, RequestHandler req)
+bool Route::handle_cgi(Response *resp, RequestReceiver req)
 {
 	std::string req_path = this->build_absolute_path(req).erase(0, this->root_directory.size());
 	if (req.getRequest().getUrl() == this->cgi.getPrevURL())
@@ -293,7 +293,7 @@ bool Route::handle_cgi(Response *resp, RequestHandler req)
 	return this->configureCGI(req, resp, path);
 }
 
-bool Route::configureCGI(RequestHandler &req, Response *resp, std::string &cgiPath)
+bool Route::configureCGI(RequestReceiver &req, Response *resp, std::string &cgiPath)
 {
 	pid_t pid;
 	int sv[2];
@@ -341,7 +341,7 @@ bool Route::configureCGI(RequestHandler &req, Response *resp, std::string &cgiPa
 }
 
 /*
-bool Route::handle_redirection(RequestHandler req)
+bool Route::handle_redirection(RequestReceiver req)
 {
 	Response resp(req.getFd());
 	std::cout << "redirecting to: " << this->redirect_url << "with code " << this->redirectStatusCode << std::endl;

@@ -40,7 +40,7 @@ class Server: public IRouter
 		char									**getEnv() const;
 		std::map<int, std::string>				getErrorPages() const;
 		// Public
-		//bool									handle_request(RequestHandler *req, Response *resp);
+		//bool									handle_request(RequestReceiver *req, Response *resp);
 		void									printServer();
 		std::string								printHosts();
 		bool									hasListenDup();
