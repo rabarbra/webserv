@@ -1,5 +1,6 @@
 #ifndef REQUEST_HPP
 # define REQUEST_HPP
+# include <cstring>
 # include "interfaces/IData.hpp"
 # include "better_string.hpp"
 # include "Method.hpp"
