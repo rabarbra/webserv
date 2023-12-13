@@ -16,6 +16,6 @@ jobs:
     - name: make
       run: make
     - name: install valgrind
-      run:  sudo apt install valgrind
+      run:  sudo apt update && sudo apt install valgrind
     - name: init worker
       run: valgrind ./webserv webserv.conf &
