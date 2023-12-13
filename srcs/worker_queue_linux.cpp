@@ -45,7 +45,7 @@ void Worker::listenWriteAvailable(int socket)
 	this->log.INFO << "Added EVFILT_WRITE for socket " << socket;
 }
 
-//void Worker::addResponseToQueue(Response *resp)
+//void Worker::addResponseSenderToQueue(ResponseSender *resp)
 //{
 //	struct epoll_event	conn_event;
 //	EpollData			*data;
@@ -80,7 +80,7 @@ int Worker::getEventSock(int num_event)
 	return this->evList[num_event].data.fd;
 }
 
-//Response *Worker::getResponse(int num_event)
+//ResponseSender *Worker::getResponse(int num_event)
 //{
 //	EpollData *data = static_cast<EpollData *>(this->evList[num_event].data.ptr);
 //	return data->resp;

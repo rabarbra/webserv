@@ -237,7 +237,7 @@ std::string Route::build_absolute_path(RequestReceiver req)
 	return root + req_path;
 }
 
-bool Route::handle_delete(std::string full_path, Response &resp)
+bool Route::handle_delete(std::string full_path, ResponseSender &resp)
 {
 	if (std::remove(full_path.c_str()) == 0)
 	{
@@ -248,7 +248,7 @@ bool Route::handle_delete(std::string full_path, Response &resp)
 	return resp.run();
 }
 
-bool Route::handle_update(RequestReceiver req, Response *resp)
+bool Route::handle_update(RequestReceiver req, ResponseSender *resp)
 {
 	std::string full_path = this->build_absolute_path(req);
 	std::ofstream output;
@@ -259,7 +259,7 @@ bool Route::handle_update(RequestReceiver req, Response *resp)
 	return resp->run();
 }
 
-bool Route::handle_create(RequestReceiver req, Response *resp)
+bool Route::handle_create(RequestReceiver req, ResponseSender *resp)
 {
 	std::string full_path = this->build_absolute_path(req);
 	std::ofstream output;
@@ -274,7 +274,7 @@ bool Route::handle_create(RequestReceiver req, Response *resp)
 	return resp->run();
 }
 
-bool Route::handle_cgi(Response *resp, RequestReceiver req)
+bool Route::handle_cgi(ResponseSender *resp, RequestReceiver req)
 {
 	std::string req_path = this->build_absolute_path(req).erase(0, this->root_directory.size());
 	if (req.getRequest().getUrl() == this->cgi.getPrevURL())
@@ -293,7 +293,7 @@ bool Route::handle_cgi(Response *resp, RequestReceiver req)
 	return this->configureCGI(req, resp, path);
 }
 
-bool Route::configureCGI(RequestReceiver &req, Response *resp, std::string &cgiPath)
+bool Route::configureCGI(RequestReceiver &req, ResponseSender *resp, std::string &cgiPath)
 {
 	pid_t pid;
 	int sv[2];
@@ -343,7 +343,7 @@ bool Route::configureCGI(RequestReceiver &req, Response *resp, std::string &cgiP
 /*
 bool Route::handle_redirection(RequestReceiver req)
 {
-	Response resp(req.getFd());
+	ResponseSender resp(req.getFd());
 	std::cout << "redirecting to: " << this->redirect_url << "with code " << this->redirectStatusCode << std::endl;
 	if (!this->redirectStatusCode.empty())
 		resp.build_redirect(this->redirect_url, this->redirectStatusCode);

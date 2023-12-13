@@ -127,7 +127,7 @@ void Connection::receive(int fd)
 	{
 		this->channels[fd] = new Channel();
 		this->channels[fd]->setReceiver(new RequestReceiver(fd));
-		this->channels[fd]->setSender(new Response(fd));
+		this->channels[fd]->setSender(new ResponseSender(fd));
 		this->channels[fd]->setHandler(new ErrorHandler());
 		this->channels[fd]->receive();
 	}

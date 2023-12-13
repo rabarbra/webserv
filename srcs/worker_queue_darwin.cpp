@@ -31,7 +31,7 @@ void Worker::addSocketToQueue(int sock)
 	this->log.INFO << "Added EVFILT_READ for socket " << sock;
 }
 
-void Worker::addResponseToQueue(Response *resp)
+void Worker::addResponseToQueue(ResponseSender *resp)
 {
 	struct kevent	evSet;
 
@@ -88,9 +88,9 @@ int Worker::getEventSock(int num_event)
 	return this->evList[num_event].ident;
 }
 
-Response *Worker::getResponse(int num_event)
+ResponseSender *Worker::getResponse(int num_event)
 {
-	return reinterpret_cast<Response *>(this->evList[num_event].udata);
+	return reinterpret_cast<ResponseSender *>(this->evList[num_event].udata);
 }
 
 EventType Worker::getEventType(int num_event)

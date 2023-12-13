@@ -143,7 +143,7 @@ void    CGI::setCgiExt(std::string ext)
 }
 
 // Public
-int CGI::execute(RequestReceiver &req, Response *resp, int *sv, std::string full_path)
+int CGI::execute(RequestReceiver &req, ResponseSender *resp, int *sv, std::string full_path)
 {
 	(void)req;
 	close(sv[0]);
@@ -160,7 +160,7 @@ int CGI::execute(RequestReceiver &req, Response *resp, int *sv, std::string full
 	return 0;
 }
 
-bool sendError(Response *resp, std::string error, std::string error_message)
+bool sendError(ResponseSender *resp, std::string error, std::string error_message)
 {
 	std::cerr << "[ERROR] "  << error_message << std::endl;
 	resp->build_error(error);

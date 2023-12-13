@@ -1,5 +1,5 @@
-#ifndef RESPONSE_HPP
-# define RESPONSE_HPP
+#ifndef RESPONSESENDER_HPP
+# define RESPONSESENDER_HPP
 // Cpp libs
 # include <sstream>
 # include <fstream>
@@ -29,7 +29,7 @@
 # else
 #  define SEND_FLAGS 0
 # endif
-class Response: public ISender
+class ResponseSender: public ISender
 {
 	private:
 		std::string							httpVersion;
@@ -49,11 +49,11 @@ class Response: public ISender
 		void								_build();
 		bool								_send_plain();
 	public:
-		Response();
-		Response(int fd);
-		~Response();
-		Response(const Response &other);
-		Response	operator=(const Response &other);
+		ResponseSender();
+		ResponseSender(int fd);
+		~ResponseSender();
+		ResponseSender(const ResponseSender &other);
+		ResponseSender	operator=(const ResponseSender &other);
 		// Setters
 		void		setBody(std::string body);
 		void		setHeader(std::string key, std::string value);

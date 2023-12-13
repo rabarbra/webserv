@@ -48,7 +48,7 @@ class CGI
 		std::string						getPrevExecPath(void) const;
 		// Public
 		void							configure(RequestReceiver &req, std::string root, std::string index);
-		int 							execute(RequestReceiver &req, Response *resp, int *sv, std::string full_path);
+		int 							execute(RequestReceiver &req, ResponseSender *resp, int *sv, std::string full_path);
 		better_string					pathToScript(better_string cgiPath, better_string index, better_string filePath, RequestReceiver &req);
 		bool							isEnabled() const;
 		void							setupCGI(better_string cgiPath, better_string scriptName, better_string filePath);
@@ -56,5 +56,5 @@ class CGI
 
 char									*ft_getEnv(char **env);
 std::string								findExecutablePath(std::vector<std::string> paths, std::string handler);
-bool									sendError(Response *resp, std::string error, std::string error_message);
+bool									sendError(ResponseSender *resp, std::string error, std::string error_message);
 #endif
