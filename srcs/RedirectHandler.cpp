@@ -1,4 +1,4 @@
-#include "../includes/RedirectHandler.hpp"
+#include "../includes/handlers/RedirectHandler.hpp"
 
 RedirectHandler::RedirectHandler()
 {}

@@ -3,7 +3,7 @@
 # include "Server.hpp"
 # include "Address.hpp"
 # include "Channel.hpp"
-# include "ErrorHandler.hpp"
+# include "handlers/ErrorHandler.hpp"
 
 class Worker;
 

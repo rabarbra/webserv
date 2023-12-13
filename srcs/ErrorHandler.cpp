@@ -1,4 +1,4 @@
-#include "../includes/ErrorHandler.hpp"
+#include "../includes/handlers/ErrorHandler.hpp"
 
 ErrorHandler::ErrorHandler()
 {}

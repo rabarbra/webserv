@@ -1,4 +1,4 @@
-#include "../includes/StaticHandler.hpp"
+#include "../includes/handlers/StaticHandler.hpp"
 
 StaticHandler::StaticHandler()
 {}

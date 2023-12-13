@@ -34,9 +34,9 @@ class Worker
 		void						addSocketToQueue(int sock);
 		int							getNewEventsCount();
 		int							getEventSock(int num_event);
-		void						addResponseToQueue(Response *resp);
+		void						addResponseToQueue(ResponseSender *resp);
 		EventType					getEventType(int num_event);
-		Response					*getResponse(int num_event);
+		ResponseSender					*getResponse(int num_event);
 		// Private
 		void						create_connections();
 		bool						is_socket_accepting_connection(int sock);

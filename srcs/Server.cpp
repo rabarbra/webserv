@@ -180,7 +180,7 @@ std::string Server::printHosts()
 }
 
 /*
-bool Server::handle_request(RequestReceiver *req, Response *resp)
+bool Server::handle_request(RequestReceiver *req, ResponseSender *resp)
 {
 	resp->setErrorPages(this->getErrorPages());
 	try

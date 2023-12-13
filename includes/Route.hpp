@@ -9,8 +9,8 @@
 # include "CGI.hpp"
 # include "RequestReceiver.hpp"
 # include "interfaces/IRouter.hpp"
-# include "StaticHandler.hpp"
-# include "RedirectHandler.hpp"
+# include "handlers/StaticHandler.hpp"
+# include "handlers/RedirectHandler.hpp"
 typedef enum e_route_type {
 	PATH_,
 	CGI_,
@@ -34,11 +34,11 @@ class Route: public IRouter
 		Logger						logger;
 		char						**ev;
 		// Private
-		bool						handle_delete(std::string full_path, Response &resp);
-		bool						handle_cgi(Response *resp, RequestReceiver req);
+		bool						handle_delete(std::string full_path, ResponseSender &resp);
+		bool						handle_cgi(ResponseSender *resp, RequestReceiver req);
 		//bool						handle_redirection(RequestReceiver req);
-		bool						handle_update(RequestReceiver req, Response *resp);
-		bool						handle_create(RequestReceiver req, Response *resp);
+		bool						handle_update(RequestReceiver req, ResponseSender *resp);
+		bool						handle_create(RequestReceiver req, ResponseSender *resp);
 		std::string					build_absolute_path(RequestReceiver req);
 
 	public:
@@ -74,7 +74,7 @@ class Route: public IRouter
 		// Public
 		void						printRoute();
 		size_t						match(std::string path);
-		bool 						configureCGI(RequestReceiver &req, Response *resp, std::string &cgiPath);
+		bool 						configureCGI(RequestReceiver &req, ResponseSender *resp, std::string &cgiPath);
 		bool						isCgiEnabled() const;
 		// IRouter impl
 		IHandler					*route(IData &url, StringData &error);

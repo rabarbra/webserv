@@ -4,7 +4,7 @@
 // Our headers
 # include "Method.hpp"
 # include "interfaces/IReceiver.hpp"
-# include "Response.hpp"
+# include "ResponseSender.hpp"
 # include "Request.hpp"
 # include "URL.hpp"
 # include "Data.hpp"
