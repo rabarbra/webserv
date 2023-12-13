@@ -3,7 +3,13 @@
 StaticHandler::StaticHandler()
 {}
 
-StaticHandler::StaticHandler(std::string path, std::string root_directory, bool dir_listing, std::string index, std::string static_dir)
+StaticHandler::StaticHandler(
+	std::string	path,
+	std::string	root_directory,
+	bool		dir_listing,
+	std::string	index,
+	std::string	static_dir
+)
 {
 	this->path = path;
 	this->root_directory = root_directory;
@@ -104,6 +110,22 @@ std::string StaticHandler::build_absolute_path(better_string requestPath)
 	return root + req_path;
 }
 
+StringData StaticHandler::handle_delete(std::string full_path)
+{
+	if (std::remove(full_path.c_str()) == 0)
+		return (StringData("200"));
+	return (StringData("403"));
+}
+
+StringData StaticHandler::handle_create(Request req, std::string full_path)
+{
+	std::ofstream output;
+	output.open(full_path.c_str(), std::ios::out | std::ios::binary);
+	output.write(req.buff, req.buff_size);
+	output.close();
+	return StringData("201");
+}
+
 StringData StaticHandler::findFilePath(Request req)
 {
 	std::string full_path = this->build_absolute_path(req.getUrl().getPath());
@@ -134,15 +156,15 @@ StringData StaticHandler::findFilePath(Request req)
 			return StringData("404");
 		if (req.getMethod() == GET)
 			return StringData(full_path, D_FILEPATH);
-		//else if (req.getMethod() == DELETE)
-		//	return (this->handle_delete(full_path, *resp));
-		//else if (req.getMethod() == POST)
-		//	return StringData("405");
+		else if (req.getMethod() == DELETE)
+			return this->handle_delete(full_path);
+		else if (req.getMethod() == POST)
+			return StringData("405");
 		//else if (req.getMethod() == PUT)
 		//	this->handle_update(req, resp);
 	}
-	//else if (req.getMethod() == PUT || req.getMethod() == POST)
-	//	return this->handle_create(req, resp);
+	else if (req.getMethod() == PUT || req.getMethod() == POST)
+		return this->handle_create(req, full_path);
 	return StringData("404");
 }
 
