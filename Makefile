@@ -10,7 +10,7 @@ INC_DIR =		includes
 
 SRC =			main Worker Server Connection Route Request Address \
 				worker_queue_darwin worker_queue_linux better_string \
-				ParseUtils cgi StatusCodes MimeTypes Config Method URL \
+				ParseUtils CGI StatusCodes MimeTypes Config Method URL \
 				Channel Data ErrorHandler RequestReceiver ResponseSender \
 				StaticHandler RedirectHandler
 OBJ =			$(addprefix $(OBJ_DIR)/, $(addsuffix .o, $(SRC)))
