@@ -1,7 +1,8 @@
-#pragma once
-#include "Data.hpp"
-#include "Request.hpp"
-#include "interfaces/IHandler.hpp"
+#ifndef REDIRECTHANDLER_HPP
+# define REDIRECTHANDLER_HPP
+# include "Data.hpp"
+# include "Request.hpp"
+# include "interfaces/IHandler.hpp"
 
 class RedirectHandler: public IHandler
 {
@@ -20,3 +21,4 @@ class RedirectHandler: public IHandler
 		IData	&produceData();
 		void	acceptData(IData &data);
 };
+#endif

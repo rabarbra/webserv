@@ -1,12 +1,12 @@
-#pragma once
-#include "Request.hpp"
-#include "Data.hpp"
-#include <unistd.h>
-#include <dirent.h>
-#include <sys/stat.h>
-
-#include "interfaces/IHandler.hpp"
-#include "../liblogging/Logger.hpp"
+#ifndef STATICHANDLER_HPP
+# define STATICHANDLER_HPP
+# include <unistd.h>
+# include <dirent.h>
+# include <sys/stat.h>
+# include "Data.hpp"
+# include "Request.hpp"
+# include "interfaces/IHandler.hpp"
+# include "../liblogging/Logger.hpp"
 
 class StaticHandler: public IHandler
 {
@@ -33,3 +33,4 @@ class StaticHandler: public IHandler
 };
 
 std::string	convertSize(size_t size);
+#endif

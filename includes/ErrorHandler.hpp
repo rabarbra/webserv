@@ -1,7 +1,7 @@
-#pragma once
-
-#include "interfaces/IHandler.hpp"
-#include "Data.hpp"
+#ifndef ERRORHANDLER_HPP
+# define ERRORHANDLER_HPP
+# include "interfaces/IHandler.hpp"
+# include "Data.hpp"
 
 class ErrorHandler: public IHandler
 {
@@ -17,3 +17,4 @@ class ErrorHandler: public IHandler
 		void	acceptData(IData &data);
 		
 };
+#endif

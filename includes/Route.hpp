@@ -7,7 +7,7 @@
 # include <sys/wait.h>
 // Our headers
 # include "CGI.hpp"
-# include "RequestHandler.hpp"
+# include "RequestReceiver.hpp"
 # include "interfaces/IRouter.hpp"
 # include "StaticHandler.hpp"
 # include "RedirectHandler.hpp"
@@ -35,11 +35,11 @@ class Route: public IRouter
 		char						**ev;
 		// Private
 		bool						handle_delete(std::string full_path, Response &resp);
-		bool						handle_cgi(Response *resp, RequestHandler req);
-		//bool						handle_redirection(RequestHandler req);
-		bool						handle_update(RequestHandler req, Response *resp);
-		bool						handle_create(RequestHandler req, Response *resp);
-		std::string					build_absolute_path(RequestHandler req);
+		bool						handle_cgi(Response *resp, RequestReceiver req);
+		//bool						handle_redirection(RequestReceiver req);
+		bool						handle_update(RequestReceiver req, Response *resp);
+		bool						handle_create(RequestReceiver req, Response *resp);
+		std::string					build_absolute_path(RequestReceiver req);
 
 	public:
 		Route();
@@ -74,7 +74,7 @@ class Route: public IRouter
 		// Public
 		void						printRoute();
 		size_t						match(std::string path);
-		bool 						configureCGI(RequestHandler &req, Response *resp, std::string &cgiPath);
+		bool 						configureCGI(RequestReceiver &req, Response *resp, std::string &cgiPath);
 		bool						isCgiEnabled() const;
 		// IRouter impl
 		IHandler					*route(IData &url, StringData &error);

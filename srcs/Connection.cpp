@@ -126,7 +126,7 @@ void Connection::receive(int fd)
 	else
 	{
 		this->channels[fd] = new Channel();
-		this->channels[fd]->setReceiver(new RequestHandler(fd));
+		this->channels[fd]->setReceiver(new RequestReceiver(fd));
 		this->channels[fd]->setSender(new Response(fd));
 		this->channels[fd]->setHandler(new ErrorHandler());
 		this->channels[fd]->receive();
@@ -149,7 +149,7 @@ void Connection::receive(int fd)
 		case R_REQUEST:
 		{
 			StringData error("");
-			Request req = dynamic_cast<RequestHandler *>(this->channels[fd]->getReceiver())->getRequest();
+			Request req = dynamic_cast<RequestReceiver *>(this->channels[fd]->getReceiver())->getRequest();
 			if (this->servers.find(req.getUrl().getDomain()) != this->servers.end())
 				this->channels[fd]->setHandler(this->servers[req.getUrl().getDomain()].route(req, error));
 			else

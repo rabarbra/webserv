@@ -143,7 +143,7 @@ void    CGI::setCgiExt(std::string ext)
 }
 
 // Public
-int CGI::execute(RequestHandler &req, Response *resp, int *sv, std::string full_path)
+int CGI::execute(RequestReceiver &req, Response *resp, int *sv, std::string full_path)
 {
 	(void)req;
 	close(sv[0]);
@@ -167,7 +167,7 @@ bool sendError(Response *resp, std::string error, std::string error_message)
 	return resp->run();
 }
 
-better_string CGI::checkRegFile(better_string cgiPath, RequestHandler &req)
+better_string CGI::checkRegFile(better_string cgiPath, RequestReceiver &req)
 {
 	if (this->handler[0] == "$self") 
 	{
@@ -200,7 +200,7 @@ better_string CGI::checkRegFile(better_string cgiPath, RequestHandler &req)
 	}
 }
 
-void CGI::createEnv(RequestHandler &req)
+void CGI::createEnv(RequestReceiver &req)
 {
 		int i = -1;
 		std::vector<std::string> envp;
@@ -248,7 +248,7 @@ void CGI::createEnv(RequestHandler &req)
         this->setEnv(ev);
 }
 
-better_string CGI::pathToScript(better_string cgiPath, better_string index, better_string filePath, RequestHandler &req)
+better_string CGI::pathToScript(better_string cgiPath, better_string index, better_string filePath, RequestReceiver &req)
 {
 	filePath = URL::removeFromStart(filePath, cgiPath);
 	filePath = URL::removeFromStart(filePath, "/");
