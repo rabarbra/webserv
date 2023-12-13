@@ -121,6 +121,7 @@ void Connection::addServer(Server server)
 
 void Connection::receive(int fd)
 {
+	this->log.INFO << "CONNECTION RECEIVING FOR SOCKET " << fd;
 	if (this->channels.find(fd) != this->channels.end())
 		this->channels[fd]->receive();
 	else
@@ -134,9 +135,11 @@ void Connection::receive(int fd)
 	switch (this->channels[fd]->getReceiver()->getState())
 	{
 		case R_WAITING:
+			this->log.INFO << "Connection: waiting";
 			return ;
 			break;
 		case R_ERROR:
+			this->log.INFO << "Connection: error";
 			this->channels[fd]->send();
 			this->channels[fd]->getHandler()->acceptData(this->channels[fd]->getReceiver()->produceData());
 			this->channels[fd]->getSender()->setData(this->channels[fd]->getHandler()->produceData());
@@ -148,6 +151,7 @@ void Connection::receive(int fd)
 			break;
 		case R_REQUEST:
 		{
+			this->log.INFO << "Connection: request";
 			StringData error("");
 			Request req = dynamic_cast<RequestReceiver *>(this->channels[fd]->getReceiver())->getRequest();
 			if (this->servers.find(req.getUrl().getDomain()) != this->servers.end())
@@ -162,7 +166,7 @@ void Connection::receive(int fd)
 				this->channels[fd]->getHandler()->acceptData(this->channels[fd]->getReceiver()->produceData());
 			this->channels[fd]->getSender()->setData(this->channels[fd]->getHandler()->produceData());
 			this->channels[fd]->send();
-			if (this->channels[fd]->getSender()->finished())
+			if (this->channels[fd]->getSender()->finished() || !error.empty())
 			{
 				delete this->channels[fd];
 				this->channels.erase(fd);
@@ -170,14 +174,24 @@ void Connection::receive(int fd)
 			}
 			else
 				this->worker->listenWriteAvailable(fd);
-			if (!error.empty())
+			break ;
+		}
+		case R_BODY:
+		{
+			this->log.INFO << "Connection: receiving body";
+			this->channels[fd]->getHandler()->acceptData(this->channels[fd]->getReceiver()->produceData());
+			this->channels[fd]->getSender()->setData(this->channels[fd]->getHandler()->produceData());
+			this->channels[fd]->send();
+			if (this->channels[fd]->getSender()->finished())
 			{
 				delete this->channels[fd];
 				this->channels.erase(fd);
 				this->worker->deleteSocketFromQueue(fd);
 			}
+			break;
 		}
 		default:
+			this->log.INFO << "Connection: default";
 			break;
 	}
 }

@@ -1,6 +1,6 @@
 #include "../includes/handlers/StaticHandler.hpp"
 
-StaticHandler::StaticHandler()
+StaticHandler::StaticHandler(): state(SH_START)
 {}
 
 StaticHandler::StaticHandler(
@@ -9,7 +9,7 @@ StaticHandler::StaticHandler(
 	bool		dir_listing,
 	std::string	index,
 	std::string	static_dir
-)
+): state(SH_START)
 {
 	this->path = path;
 	this->root_directory = root_directory;
@@ -21,7 +21,7 @@ StaticHandler::StaticHandler(
 StaticHandler::~StaticHandler()
 {}
 
-StaticHandler::StaticHandler(const StaticHandler &other)
+StaticHandler::StaticHandler(const StaticHandler &other): state(SH_START)
 {
 	*this = other;
 }
@@ -34,6 +34,8 @@ StaticHandler &StaticHandler::operator=(StaticHandler const &other)
 	this->index = other.index;
 	this->static_dir = other.static_dir;
 	this->data = other.data;
+	this->state = other.state;
+	this->full_path = other.full_path;
 	this->log = other.log;
 	return *this;
 }
@@ -50,7 +52,7 @@ StringData StaticHandler::handle_dir_listing(Request req, std::string full_path)
 	better_string url_path = req.getUrl().getPath();
 	dir = opendir(full_path.c_str());
 	if (dir == NULL)
-		return StringData("404");
+		return this->state = SH_FINISHED, StringData("404");
 	better_string path = url_path.substr(this->path.size(), url_path.size());
 	dir_content += ("<script>start(\"" + path + "\");</script>\n");
 	better_string route_path(this->path);
@@ -93,7 +95,7 @@ StringData StaticHandler::handle_dir_listing(Request req, std::string full_path)
 		dir_content += "\n";
 	}
 	closedir(dir);
-	return StringData(dir_content, D_DIRLISTING);
+	return this->state = SH_FINISHED, StringData(dir_content, D_DIRLISTING);
 }
 
 std::string StaticHandler::build_absolute_path(better_string requestPath)
@@ -113,17 +115,37 @@ std::string StaticHandler::build_absolute_path(better_string requestPath)
 StringData StaticHandler::handle_delete(std::string full_path)
 {
 	if (std::remove(full_path.c_str()) == 0)
-		return (StringData("200"));
-	return (StringData("403"));
+		return this->state = SH_FINISHED, StringData("200");
+	return this->state = SH_FINISHED, StringData("403");
+}
+
+StringData StaticHandler::save_chunk(Request req)
+{
+	this->log.INFO << "Saving chunk " << req.body_start << " " << req.offset;
+	std::ofstream output;
+	output.open(full_path.c_str(), std::ios::out | std::ios::binary | std::ios::app);
+	output.write(req.buff + req.body_start, req.offset - req.body_start);
+	if (req.content_length && req.content_length == output.tellp())
+	{
+		output.close();
+		return this->state = SH_FINISHED, StringData("201");
+	}
+	output.close();
+	if (!req.offset && !req.body_start)
+		return this->state = SH_FINISHED, StringData("", D_FINISHED);
+	return StringData("", D_NOTHING);
 }
 
 StringData StaticHandler::handle_create(Request req, std::string full_path)
 {
 	std::ofstream output;
 	output.open(full_path.c_str(), std::ios::out | std::ios::binary);
-	output.write(req.buff, req.buff_size);
+	this->full_path = full_path;
+	if (!output.is_open() || !output.good())
+		return this->state = SH_FINISHED, StringData("507");
+	this->state = SH_UPLOADING;
 	output.close();
-	return StringData("201");
+	return this->save_chunk(req);
 }
 
 StringData StaticHandler::findFilePath(Request req)
@@ -134,9 +156,16 @@ StringData StaticHandler::findFilePath(Request req)
 	{
 		if (S_ISDIR(st.st_mode))
 		{
+			if (
+				req.getMethod() == DELETE
+				|| req.getMethod() == POST
+				|| req.getMethod() == PUT
+				|| req.getMethod() == PATCH
+			)
+				return this->state = SH_FINISHED, StringData("403");
 			if (full_path[full_path.size() - 1] == '/')
 			{
-				if (this->dir_listing)
+				if (this->dir_listing) 
 					return this->handle_dir_listing(req, full_path);
 				full_path += this->index;
 			}
@@ -144,28 +173,28 @@ StringData StaticHandler::findFilePath(Request req)
 			{
 				URL url = req.getUrl();
 				url.addSegment("/");
-				return (StringData("302" + url.getFullPath(), D_REDIR));
+				return this->state = SH_FINISHED, StringData("302" + url.getFullPath(), D_REDIR);
 			}
 			if (
 				(req.getMethod() == GET && access(full_path.c_str(), R_OK))
 				|| (req.getMethod() == DELETE && access(full_path.c_str(), W_OK))
 			)
-				return StringData("404");
+				return this->state = SH_FINISHED, StringData("404");
 		}
 		else if (!(S_ISREG(st.st_mode)))
-			return StringData("404");
+			return this->state = SH_FINISHED, StringData("404");
 		if (req.getMethod() == GET)
-			return StringData(full_path, D_FILEPATH);
+			return this->state = SH_FINISHED, StringData(full_path, D_FILEPATH);
 		else if (req.getMethod() == DELETE)
 			return this->handle_delete(full_path);
 		else if (req.getMethod() == POST)
-			return StringData("405");
+			return this->state = SH_FINISHED, StringData("405");
 		//else if (req.getMethod() == PUT)
 		//	this->handle_update(req, resp);
 	}
 	else if (req.getMethod() == PUT || req.getMethod() == POST)
 		return this->handle_create(req, full_path);
-	return StringData("404");
+	return this->state = SH_FINISHED, StringData("404");
 }
 
 // IHandler impl
@@ -177,6 +206,18 @@ IData &StaticHandler::produceData()
 
 void StaticHandler::acceptData(IData &data)
 {
-	Request	&req = dynamic_cast<Request&>(data);
-	this->data = this->findFilePath(req);
+	try
+	{
+		Request	&req = dynamic_cast<Request&>(data);
+		this->log.INFO << "Static handler: " << req.getUrl().getFullPath() << " state: " << this->state;
+		if (this->state == SH_START)
+			this->data = this->findFilePath(req);
+		else if (this->state == SH_UPLOADING)
+			this->data = this->save_chunk(req);
+	}
+	catch(const std::exception& e)
+	{
+		this->log.ERROR << "lkejhgklgjh";
+	}
+	
 }

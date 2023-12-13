@@ -8,7 +8,9 @@ typedef	enum	e_data_type
 	D_ERROR,
 	D_REDIR,
 	D_FILEPATH,
-	D_DIRLISTING
+	D_DIRLISTING,
+	D_FINISHED,
+	D_NOTHING
 }				DataType;
 
 class StringData: public IData, virtual public std::string

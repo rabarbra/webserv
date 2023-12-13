@@ -364,13 +364,8 @@ void ResponseSender::setData(IData &data)
 		switch (d.getType())
 		{
 			case D_ERROR:
-				if (!d.empty())
-				{
-					this->build_error(d);
-					this->ready = true;
-				}
-				else
-					this->_finished = true;
+				this->build_error(d);
+				this->ready = true;
 				break;
 			case D_FILEPATH:
 				this->build_file(d);
@@ -383,6 +378,9 @@ void ResponseSender::setData(IData &data)
 			case D_REDIR:
 				this->build_redirect(d);
 				this->ready = true;
+				break;
+			case D_FINISHED:
+				this->_finished = true;
 				break;
 			default:
 				break;

@@ -1,9 +1,9 @@
 #include "../includes/RequestReceiver.hpp"
 
-RequestReceiver::RequestReceiver(int fd): _fd(fd), state(R_WAITING), _header_pos(0), received(false)
+RequestReceiver::RequestReceiver(int fd): _fd(fd), state(R_WAITING), _header_pos(0), received(false), headersOk(false)
 {}
 
-RequestReceiver::RequestReceiver(): _fd(-1), state(R_WAITING), _header_pos(0), received(false)
+RequestReceiver::RequestReceiver(): _fd(-1), state(R_WAITING), _header_pos(0), received(false), headersOk(false)
 {}
 
 RequestReceiver::~RequestReceiver()
@@ -28,6 +28,7 @@ RequestReceiver &RequestReceiver::operator=(const RequestReceiver &other)
 		this->received = other.received;
 		this->_header_pos = other._header_pos;
 		this->req = other.req;
+		this->headersOk = other.headersOk;
 		this->error_code = other.error_code;
 	}
 	return *this;
@@ -62,31 +63,22 @@ int RequestReceiver::getFd() const
 
 // Private
 
-bool RequestReceiver::receive_body(std::ofstream &tmp)
+bool RequestReceiver::receive_body()
 {
-	size_t		buf_size = 8192;
-	char		buf[buf_size];
-	ssize_t		bytes_read;
-
-	bytes_read = recv(this->_fd, buf, buf_size, 0);
+	ssize_t bytes_read = recv(this->_fd, this->req.buff, this->req.buff_size, 0);
 	if (bytes_read < 0)
 		throw std::runtime_error("Error receiving request: " + std::string(strerror(errno)));
-	std::streampos before = tmp.tellp();
-	tmp.write(buf, bytes_read);
-	this->log.INFO << "Received: " << bytes_read;
-	this->log.INFO << "Written: " << tmp.tellp() - before;
-	before = tmp.tellp();
-	while (static_cast<size_t>(bytes_read) == buf_size)
+	this->log.INFO << "Setting body start to 0";
+	this->req.body_start = 0;
+	this->req.offset = bytes_read;
+	this->received = true;
+	if (!bytes_read)
 	{
-		bytes_read = recv(this->_fd, buf, buf_size, 0);
-		this->log.INFO << "Received: " << bytes_read;
-		if (bytes_read < 0)
-			throw std::runtime_error("Error receiving request: " + std::string(strerror(errno)));
-		tmp.write(buf, bytes_read);
-		this->log.INFO << "Written: " << tmp.tellp() - before;
-		before = tmp.tellp();
+		this->state = R_FINISHED;
+		this->received = false;
 	}
-	//tmp.close();
+	else
+		this->received = true;
 	return true;
 }
 
@@ -152,7 +144,7 @@ bool RequestReceiver::parse_completed_lines()
 				// All headers processed.
 				this->headersOk = true;
 				// Set headers position to start point of body
-				this->_header_pos = line.size() + 1;
+				this->_header_pos += line.size() + 1;
 				return true;
 			}
 			else if (line.find(':') != std::string::npos)
@@ -209,9 +201,35 @@ bool RequestReceiver::receive_headers()
 		this->state = R_FINISHED;
 		return false;
 	}
+	this->state = R_REQUEST;
 	this->req.offset += bytes_read;
 	if (parse_completed_lines())
+	{
+		std::map<std::string, std::string> headers = this->req.getHeaders();
+		if (
+			headers.find("Content-Length") != headers.end()
+			&& headers.find("Transfer-Encoding") != headers.end()
+		)
+		{
+			this->req.removeHeader("Content-Length");
+			headers.erase("Content-Length");
+		}
+		if (headers.find("Transfer-Encoding") != headers.end())
+		{
+			if (!better_string(headers["Transfer-Encoding"]).ends_with("chunked"))
+				return this->finish_request("400");
+			this->req.content_length = -1;
+		}
+		else if (headers.find("Content-Length") != headers.end())
+		{
+			if (!better_string(headers["Content-Length"]).all_are(&(std::isdigit)))
+				return this->finish_request("400");
+			std::stringstream(headers["Content-Length"]) >> this->req.content_length;
+		}
+		this->headersOk = true;
+		req.body_start = this->_header_pos;
 		return true;
+	}
 	if (this->req.offset == this->req.buff_size && !this->headersOk)
 		return this->finish_request("413");
 	return false;
@@ -219,13 +237,17 @@ bool RequestReceiver::receive_headers()
 
 void RequestReceiver::consume()
 {
-	//if (this->headersOk)
-	//	this->receive_body();
-	//else
-	if (this->receive_headers())
+	this->log.WARN << "Consume request. HeadersOK: " << std::boolalpha << this->headersOk << ", content length: " << this->req.content_length;
+	if (this->headersOk)
+	{
+		if (this->req.content_length)
+			this->receive_body();
+		else
+			this->state = R_FINISHED;
+	}
+	else if (this->receive_headers())
 	{
 		this->received = true;
-		this->state = R_REQUEST;
 		this->log.INFO << "RequestReceiver will produce request now!";
 		this->log.INFO << "RequestReceiver will produce request now!";
 	}
@@ -246,6 +268,14 @@ IData &RequestReceiver::produceData()
 			return this->error_code;
 			break;
 		case R_REQUEST:
+			if (this->headersOk && this->req.content_length)
+				this->state = R_BODY;
+			else if (this->headersOk)
+				this->state = R_FINISHED;
+			return this->req;
+			break;
+		case R_BODY:
+			this->log.INFO << "Producing chunk of body";
 			return this->req;
 			break;
 		default:
