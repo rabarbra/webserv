@@ -61,7 +61,7 @@ StringData StaticHandler::handle_dir_listing(Request req, std::string full_path)
 	while ((ent = readdir(dir)) != NULL) {
 		content = "<script>addRow(\"{{name}}\",\"{{href}}\",{{is_dir}},{{abs_size}},\"{{size}}\",{{timestamp}},\"{{date}}\");</script>";
 		content.find_and_replace("{{name}}", std::string(ent->d_name));
-		if (url_path.back() != '/')
+		if (url_path.ends_with("/"))
 			content.find_and_replace("{{href}}", "/" + std::string(ent->d_name));
 		else
 			content.find_and_replace("{{href}}", std::string(ent->d_name));
