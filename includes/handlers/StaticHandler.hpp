@@ -23,7 +23,13 @@ class StaticHandler: public IHandler
 		Logger		log;
 	public:
 		StaticHandler();
-		StaticHandler(std::string path, std::string root_directory, bool dir_listing, std::string index, std::string static_dir);
+		StaticHandler(
+			std::string path,
+			std::string root_directory,
+			bool dir_listing,
+			std::string index,
+			std::string static_dir
+		);
 		~StaticHandler();
 		StaticHandler(const StaticHandler &other);
 		StaticHandler	&operator=(const StaticHandler &other);
