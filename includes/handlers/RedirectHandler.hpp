@@ -13,7 +13,10 @@ class RedirectHandler: public IHandler
 		StringData	redir;
 	public:
 		RedirectHandler();
-		RedirectHandler(std::string	redirectUrl, std::string redirectStatusCode);
+		RedirectHandler(
+			std::string	redirectUrl,
+			std::string redirectStatusCode
+		);
 		~RedirectHandler();
 		RedirectHandler(const RedirectHandler &other);
 		RedirectHandler	&operator=(const RedirectHandler &other);

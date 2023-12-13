@@ -23,12 +23,12 @@ class Request: public IData
 		Request(const Request &other);
 		Request	&operator=(const Request &other);
 		// Setters
-		void	setMethod(Method method);
-		void	setVersion(better_string version);
-		void	setHeader(std::string key, std::string value);
-		void	setUrl(URL url);
-		void	setDomain(std::string domain);
-		void	setPort(std::string port);
+		void								setMethod(Method method);
+		void								setVersion(better_string version);
+		void								setHeader(std::string key, std::string value);
+		void								setUrl(URL url);
+		void								setDomain(std::string domain);
+		void								setPort(std::string port);
 		// Getters
 		better_string						getVersion() const;
 		Method								getMethod() const;

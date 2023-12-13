@@ -24,9 +24,7 @@ RequestReceiver &RequestReceiver::operator=(const RequestReceiver &other)
 		this->_fd = other._fd;
 		this->state = other.state;
 		this->body = other.body;
-		this->plain = other.plain;
 		this->tmp_file = other.tmp_file;
-		this->body_pos = other.body_pos;
 		this->received = other.received;
 		this->_header_pos = other._header_pos;
 		this->req = other.req;
@@ -217,25 +215,6 @@ bool RequestReceiver::receive_headers()
 	if (this->req.offset == this->req.buff_size && !this->headersOk)
 		return this->finish_request("413");
 	return false;
-}
-
-std::string RequestReceiver::decodeURI(std::string str)
-{
-	for (size_t i = 0; i < str.length(); i++)
-	{
-		if (str[i] == '%' && i + 2 < str.length())
-		{
-			std::stringstream hex;
-			hex << str.substr(i + 1, 2);
-			int val;
-			hex >> std::setbase(16) >> val;
-			char chr = static_cast<char>(val);
-			str.replace(i, 3, &chr, 1);
-		}
-		else if (str[i] == '+')
-			str[i] = ' ';
-	}
-	return str;
 }
 
 void RequestReceiver::consume()

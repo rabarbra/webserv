@@ -15,9 +15,7 @@ class RequestReceiver: public IReceiver, public IData
 		int									_fd;
 		ReceiverState						state;
 		better_string						body;
-		better_string						plain;
 		size_t								_header_pos;
-		size_t								body_pos;
 		bool								received;
 		bool								headersOk;
 		StringData							error_code;
@@ -40,7 +38,7 @@ class RequestReceiver: public IReceiver, public IData
 		int									getFd() const;
 		// Public
 		bool								receive_headers();
-		std::string							decodeURI(std::string str);
+		// IReceiver impl
 		void								consume();
 		bool								ready();
 		ReceiverState						getState() const;
