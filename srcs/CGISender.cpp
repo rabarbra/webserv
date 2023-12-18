@@ -29,6 +29,7 @@ CGISender CGISender::operator=(const CGISender &other)
 
 void CGISender::setData(IData &data)
 {
+	this->log.INFO << "CGISender accepts data"; 
 	try
 	{
 		StringData &d = dynamic_cast<StringData&>(data);

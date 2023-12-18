@@ -10,7 +10,8 @@ typedef	enum	e_data_type
 	D_FILEPATH,
 	D_DIRLISTING,
 	D_FINISHED,
-	D_NOTHING
+	D_NOTHING,
+	D_CGI
 }				DataType;
 
 class StringData: public IData, virtual public std::string
