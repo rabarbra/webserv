@@ -54,7 +54,8 @@ void Worker::listenWriteAvailable(int socket)
 {
 	struct kevent	evSet;
 
-	EV_SET(&evSet, socket, EVFILT_WRITE, EV_ADD | EV_CLEAR, 0, 0, NULL);
+	EV_SET(&evSet, socket, EVFILT_WRITE, EV_ADD, 0, 0, NULL);
+	//EV_SET(&evSet, socket, EVFILT_WRITE, EV_ADD | EV_CLEAR, 0, 0, NULL);
     if (kevent(this->queue, &evSet, 1, NULL, 0, NULL) < 0)
 	{
 		std::stringstream ss;
