@@ -40,7 +40,10 @@ void CGIReceiver::consume()
 {
 	char buff[4096];
 	size_t received = recv(this->fd, buff, 4096, 0);
-	this->log.INFO << "CGIReceiver: " << std::string(buff, received);
+	std::string d(buff, received);
+	this->log.INFO << "CGIReceiver: " << d;
+	this->data = StringData(d, D_CGI);
+	this->state = R_BODY;
 }
 
 IData &CGIReceiver::produceData()

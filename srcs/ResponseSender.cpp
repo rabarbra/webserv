@@ -385,6 +385,11 @@ void ResponseSender::setData(IData &data)
 				this->build_redirect(d);
 				this->ready = true;
 				break;
+			case D_CGI:
+				this->log.INFO << "Response gets D_CGI: " << d;
+				this->build_cgi_response(d);
+				this->ready = true;
+				break;
 			case D_FINISHED:
 				this->log.INFO << "Response gets D_FINISHED: " << d;
 				this->_finished = true;

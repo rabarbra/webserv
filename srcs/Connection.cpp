@@ -146,7 +146,6 @@ void Connection::receive(int fd)
 		case R_ERROR:
 			this->log.INFO << "Connection: error";
 			this->channels[fd]->getHandler()->acceptData(this->channels[fd]->getReceiver()->produceData());
-			this->channels[fd]->getSender()->setData(this->channels[fd]->getHandler()->produceData());
 			this->channels[fd]->send();
 			delete this->channels[fd];
 			this->channels.erase(fd);
@@ -185,7 +184,6 @@ void Connection::receive(int fd)
 					//this->worker->listenWriteAvailable(cgiHandler->getFd());
 				}
 			}
-			this->channels[fd]->getSender()->setData(this->channels[fd]->getHandler()->produceData());
 			this->channels[fd]->send();
 			if (this->channels[fd]->getSender()->finished() || !error.empty())
 			{
@@ -209,13 +207,15 @@ void Connection::receive(int fd)
 		{
 			this->log.INFO << "Connection: receiving body";
 			this->channels[fd]->getHandler()->acceptData(this->channels[fd]->getReceiver()->produceData());
-			this->channels[fd]->getSender()->setData(this->channels[fd]->getHandler()->produceData());
-			this->channels[fd]->send();
-			if (this->channels[fd]->getSender()->finished())
+			if (dynamic_cast<ResponseSender *>(this->channels[fd]->getSender()))
 			{
-				delete this->channels[fd];
-				this->channels.erase(fd);
-				this->worker->deleteSocketFromQueue(fd);
+				this->channels[fd]->send();
+				if (this->channels[fd]->getSender()->finished())
+				{
+					delete this->channels[fd];
+					this->channels.erase(fd);
+					this->worker->deleteSocketFromQueue(fd);
+				}
 			}
 			break;
 		}
@@ -229,6 +229,7 @@ void Connection::send(int fd)
 {
 	if (this->channels.find(fd) != this->channels.end())
 	{
+		this->channels[fd]->getSender()->setData(this->channels[fd]->getHandler()->produceData());
 		this->channels[fd]->send();
 		if (this->channels[fd]->senderFinished())
 		{

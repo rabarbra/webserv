@@ -152,11 +152,23 @@ void CGIHandler::acceptData(IData &data)
 	try
 	{
 		Request req = dynamic_cast<Request &>(data);
-		this->configure(req);
+		if (!this->configured)
+			this->configure(req);
+		this->save_chunk_of_body(req);
 	}
 	catch(const std::exception& e)
 	{
-		this->log.ERROR << "CHIHandler accepting not a request data";
+		try
+		{
+			StringData rsp = dynamic_cast<StringData &>(data);
+			this->log.INFO << "CGIHandler: accepting data from CGIReceiver: " << rsp;
+			this->dataForResponse = rsp;
+		}
+		catch(const std::exception& e)
+		{
+			std::cerr << e.what() << '\n';
+			this->log.ERROR << "CHIHandler accepting unknown data type";
+		}
 	}
 	
 }
