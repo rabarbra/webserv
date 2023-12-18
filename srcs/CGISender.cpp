@@ -49,7 +49,7 @@ void CGISender::setData(IData &data)
 				break;
 		}
 	}
-	catch(const std::bad_cast& e)
+	catch(const std::bad_cast &e)
 	{
 		std::cerr << e.what() << '\n';
 	}

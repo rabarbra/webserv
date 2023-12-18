@@ -6,6 +6,7 @@
 # include <sys/time.h>
 # include <sys/types.h>
 # include <sys/socket.h>
+# include <typeinfo>
 // Our headers
 # include "Data.hpp"
 # include "interfaces/ISender.hpp"
