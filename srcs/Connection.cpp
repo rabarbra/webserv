@@ -68,6 +68,7 @@ Connection &Connection::operator=(const Connection &other)
 		this->log = other.log;
 		this->address = other.address;
 		this->worker = other.worker;
+		this->channels = other.channels;
 	}
 	return *this;
 }
@@ -121,11 +122,15 @@ void Connection::addServer(Server server)
 
 void Connection::receive(int fd)
 {
-	this->log.INFO << "CONNECTION RECEIVING FOR SOCKET " << fd;
+	this->log.INFO << "CONNECTION RECEIVING FOR SOCKET " << fd << ", channels count: " << this->channels.size();
 	if (this->channels.find(fd) != this->channels.end())
+	{
+		this->log.INFO << "Channel alredy exists. Going to " << (dynamic_cast<CGIReceiver *>(this->channels[fd]->getReceiver()) ? "CGIReceiver" : "RequestReceiver");
 		this->channels[fd]->receive();
+	}
 	else
 	{
+		this->log.INFO << "Crteating new channel";
 		this->channels[fd] = new Channel();
 		this->channels[fd]->setReceiver(new RequestReceiver(fd));
 		this->channels[fd]->setSender(new ResponseSender(fd));
@@ -140,7 +145,6 @@ void Connection::receive(int fd)
 			break;
 		case R_ERROR:
 			this->log.INFO << "Connection: error";
-			this->channels[fd]->send();
 			this->channels[fd]->getHandler()->acceptData(this->channels[fd]->getReceiver()->produceData());
 			this->channels[fd]->getSender()->setData(this->channels[fd]->getHandler()->produceData());
 			this->channels[fd]->send();
@@ -158,19 +162,44 @@ void Connection::receive(int fd)
 				this->channels[fd]->setHandler(this->servers[req.getUrl().getDomain()].route(req, error));
 			else
 				this->channels[fd]->setHandler(this->servers["default"].route(req, error));
-			this->log.INFO << "Error after route selection: " << dynamic_cast<std::string &>(error);
-			this->log.INFO << "Error after route selection: " << dynamic_cast<std::string &>(error);
 			if (!error.empty())
+			{
+				this->log.INFO << "Error during route selection: " << dynamic_cast<std::string &>(error);
 				this->channels[fd]->getHandler()->acceptData(error);
+			}
 			else
+			{
 				this->channels[fd]->getHandler()->acceptData(this->channels[fd]->getReceiver()->produceData());
+				CGIHandler	*cgiHandler = dynamic_cast<CGIHandler *>(this->channels[fd]->getHandler());
+				this->log.INFO << "right after forking: " << this->channels.size();
+				if (cgiHandler && cgiHandler->getFd() > 0)
+				{
+					this->log.INFO << "Creating CGI channel";
+					this->channels[cgiHandler->getFd()] = new Channel();
+					this->channels[cgiHandler->getFd()]->setReceiver(new CGIReceiver(cgiHandler->getFd()));
+					this->channels[cgiHandler->getFd()]->setSender(new CGISender(cgiHandler->getFd()));
+					this->channels[cgiHandler->getFd()]->setHandler(cgiHandler);
+					this->log.INFO << "Adding CGI socket: " << cgiHandler->getFd();
+					this->worker->addSocketToQueue(cgiHandler->getFd());
+					this->worker->addConnection(cgiHandler->getFd(), this);
+					//this->worker->listenWriteAvailable(cgiHandler->getFd());
+				}
+			}
 			this->channels[fd]->getSender()->setData(this->channels[fd]->getHandler()->produceData());
 			this->channels[fd]->send();
 			if (this->channels[fd]->getSender()->finished() || !error.empty())
 			{
+				CGIHandler *cgiHandler = dynamic_cast<CGIHandler *>(this->channels[fd]->getHandler());
 				delete this->channels[fd];
 				this->channels.erase(fd);
 				this->worker->deleteSocketFromQueue(fd);
+				if (cgiHandler)
+				{
+					int cgiFd = cgiHandler->getFd();
+					//delete this->channels[cgiFd];
+					//this->channels.erase(cgiFd);
+					this->worker->deleteSocketFromQueue(cgiFd);
+				}
 			}
 			else
 				this->worker->listenWriteAvailable(fd);

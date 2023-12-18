@@ -1,6 +1,7 @@
 #ifndef CHANNEL_HPP
 # define CHANNEL_HPP
 # include "RequestReceiver.hpp"
+# include "handlers/CGIHandler.hpp"
 # include "interfaces/ISender.hpp"
 # include "interfaces/IReceiver.hpp"
 # include "interfaces/IHandler.hpp"
@@ -29,6 +30,5 @@ class Channel: IChannel
 		void		receive();
 		void		send();
 		bool		senderFinished();
-		bool		receiverReady();
 };
 #endif

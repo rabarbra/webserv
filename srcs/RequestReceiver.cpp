@@ -1,9 +1,9 @@
 #include "../includes/RequestReceiver.hpp"
 
-RequestReceiver::RequestReceiver(int fd): _fd(fd), state(R_WAITING), _header_pos(0), received(false), headersOk(false)
+RequestReceiver::RequestReceiver(int fd): _fd(fd), state(R_WAITING), _header_pos(0), headersOk(false)
 {}
 
-RequestReceiver::RequestReceiver(): _fd(-1), state(R_WAITING), _header_pos(0), received(false), headersOk(false)
+RequestReceiver::RequestReceiver(): _fd(-1), state(R_WAITING), _header_pos(0), headersOk(false)
 {}
 
 RequestReceiver::~RequestReceiver()
@@ -25,7 +25,6 @@ RequestReceiver &RequestReceiver::operator=(const RequestReceiver &other)
 		this->state = other.state;
 		this->body = other.body;
 		this->tmp_file = other.tmp_file;
-		this->received = other.received;
 		this->_header_pos = other._header_pos;
 		this->req = other.req;
 		this->headersOk = other.headersOk;
@@ -71,14 +70,8 @@ bool RequestReceiver::receive_body()
 	this->log.INFO << "Setting body start to 0";
 	this->req.body_start = 0;
 	this->req.offset = bytes_read;
-	this->received = true;
 	if (!bytes_read)
-	{
 		this->state = R_FINISHED;
-		this->received = false;
-	}
-	else
-		this->received = true;
 	return true;
 }
 
@@ -180,7 +173,6 @@ bool RequestReceiver::finish_request(std::string code)
 	this->headersOk = false;
 	this->state = R_ERROR;
 	this->error_code = StringData(code);
-	this->received = true;
 	return false;
 }
 
@@ -201,7 +193,8 @@ bool RequestReceiver::receive_headers()
 		this->state = R_FINISHED;
 		return false;
 	}
-	this->state = R_REQUEST;
+	this->log.INFO << "Received: " << std::string(this->req.buff + this->req.offset, bytes_read);
+	//this->state = R_REQUEST;
 	this->req.offset += bytes_read;
 	if (parse_completed_lines())
 	{
@@ -237,7 +230,7 @@ bool RequestReceiver::receive_headers()
 
 void RequestReceiver::consume()
 {
-	this->log.WARN << "Consume request. HeadersOK: " << std::boolalpha << this->headersOk << ", content length: " << this->req.content_length;
+	this->log.WARN << "Consume request " << this->_fd << " . HeadersOK: " << std::boolalpha << this->headersOk << ", content length: " << this->req.content_length;
 	if (this->headersOk)
 	{
 		if (this->req.content_length)
@@ -245,18 +238,14 @@ void RequestReceiver::consume()
 		else
 			this->state = R_FINISHED;
 	}
-	else if (this->receive_headers())
+	else
 	{
-		this->received = true;
-		this->log.INFO << "RequestReceiver will produce request now!";
-		this->log.INFO << "RequestReceiver will produce request now!";
+		this->receive_headers();
+		if (this->headersOk)
+			this->state = R_REQUEST;
 	}
-	this->log.INFO << this->req.toString();
-}
-
-bool RequestReceiver::ready()
-{
-	return this->received;
+	this->log.WARN << "Req obj have been created. HeadersOK: " << std::boolalpha << this->headersOk << ", content length: " << this->req.content_length;
+	//this->log.INFO << this->req.toString();
 }
 
 IData &RequestReceiver::produceData()
@@ -265,6 +254,7 @@ IData &RequestReceiver::produceData()
 	{
 		case R_ERROR:
 			this->state = R_FINISHED;
+			this->log.INFO << "Producing error msg";
 			return this->error_code;
 			break;
 		case R_REQUEST:
@@ -272,6 +262,7 @@ IData &RequestReceiver::produceData()
 				this->state = R_BODY;
 			else if (this->headersOk)
 				this->state = R_FINISHED;
+			this->log.INFO << "Producing initial request obj";
 			return this->req;
 			break;
 		case R_BODY:
@@ -281,6 +272,5 @@ IData &RequestReceiver::produceData()
 		default:
 			break;
 	}
-	this->received = false;
 	return (this->error_code);
 }

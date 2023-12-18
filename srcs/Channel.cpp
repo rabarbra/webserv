@@ -5,12 +5,12 @@ Channel::Channel(): sender(NULL), receiver(NULL), handler(NULL)
 
 Channel::~Channel()
 {
+	if (this->handler && !(dynamic_cast<CGIHandler *>(this->handler) && dynamic_cast<ResponseSender *>(this->sender)))
+		delete this->handler;
 	if (this->sender)
 		delete this->sender;
 	if (this->receiver)
 		delete this->receiver;
-	if (this->handler)
-		delete this->handler;
 }
 
 Channel::Channel(const Channel &other)
@@ -88,9 +88,4 @@ void Channel::send()
 bool Channel::senderFinished()
 {
 	return this->sender->finished();
-}
-
-bool Channel::receiverReady()
-{
-	return this->receiver->ready();
 }

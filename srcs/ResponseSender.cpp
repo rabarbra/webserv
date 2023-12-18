@@ -356,6 +356,8 @@ void ResponseSender::build_cgi_response(std::string response)
 	this->_plain = new_response;
 }
 
+// ISender impl
+
 void ResponseSender::setData(IData &data)
 {
 	try
@@ -364,25 +366,35 @@ void ResponseSender::setData(IData &data)
 		switch (d.getType())
 		{
 			case D_ERROR:
+				this->log.INFO << "Response gets D_ERROR: " << d;
 				this->build_error(d);
 				this->ready = true;
 				break;
 			case D_FILEPATH:
+				this->log.INFO << "Response gets D_FILEPATH: " << d;
 				this->build_file(d);
 				this->ready = true;
 				break;
 			case D_DIRLISTING:
+				this->log.INFO << "Response gets D_DIRLISTING: " << d;
 				this->build_dir_listing(d);
 				this->ready = true;
 				break;
 			case D_REDIR:
+				this->log.INFO << "Response gets D_REDIR: " << d;
 				this->build_redirect(d);
 				this->ready = true;
 				break;
 			case D_FINISHED:
+				this->log.INFO << "Response gets D_FINISHED: " << d;
 				this->_finished = true;
 				break;
+			case D_NOTHING:
+				this->log.INFO << "Response gets D_NOTHING: " << d;
+				this->ready = false;
+				break ;
 			default:
+				this->log.INFO << "Response gets something strange: " << d;
 				break;
 		}
 	}
@@ -404,5 +416,9 @@ bool ResponseSender::finished()
 
 void ResponseSender::sendData()
 {
-	this->_finished = this->run();
+	bool res = this->run();
+	if (this->statusCode == "100")
+		this->_finished = false;
+	else
+		this->_finished = res;
 }

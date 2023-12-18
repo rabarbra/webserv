@@ -9,6 +9,7 @@
 # include "CGI.hpp"
 # include "RequestReceiver.hpp"
 # include "interfaces/IRouter.hpp"
+# include "handlers/CGIHandler.hpp"
 # include "handlers/StaticHandler.hpp"
 # include "handlers/RedirectHandler.hpp"
 typedef enum e_route_type {
@@ -35,7 +36,6 @@ class Route: public IRouter
 		char						**ev;
 		// Private
 		bool						handle_delete(std::string full_path, ResponseSender &resp);
-		bool						handle_cgi(ResponseSender *resp, RequestReceiver req);
 		//bool						handle_redirection(RequestReceiver req);
 		bool						handle_update(RequestReceiver req, ResponseSender *resp);
 		bool						handle_create(RequestReceiver req, ResponseSender *resp);
@@ -74,7 +74,6 @@ class Route: public IRouter
 		// Public
 		void						printRoute();
 		size_t						match(std::string path);
-		bool 						configureCGI(RequestReceiver &req, ResponseSender *resp, std::string &cgiPath);
 		bool						isCgiEnabled() const;
 		// IRouter impl
 		IHandler					*route(IData &url, StringData &error);
