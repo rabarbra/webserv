@@ -49,7 +49,7 @@ int CGIHandler::getFd()
 
 // Private
 
-std::__1::string CGIHandler::build_absolute_path(better_string requestPath)
+std::string CGIHandler::build_absolute_path(better_string requestPath)
 {
 	better_string	root(this->root_directory);
 	better_string	req_path(requestPath);
