@@ -4,6 +4,9 @@
 # include "Address.hpp"
 # include "Channel.hpp"
 # include "handlers/ErrorHandler.hpp"
+# include "handlers/CGIHandler.hpp"
+# include "CGISender.hpp"
+# include "CGIReceiver.hpp"
 
 class Worker;
 

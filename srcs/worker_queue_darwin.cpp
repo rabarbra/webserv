@@ -25,7 +25,7 @@ void Worker::addSocketToQueue(int sock)
 		ss << sock;
 		throw std::runtime_error(
 			"Error adding EVFILT_READ for socket " +
-			ss.str() + "to kqueue: " +
+			ss.str() + " to kqueue: " +
 			std::string(strerror(errno))
 		);
 	}

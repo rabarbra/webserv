@@ -31,7 +31,6 @@ class Worker
 			struct epoll_event		evList[Worker::max_events];
 		#endif
 		void						initQueue();
-		void						addSocketToQueue(int sock);
 		int							getNewEventsCount();
 		int							getEventSock(int num_event);
 		void						addResponseToQueue(ResponseSender *resp);
@@ -49,8 +48,10 @@ class Worker
 		~Worker();
 		Worker(char *path_to_conf, char **ev);
 		void						run();
+		void						addSocketToQueue(int sock);
 		void						deleteSocketFromQueue(int num_event);
 		void						listenWriteAvailable(int socket);
+		void						addConnection(int fd, Connection *conn);
 };
 
 #endif

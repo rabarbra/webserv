@@ -84,6 +84,11 @@ void Worker::create_connections()
 	}
 }
 
+void Worker::addConnection(int fd, Connection *conn)
+{
+	this->connections[fd] = *conn;
+}
+
 void Worker::accept_connection(int sock)
 {
 	int	conn_fd;

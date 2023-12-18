@@ -9,14 +9,13 @@
 # include "URL.hpp"
 # include "Data.hpp"
 
-class RequestReceiver: public IReceiver, public IData
+class RequestReceiver: public IReceiver
 {
 	private:
 		int									_fd;
 		ReceiverState						state;
 		better_string						body;
 		size_t								_header_pos;
-		bool								received;
 		bool								headersOk;
 		StringData							error_code;
 		Request								req;

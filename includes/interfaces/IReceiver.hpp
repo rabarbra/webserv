@@ -16,7 +16,6 @@ class IReceiver
 	public:
 		virtual	~IReceiver(){}
 		virtual void			consume() = 0;
-		virtual bool			ready() = 0;
 		virtual IData			&produceData() = 0;
 		virtual	ReceiverState	getState() const = 0;
 };

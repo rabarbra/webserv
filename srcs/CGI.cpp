@@ -143,7 +143,7 @@ void    CGI::setCgiExt(std::string ext)
 }
 
 // Public
-int CGI::execute(RequestReceiver &req, ResponseSender *resp, int *sv, std::string full_path)
+int CGI::execute(Request &req, int *sv, std::string full_path)
 {
 	(void)req;
 	close(sv[0]);
@@ -153,11 +153,10 @@ int CGI::execute(RequestReceiver &req, ResponseSender *resp, int *sv, std::strin
 	int pos = full_path.find_last_of('/');
 	std::string dir = full_path.substr(0, pos);
 	if (chdir(dir.c_str()) == -1)
-		return(sendError(resp, "503", "chdir failed"), -1);
+		return (1);
 	char **args = this->getArgs(full_path);
-	if (execve(args[0], args, this->getEnv()) == -1)
-		return(sendError(resp, "503", "execve failed " + std::string(strerror(errno))), -1);
-	return 0;
+	execve(args[0], args, this->getEnv());
+	return (1);
 }
 
 bool sendError(ResponseSender *resp, std::string error, std::string error_message)
@@ -167,7 +166,7 @@ bool sendError(ResponseSender *resp, std::string error, std::string error_messag
 	return resp->run();
 }
 
-better_string CGI::checkRegFile(better_string cgiPath, RequestReceiver &req)
+better_string CGI::checkRegFile(better_string cgiPath, Request &req)
 {
 	if (this->handler[0] == "$self") 
 	{
@@ -175,7 +174,7 @@ better_string CGI::checkRegFile(better_string cgiPath, RequestReceiver &req)
 		{
 			if (access(cgiPath.c_str(), X_OK) == 0)
 			{
-				this->prevURL = req.getRequest().getUrl();
+				this->prevURL = req.getUrl();
 				this->prevExecPath = cgiPath;
 				return (cgiPath);
 			}
@@ -189,7 +188,7 @@ better_string CGI::checkRegFile(better_string cgiPath, RequestReceiver &req)
 		{
 			if (access(cgiPath.c_str(), R_OK) == 0)
 			{
-				this->prevURL = req.getRequest().getUrl();
+				this->prevURL = req.getUrl();
 				this->prevExecPath = cgiPath;
 				return (cgiPath);
 			}
@@ -200,7 +199,7 @@ better_string CGI::checkRegFile(better_string cgiPath, RequestReceiver &req)
 	}
 }
 
-void CGI::createEnv(RequestReceiver &req)
+void CGI::createEnv(Request &req)
 {
 		int i = -1;
 		std::vector<std::string> envp;
@@ -220,14 +219,14 @@ void CGI::createEnv(RequestReceiver &req)
         envp.push_back("SERVER_PORT=" + this->prevURL.getPort());
         envp.push_back("SERVER_PROTOCOL=HTTP/1.1");
         envp.push_back("SERVER_SOFTWARE=webserv 1.0");
-        envp.push_back("REQUEST_METHOD=" + getMethodString(req.getRequest().getMethod()));
+        envp.push_back("REQUEST_METHOD=" + getMethodString(req.getMethod()));
         envp.push_back("AUTH_TYPE=Basic");
         envp.push_back("GATEWAY_INTERFACE=CGI/1.1");
-        std::stringstream ss;
-        ss << req.getBody().size();
-        std::string result = ss.str();
+        std::string result = req.getHeaders()["Content-Length"];
+		if (result.empty())
+			result = "0";
         envp.push_back("CONTENT_LENGTH=" + result);
-        std::map<std::string, std::string> headers = req.getRequest().getHeaders();
+        std::map<std::string, std::string> headers = req.getHeaders();
         for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
         {
                 std::string key = it->first;
@@ -248,7 +247,7 @@ void CGI::createEnv(RequestReceiver &req)
         this->setEnv(ev);
 }
 
-better_string CGI::pathToScript(better_string cgiPath, better_string index, better_string filePath, RequestReceiver &req)
+better_string CGI::pathToScript(better_string cgiPath, better_string index, better_string filePath, Request &req)
 {
 	filePath = URL::removeFromStart(filePath, cgiPath);
 	filePath = URL::removeFromStart(filePath, "/");

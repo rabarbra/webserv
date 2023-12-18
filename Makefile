@@ -12,7 +12,7 @@ SRC =			main Worker Server Connection Route Request Address \
 				worker_queue_darwin worker_queue_linux better_string \
 				ParseUtils CGI StatusCodes MimeTypes Config Method URL \
 				Channel Data ErrorHandler RequestReceiver ResponseSender \
-				StaticHandler RedirectHandler
+				StaticHandler RedirectHandler CGIHandler CGISender CGIReceiver
 OBJ =			$(addprefix $(OBJ_DIR)/, $(addsuffix .o, $(SRC)))
 
 LIBLOGGING =	liblogging
