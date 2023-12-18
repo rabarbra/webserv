@@ -1,5 +1,6 @@
 #ifndef CGIHANDLER_HPP
 # define CGIHANDLER_HPP
+# include <sys/wait.h>
 # include <string>
 # include <vector>
 # include "../CGI.hpp"
