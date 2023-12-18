@@ -294,7 +294,7 @@ StringData StaticHandler::findFilePath(Request req)
 				|| req.getMethod() == PATCH
 			)
 				return this->state = SH_FINISHED, StringData("403");
-			if (full_path.back() == '/')
+			if (full_path[full_path.size() - 1] == '/')
 			{
 				if (this->dir_listing) 
 					return this->handle_dir_listing(req, full_path);
