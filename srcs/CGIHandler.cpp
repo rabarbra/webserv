@@ -88,13 +88,13 @@ void CGIHandler::configureCGI(Request &req, std::string &cgiPath)
 	else
 	{
 		this->pid = pid;
-		int status;
-		waitpid(this->pid, &status, 0);
-		if (WEXITSTATUS(status))
-		{
-			this->dataForResponse = StringData("502");
-			return ;
-		}
+		//int status;
+		//waitpid(this->pid, &status, 0);
+		//if (WEXITSTATUS(status))
+		//{
+		//	this->dataForResponse = StringData("502");
+		//	return ;
+		//}
 		// if (req.getBody().size())
 		// 	write(sv[0], req.getBody().c_str(), req.getBody().size());
 		// close(sv[1]);
@@ -143,7 +143,6 @@ void CGIHandler::configure(Request &req)
 
 IData &CGIHandler::produceData()
 {
-	this->log.INFO << "Producing CGI data: " << dataForResponse;
 	return this->dataForResponse;
 }
 
@@ -159,7 +158,6 @@ void CGIHandler::acceptData(IData &data)
 		try
 		{
 			StringData rsp = dynamic_cast<StringData &>(data);
-			this->log.INFO << "CGIHandler: accepting data from CGIReceiver: " << rsp;
 			this->dataForResponse = rsp;
 		}
 		catch(const std::exception& e)
