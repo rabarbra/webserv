@@ -67,4 +67,6 @@ bool CGISender::finished()
 }
 
 void CGISender::sendData()
-{}
+{
+	
+}

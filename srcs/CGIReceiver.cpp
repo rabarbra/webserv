@@ -39,7 +39,7 @@ ReceiverState CGIReceiver::getState() const
 void CGIReceiver::consume()
 {
 	char buff[4096];
-	size_t received = recv(this->fd, buff, 4096, 0);
+	ssize_t received = recv(this->fd, buff, 4096, 0);
 	std::string d(buff, received);
 	this->log.INFO << "CGIReceiver: " << d;
 	this->data = StringData(d, D_CGI);
