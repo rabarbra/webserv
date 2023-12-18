@@ -21,7 +21,7 @@ class RequestReceiver: public IReceiver
 		Request								req;
 		Logger								log;
 		std::string							tmp_file;
-		bool								finish_request(std::string code);
+		bool								finish_request(const std::string& code);
 		bool								receive_body();
 		bool								parse_completed_lines();
 	public:

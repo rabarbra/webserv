@@ -348,7 +348,13 @@ void StaticHandler::acceptData(IData &data)
 	}
 	catch(const std::exception& e)
 	{
-		this->log.ERROR << "lkejhgklgjh";
+		try {
+			StringData &str = dynamic_cast<StringData&>(data);
+			this->log.INFO << "Static handler: " << str << " state: " << this->state;
+		}
+		catch(const std::exception& e) {
+			this->log.ERROR << "Static handler: " << e.what();
+		}
 	}
 	
 }

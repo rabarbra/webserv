@@ -18,6 +18,7 @@ class CGIReceiver: public IReceiver
 		ReceiverState			state;
 		StringData				data;
 		Logger					log;
+		std::string				headers;
 	public:
 		CGIReceiver();
 		CGIReceiver(int	fd);

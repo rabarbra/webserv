@@ -157,7 +157,7 @@ bool ResponseSender::_send()
 	left = this->_plain.size() - this->sent;
 	if (left < chunk_size)
 		chunk_size = left;
-	while (this->_plain.size() && this->sent < this->_plain.size())
+	while (!this->_plain.empty() && this->sent < this->_plain.size())
 	{
 		chunk = send(this->fd, this->_plain.c_str() + this->sent, chunk_size, SEND_FLAGS);
 		if (chunk < 0)
@@ -173,7 +173,7 @@ bool ResponseSender::_send()
 		if (left < chunk_size)
 			chunk_size = left;
 	}
-	if (this->file.size())
+	if (!this->file.empty())
 	{
 		std::ifstream file_s(this->file.c_str(), std::ios::binary | std::ios::ate);
 		if (!file_s.is_open())
@@ -242,20 +242,20 @@ bool ResponseSender::run()
 	return this->_send();
 }
 
-void ResponseSender::build_ok(std::string statuscode)
+void ResponseSender::build_ok(const std::string& statuscode)
 {
 	StatusCodes		status;
 	this->setStatusCode(statuscode);
 	this->setReason(status.getDescription(statuscode));
 }
 
-void ResponseSender::build_file(std::string filename)
+void ResponseSender::build_file(const std::string& filename)
 {
 	this->setContentTypes(filename);
 	this->setFile(filename);
 }
 
-void ResponseSender::build_error(std::string status_code)
+void ResponseSender::build_error(const std::string& status_code)
 {
 	StatusCodes		status;
 	this->log.INFO << "status code: " << status_code;
@@ -294,7 +294,7 @@ void ResponseSender::build_error(std::string status_code)
 	}
 }
 
-void ResponseSender::build_dir_listing(std::string content)
+void ResponseSender::build_dir_listing(const std::string& content)
 {
 	StatusCodes		status;
 	this->setContentTypes("dir_list.html");
@@ -321,7 +321,7 @@ void ResponseSender::build_dir_listing(std::string content)
 	}
 }
 
-void ResponseSender::build_redirect(std::string redirect)
+void ResponseSender::build_redirect(const std::string& redirect)
 {
 	std::string	status_code = redirect.substr(0, 3);
 	std::string	location = redirect.substr(3);
@@ -338,7 +338,7 @@ void ResponseSender::build_redirect(std::string redirect)
 		+ "</h1></body></html>";
 }
 
-void ResponseSender::build_cgi_response(std::string response)
+void ResponseSender::build_cgi_response(const std::string& response)
 {
 	better_string new_response(response);
 	if (!new_response.starts_with("Status:"))
@@ -352,7 +352,6 @@ void ResponseSender::build_cgi_response(std::string response)
 	}
 	else
 		new_response.replace(0, 7, this->httpVersion, 0, this->httpVersion.size());
-	this->log.INFO << "CGI RESPONSE: " << new_response;
 	this->_plain = new_response;
 }
 

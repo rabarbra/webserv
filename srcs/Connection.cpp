@@ -122,15 +122,12 @@ void Connection::addServer(Server server)
 
 void Connection::receive(int fd)
 {
-	this->log.INFO << "CONNECTION RECEIVING FOR SOCKET " << fd << ", channels count: " << this->channels.size();
 	if (this->channels.find(fd) != this->channels.end())
 	{
-		this->log.INFO << "Channel alredy exists. Going to " << (dynamic_cast<CGIReceiver *>(this->channels[fd]->getReceiver()) ? "CGIReceiver" : "RequestReceiver");
 		this->channels[fd]->receive();
 	}
 	else
 	{
-		this->log.INFO << "Crteating new channel";
 		this->channels[fd] = new Channel();
 		this->channels[fd]->setReceiver(new RequestReceiver(fd));
 		this->channels[fd]->setSender(new ResponseSender(fd));
@@ -140,11 +137,9 @@ void Connection::receive(int fd)
 	switch (this->channels[fd]->getReceiver()->getState())
 	{
 		case R_WAITING:
-			this->log.INFO << "Connection: waiting";
-			return ;
+			return ;			this->log.INFO << "Connection: error";
 			break;
 		case R_ERROR:
-			this->log.INFO << "Connection: error";
 			this->channels[fd]->getHandler()->acceptData(this->channels[fd]->getReceiver()->produceData());
 			this->channels[fd]->send();
 			delete this->channels[fd];
@@ -154,7 +149,6 @@ void Connection::receive(int fd)
 			break;
 		case R_REQUEST:
 		{
-			this->log.INFO << "Connection: request";
 			StringData error("");
 			Request req = dynamic_cast<RequestReceiver *>(this->channels[fd]->getReceiver())->getRequest();
 			if (this->servers.find(req.getUrl().getDomain()) != this->servers.end())
@@ -163,22 +157,27 @@ void Connection::receive(int fd)
 				this->channels[fd]->setHandler(this->servers["default"].route(req, error));
 			if (!error.empty())
 			{
-				this->log.INFO << "Error during route selection: " << dynamic_cast<std::string &>(error);
 				this->channels[fd]->getHandler()->acceptData(error);
 			}
 			else
 			{
 				this->channels[fd]->getHandler()->acceptData(this->channels[fd]->getReceiver()->produceData());
 				CGIHandler	*cgiHandler = dynamic_cast<CGIHandler *>(this->channels[fd]->getHandler());
-				this->log.INFO << "right after forking: " << this->channels.size();
+
+				if (cgiHandler && dynamic_cast<StringData &>(cgiHandler->produceData()).getType() == D_SWAP_HANDLER)
+				{
+					IHandler *handler = new StaticHandler(cgiHandler->getPath(), cgiHandler->getRoot(), false, cgiHandler->getIndex(), "");
+					handler->acceptData(req);
+					this->channels[fd]->setHandler(handler);
+					cgiHandler = NULL;
+					this->log.INFO << "Changed handler to static";
+				}
 				if (cgiHandler && cgiHandler->getFd() > 0)
 				{
-					this->log.INFO << "Creating CGI channel";
 					this->channels[cgiHandler->getFd()] = new Channel();
 					this->channels[cgiHandler->getFd()]->setReceiver(new CGIReceiver(cgiHandler->getFd()));
 					this->channels[cgiHandler->getFd()]->setSender(new CGISender(cgiHandler->getFd()));
 					this->channels[cgiHandler->getFd()]->setHandler(cgiHandler);
-					this->log.INFO << "Adding CGI socket: " << cgiHandler->getFd();
 					this->worker->addSocketToQueue(cgiHandler->getFd());
 					this->worker->addConnection(cgiHandler->getFd(), this);
 					//this->worker->listenWriteAvailable(cgiHandler->getFd());
