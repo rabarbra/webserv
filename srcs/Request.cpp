@@ -98,7 +98,7 @@ std::string Request::toString() const
 	return ss.str();
 }
 
-void Request::removeHeader(std::__1::string key)
+void Request::removeHeader(std::string key)
 {
 	this->headers.erase(key);
 }
