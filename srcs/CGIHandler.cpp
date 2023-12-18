@@ -152,9 +152,7 @@ void CGIHandler::acceptData(IData &data)
 	try
 	{
 		Request req = dynamic_cast<Request &>(data);
-		if (!this->configured)
-			this->configure(req);
-		this->save_chunk_of_body(req);
+		this->configure(req);
 	}
 	catch(const std::exception& e)
 	{
