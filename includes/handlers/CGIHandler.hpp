@@ -17,6 +17,7 @@ class CGIHandler: public IHandler
 		std::vector<Method> 	allowed_methods;// All methods if not specified
 		std::string				root_directory; // Current directory if not specified
 		std::string				index; // index.html by default
+		std::string				path_to_script;
 		CGI						cgi; // NULL by default
 		int						fd;
 		int						pid;
@@ -32,6 +33,7 @@ class CGIHandler: public IHandler
 			const std::vector<Method>&	allowed_methods,
 			const std::string&			root_directory,
 			const std::string&			index,
+			const std::string&			path_to_script,
 			const CGI&					cgi
 		);
 		~CGIHandler();

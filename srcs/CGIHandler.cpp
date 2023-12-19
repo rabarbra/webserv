@@ -8,6 +8,7 @@ CGIHandler::CGIHandler(
 	const std::vector<Method>&	allowed_methods,
 	const std::string&			root_directory,
 	const std::string&			index,
+	const std::string&			path_to_script,
 	const CGI&					cgi
 ): fd(-1), pid(-1), dataForResponse(StringData("", D_NOTHING))
 {
@@ -15,6 +16,7 @@ CGIHandler::CGIHandler(
 	this->allowed_methods = allowed_methods;
 	this->root_directory = root_directory;
 	this->index = index;
+	this->path_to_script = path_to_script;
 	this->cgi = cgi;
 }
 
@@ -34,6 +36,7 @@ CGIHandler &CGIHandler::operator=(CGIHandler const &other)
 	this->allowed_methods = other.allowed_methods;
 	this->root_directory = other.root_directory;
 	this->index = other.index;
+	this->path_to_script = other.path_to_script;
 	this->cgi = other.cgi;
 	this->dataForResponse = other.dataForResponse;
 	this->log = other.log;
@@ -126,19 +129,7 @@ void CGIHandler::configureCGI(Request &req, std::string &cgiPath)
 
 void CGIHandler::configure(Request &req)
 {
-	std::string req_path = this->build_absolute_path(req.getUrl().getPath()).erase(0, this->root_directory.size());
-	better_string path = this->cgi.pathToScript(this->root_directory, this->index, this->build_absolute_path(req.getUrl().getPath()), req);
-	if (path == "404" || path == "403")
-	{
-		this->dataForResponse = StringData(path);
-		return ;
-	}
-	else if (path == "HandlePath")
-	{
-		this->dataForResponse = StringData("HandlePath", D_SWAP_HANDLER);
-		return ;
-	}
-	return this->configureCGI(req, path);
+	return this->configureCGI(req, this->path_to_script);
 }
 
 

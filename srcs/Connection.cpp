@@ -156,22 +156,11 @@ void Connection::receive(int fd)
 			else
 				this->channels[fd]->setHandler(this->servers["default"].route(req, error));
 			if (!error.empty())
-			{
 				this->channels[fd]->getHandler()->acceptData(error);
-			}
 			else
 			{
 				this->channels[fd]->getHandler()->acceptData(this->channels[fd]->getReceiver()->produceData());
 				CGIHandler	*cgiHandler = dynamic_cast<CGIHandler *>(this->channels[fd]->getHandler());
-
-				if (cgiHandler && dynamic_cast<StringData &>(cgiHandler->produceData()).getType() == D_SWAP_HANDLER)
-				{
-					IHandler *handler = new StaticHandler(cgiHandler->getPath(), cgiHandler->getRoot(), false, cgiHandler->getIndex(), "");
-					handler->acceptData(req);
-					this->channels[fd]->setHandler(handler);
-					cgiHandler = NULL;
-					this->log.INFO << "Changed handler to static";
-				}
 				if (cgiHandler && cgiHandler->getFd() > 0)
 				{
 					this->channels[cgiHandler->getFd()] = new Channel();
@@ -183,23 +172,7 @@ void Connection::receive(int fd)
 					//this->worker->listenWriteAvailable(cgiHandler->getFd());
 				}
 			}
-			this->channels[fd]->send();
-			if (this->channels[fd]->getSender()->finished() || !error.empty())
-			{
-				CGIHandler *cgiHandler = dynamic_cast<CGIHandler *>(this->channels[fd]->getHandler());
-				delete this->channels[fd];
-				this->channels.erase(fd);
-				this->worker->deleteSocketFromQueue(fd);
-				if (cgiHandler)
-				{
-					int cgiFd = cgiHandler->getFd();
-					//delete this->channels[cgiFd];
-					//this->channels.erase(cgiFd);
-					this->worker->deleteSocketFromQueue(cgiFd);
-				}
-			}
-			else
-				this->worker->listenWriteAvailable(fd);
+			this->worker->listenWriteAvailable(fd);
 			break ;
 		}
 		case R_BODY:
@@ -232,9 +205,17 @@ void Connection::send(int fd)
 		this->channels[fd]->send();
 		if (this->channels[fd]->senderFinished())
 		{
+			CGIHandler *cgiHandler = dynamic_cast<CGIHandler *>(this->channels[fd]->getHandler());
 			delete this->channels[fd];
 			this->channels.erase(fd);
 			this->worker->deleteSocketFromQueue(fd);
+			if (cgiHandler)
+			{
+				int cgiFd = cgiHandler->getFd();
+				//delete this->channels[cgiFd];
+				//this->channels.erase(cgiFd);
+				this->worker->deleteSocketFromQueue(cgiFd);
+			}
 			//close (fd);
 		}
 	}

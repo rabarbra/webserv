@@ -11,7 +11,6 @@ typedef	enum	e_data_type
 	D_DIRLISTING,
 	D_FINISHED,
 	D_NOTHING,
-	D_SWAP_HANDLER,
 	D_CGI
 }				DataType;
 

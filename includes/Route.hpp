@@ -35,11 +35,7 @@ class Route: public IRouter
 		Logger						logger;
 		char						**ev;
 		// Private
-		bool						handle_delete(std::string full_path, ResponseSender &resp);
-		//bool						handle_redirection(RequestReceiver req);
-		bool						handle_update(RequestReceiver req, ResponseSender *resp);
-		bool						handle_create(RequestReceiver req, ResponseSender *resp);
-		std::string					build_absolute_path(RequestReceiver req);
+		std::string					build_absolute_path(Request req);
 
 	public:
 		Route();
