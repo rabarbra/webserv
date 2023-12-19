@@ -223,10 +223,10 @@ bool Route::isRouteValid()
 	return true;
 }
 
-std::string Route::build_absolute_path(RequestReceiver req)
+std::string Route::build_absolute_path(Request req)
 {
 	better_string	root(this->root_directory);
-	better_string	req_path(req.getRequest().getUrl().getPath());
+	better_string	req_path(req.getUrl().getPath());
 
 	if (root.ends_with("/"))
 		root.erase(root.size() - 1);
@@ -236,56 +236,6 @@ std::string Route::build_absolute_path(RequestReceiver req)
 		req_path.erase(0, this->path.size());
 	return root + req_path;
 }
-
-bool Route::handle_delete(std::string full_path, ResponseSender &resp)
-{
-	if (std::remove(full_path.c_str()) == 0)
-	{
-		resp.build_ok("200");
-		return resp.run();
-	}
-	resp.build_error("403");
-	return resp.run();
-}
-
-bool Route::handle_update(RequestReceiver req, ResponseSender *resp)
-{
-	std::string full_path = this->build_absolute_path(req);
-	std::ofstream output;
-	output.open(full_path.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
-	output << req.getBody();
-	output.close();
-	resp->build_error("200");
-	return resp->run();
-}
-
-bool Route::handle_create(RequestReceiver req, ResponseSender *resp)
-{
-	std::string full_path = this->build_absolute_path(req);
-	std::ofstream output;
-	std::ifstream input;
-	//std::rename(req.getTempFile().c_str(), full_path.c_str());
-	output.open(full_path.c_str(), std::ios::out | std::ios::binary);
-	input.open(req.getTempFile().c_str(), std::ios::in | std::ios::binary);
-	output << input.rdbuf();
-	output.close();
-	input.close();
-	resp->build_error("201");
-	return resp->run();
-}
-
-/*
-bool Route::handle_redirection(RequestReceiver req)
-{
-	ResponseSender resp(req.getFd());
-	std::cout << "redirecting to: " << this->redirect_url << "with code " << this->redirectStatusCode << std::endl;
-	if (!this->redirectStatusCode.empty())
-		resp.build_redirect(this->redirect_url, this->redirectStatusCode);
-	else
-		resp.build_redirect(this->redirect_url, "302");
-	return resp.run();
-}
-*/
 
 // Public
 
@@ -356,14 +306,35 @@ IHandler *Route::route(IData &request, StringData &error)
 			this->static_dir
 		);
 	else if (this->type == CGI_)
+	{
+		better_string cgi_path = this->cgi.pathToScript(
+			this->root_directory,
+			this->index,
+			this->build_absolute_path(req),
+			req
+		);
+		if (cgi_path == "404" || cgi_path == "403")
+		{
+			error = StringData(cgi_path);
+			return NULL;
+		}
+		else if (cgi_path == "HandlePath")
+			return new StaticHandler(
+				this->path,
+				this->root_directory,
+				this->dir_listing,
+				this->index,
+				this->static_dir
+			);
 		return new CGIHandler(
 			this->path,
 			this->allowed_methods,
 			this->root_directory,
 			this->index,
+			cgi_path,
 			this->cgi
 		);
-		//return this->handle_cgi(resp, req);
+	}
 	else if (this->type == REDIRECTION_)
 		return new RedirectHandler(
 			this->redirect_url,

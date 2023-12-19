@@ -1,6 +1,6 @@
 #include "../includes/Request.hpp"
 
-Request::Request(): content_length(0), offset(0), body_start(0)
+Request::Request(): content_length(0), offset(0), body_start(0), buff()
 {}
 
 Request::~Request()
@@ -39,22 +39,22 @@ void	Request::setVersion(better_string version)
 	this->httpVersion = version;
 }
 
-void	Request::setHeader(std::string key, std::string value)
+void	Request::setHeader(const std::string& key, const std::string& value)
 {
 	this->headers[key] = value;
 }
 
-void	Request::setUrl(URL url)
+void	Request::setUrl(const URL& url)
 {
 	this->url = url;
 }
 
-void Request::setDomain(std::string domain)
+void Request::setDomain(const std::string& domain)
 {
 	this->url.setDomain(domain);
 }
 
-void Request::setPort(std::string port)
+void Request::setPort(const std::string& port)
 {
 	this->url.setPort(port);
 }
@@ -98,7 +98,7 @@ std::string Request::toString() const
 	return ss.str();
 }
 
-void Request::removeHeader(std::string key)
+void Request::removeHeader(const std::string& key)
 {
 	this->headers.erase(key);
 }

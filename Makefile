@@ -2,7 +2,7 @@ NAME =			webserv
 
 CXX =			c++
 
-CXXFLAGS =		-std=c++98 -Wall -Wextra -Werror -g
+CXXFLAGS =		-std=c++98 -Wall -Wextra -Werror -g -fsanitize=address
 
 OBJ_DIR =		build
 SRC_DIR =		srcs

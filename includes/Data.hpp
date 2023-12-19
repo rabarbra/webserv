@@ -25,6 +25,9 @@ class StringData: public IData, virtual public std::string
 		StringData(const char *base);
 		StringData(const char *base, DataType type);
 		~StringData();
+		bool    operator==(StringData &second);
+		bool    operator==(std::string &string);
+
 		// Getters
 		DataType	getType() const;
 };

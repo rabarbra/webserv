@@ -20,6 +20,7 @@ CGIReceiver &CGIReceiver::operator=(const CGIReceiver &other)
 	{
 		this->fd = other.fd;
 		this->state = other.state;
+		this->headers = other.headers;
 	}
 	return *this;
 }
@@ -40,9 +41,17 @@ void CGIReceiver::consume()
 {
 	char buff[4096];
 	ssize_t received = recv(this->fd, buff, 4096, 0);
+	if (received == 0 || received == -1)
+
+	{
+		this->state = R_ERROR;
+		return;
+	}
 	std::string d(buff, received);
-	this->log.INFO << "CGIReceiver: " << d;
-	this->data = StringData(d, D_CGI);
+	this->headers += d;
+	if (this->headers.find("\r\n\r\n") == std::string::npos)
+		return;
+	this->data = StringData(this->headers, D_CGI);
 	this->state = R_BODY;
 }
 

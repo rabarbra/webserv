@@ -68,12 +68,12 @@ class ResponseSender: public ISender
 		std::string getBody() const;
 		int			getFd() const;
 		// Public
-		void		build_file(std::string filename);
-		void		build_error(std::string status_code);
-		void		build_ok(std::string statuscode);
-		void		build_dir_listing(std::string content);
-		void		build_redirect(std::string redirect);
-		void		build_cgi_response(std::string response);
+		void		build_file(const std::string& filename);
+		void		build_error(const std::string& status_code);
+		void		build_ok(const std::string& statuscode);
+		void		build_dir_listing(const std::string& content);
+		void		build_redirect(const std::string& redirect);
+		void		build_cgi_response(const std::string& response);
 		bool		run();
 		bool		_send();
 		// ISender impl
