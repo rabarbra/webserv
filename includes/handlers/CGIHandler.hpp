@@ -17,6 +17,7 @@ class CGIHandler: public IHandler
 		std::vector<Method> 	allowed_methods;// All methods if not specified
 		std::string				root_directory; // Current directory if not specified
 		std::string				index; // index.html by default
+		std::string				path_to_script;
 		CGI						cgi; // NULL by default
 		int						fd;
 		int						pid;
@@ -24,21 +25,24 @@ class CGIHandler: public IHandler
 		Logger					log;
 		void 					configureCGI(Request &req, std::string &cgiPath);
 		void					configure(Request &req);
-		std::string 			build_absolute_path(better_string requestPath);
+		std::string 			build_absolute_path(const better_string& requestPath);
 	public:
 		CGIHandler();
 		CGIHandler(
-			std::string 		path,
-			std::vector<Method>	allowed_methods,
-			std::string			root_directory,
-			std::string			index,
-			CGI					cgi
+			const std::string& 		path,
+			const std::vector<Method>&	allowed_methods,
+			const std::string&			root_directory,
+			const std::string&			index,
+			const std::string&			path_to_script,
+			const CGI&					cgi
 		);
 		~CGIHandler();
 		CGIHandler(const CGIHandler &other);
 		CGIHandler &operator=(CGIHandler const &other);
 		// Getters
-
+		std::string getRoot();
+		std::string getIndex();
+		std::string getPath();
 		int	getFd();
 		// IHandler impl
 		IData	&produceData();

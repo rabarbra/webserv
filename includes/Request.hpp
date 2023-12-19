@@ -28,10 +28,10 @@ class Request: public IData
 		// Setters
 		void								setMethod(Method method);
 		void								setVersion(better_string version);
-		void								setHeader(std::string key, std::string value);
-		void								setUrl(URL url);
-		void								setDomain(std::string domain);
-		void								setPort(std::string port);
+		void                                setHeader(const std::string& key, const std::string& value);
+		void								setUrl(const URL& url);
+		void								setDomain(const std::string& domain);
+		void								setPort(const std::string& port);
 		// Getters
 		better_string						getVersion() const;
 		Method								getMethod() const;
@@ -39,6 +39,6 @@ class Request: public IData
 		URL									getUrl() const;
 		// Public
 		std::string							toString() const;
-		void								removeHeader(std::string key);
+		void								removeHeader(const std::string& key);
 };
 #endif
