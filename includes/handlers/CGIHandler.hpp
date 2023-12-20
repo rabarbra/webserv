@@ -1,7 +1,9 @@
 #ifndef CGIHANDLER_HPP
 # define CGIHANDLER_HPP
+# include <ctime>
 # include <string>
 # include <vector>
+# include <cstdlib>
 # include <sys/wait.h>
 # include "../CGI.hpp"
 # include "../Data.hpp"
@@ -23,7 +25,6 @@ class CGIHandler: public IHandler
 		int						pid;
 		StringData				dataForResponse;
 		std::string				tmp_file;
-		bool					configured;
 		Logger					log;
 		void 					configureCGI(Request &req);
 		std::string 			build_absolute_path(const better_string& requestPath);

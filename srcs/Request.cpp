@@ -235,3 +235,12 @@ StringData Request::save_chunk(std::string output_file)
 	}
 	return StringData("", D_NOTHING);
 }
+
+bool Request::isBodyReceived()
+{
+	if (!this->content_length)
+		return true;
+	if (this->chunked_state == CH_COMPLETE)
+		return true;
+	return false;
+}

@@ -4,8 +4,7 @@ CGIHandler::CGIHandler():
 	fd(-1),
 	pid(-1),
 	dataForResponse(StringData("", D_NOTHING)),
-	tmp_file(""),
-	configured(false)
+	tmp_file("")
 {}
 
 CGIHandler::CGIHandler(
@@ -19,8 +18,7 @@ CGIHandler::CGIHandler(
 	fd(-1),
 	pid(-1),
 	dataForResponse(StringData("", D_NOTHING)),
-	tmp_file(""),
-	configured(false)
+	tmp_file("")
 {
 	this->path = path;
 	this->allowed_methods = allowed_methods;
@@ -50,7 +48,6 @@ CGIHandler &CGIHandler::operator=(CGIHandler const &other)
 	this->cgi = other.cgi;
 	this->dataForResponse = other.dataForResponse;
 	this->tmp_file = other.tmp_file;
-	this->configured = other.configured;
 	this->log = other.log;
 	return *this;
 }
@@ -103,7 +100,6 @@ void CGIHandler::configureCGI(Request &req)
 	else
 	{
 		this->pid = tmp_pid;
-		this->configured = true;
 		//int status;
 		//waitpid(this->pid, &status, 0);
 	//	if (WEXITSTATUS(status))
@@ -152,18 +148,20 @@ void CGIHandler::acceptData(IData &data)
 	{
 		Request req = dynamic_cast<Request &>(data);
 		this->log.INFO << "CGIHandler accepts Request " << req.getUrl().getFullPath();
-		if (!this->configured)
-			this->configureCGI(req);
-		if (req.content_length)
+		if (req.content_length && !req.isBodyReceived())
 		{
 			if (this->tmp_file.empty())
 			{
+				std::srand(std::time(NULL));
 				std::stringstream ss;
-				ss << "test_tmp_" << this->pid;
+				ss << "test_tmp_" << std::rand();
 				this->tmp_file = ss.str();
 			}
 			req.save_chunk(this->tmp_file);
 		}
+		if (req.isBodyReceived())
+			this->configureCGI(req);
+
 	}
 	catch(const std::exception& e)
 	{

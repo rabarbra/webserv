@@ -57,5 +57,6 @@ class Request: public IData
 		std::string							toString() const;
 		void								removeHeader(const std::string& key);
 		StringData							save_chunk(std::string output_file);
+		bool								isBodyReceived();
 };
 #endif
