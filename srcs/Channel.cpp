@@ -72,11 +72,6 @@ IHandler *Channel::getHandler()
 void Channel::receive()
 {
 	this->receiver->consume();
-	//if (this->receiver->ready())
-	//{
-	//	this->handler->acceptData(this->receiver->produceData());
-	//	this->send();
-	//}
 }
 
 void Channel::send()
