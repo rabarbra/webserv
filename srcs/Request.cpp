@@ -35,6 +35,7 @@ Request &Request::operator=(const Request &other)
 		this->chunked_state = other.chunked_state;
 		this->remaining_chunk_size = other.remaining_chunk_size;
 		this->prev_chunk_size = other.prev_chunk_size;
+		this->log = other.log;
 		this->headers = other.headers;
 		this->offset = other.offset;
 		this->body_start = other.body_start;
@@ -127,9 +128,11 @@ StringData Request::save_chunk(std::string output_file)
 	if (this->content_length > 0)
 	{
 		output.write(this->buff + this->body_start, this->offset - this->body_start);
+		this->log.INFO << output_file << ": saved " << output.tellp() << " from " << this->content_length;
 		if (this->content_length == output.tellp())
 		{
 			output.close();
+			this->log.INFO << output_file << ": completed";
 			return StringData("", D_FINISHED);
 		}
 	}
@@ -187,6 +190,7 @@ StringData Request::save_chunk(std::string output_file)
 					}
 					output.write(this->buff + this->body_start, ch_size);
 					this->remaining_chunk_size -= ch_size;						
+					this->log.INFO << output_file << ": saved " << output.tellp() << " from " << this->content_length << ", remaining chunk size: " << this->remaining_chunk_size;
 					if (!this->remaining_chunk_size)
 						this->chunked_state = CH_TRAILER;
 					curr_pos += ch_size;
@@ -210,10 +214,12 @@ StringData Request::save_chunk(std::string output_file)
 				case CH_COMPLETE:
 					this->chunked_state = CH_START;
 					output.close();
+					this->log.INFO << output_file << ": completed";
 					return StringData("", D_FINISHED);
 					break;
 				case CH_ERROR:
 					this->chunked_state = CH_START;
+					this->log.INFO << output_file << ": error";
 					return StringData("500");
 					break;
 				default:
@@ -223,6 +229,9 @@ StringData Request::save_chunk(std::string output_file)
 	}
 	output.close();
 	if (!this->offset && !this->body_start)
+	{
+		this->log.INFO << output_file << ": completed";
 		return StringData("", D_FINISHED);
+	}
 	return StringData("", D_NOTHING);
 }

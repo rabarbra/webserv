@@ -4,6 +4,7 @@
 # include <fstream>
 # include <cstring>
 # include <string>
+# include "../liblogging/Logger.hpp"
 # include "interfaces/IData.hpp"
 # include "better_string.hpp"
 # include "Method.hpp"
@@ -29,6 +30,7 @@ class Request: public IData
 		ChunkedReqState						chunked_state;
 		size_t								remaining_chunk_size;
 		std::string							prev_chunk_size;
+		Logger								log;
 	public:
 		ssize_t								content_length;
 		size_t								offset;

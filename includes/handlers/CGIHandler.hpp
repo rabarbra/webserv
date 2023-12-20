@@ -22,8 +22,10 @@ class CGIHandler: public IHandler
 		int						fd;
 		int						pid;
 		StringData				dataForResponse;
+		std::string				tmp_file;
+		bool					configured;
 		Logger					log;
-		void 					configureCGI(Request &req, std::string &cgiPath);
+		void 					configureCGI(Request &req);
 		std::string 			build_absolute_path(const better_string& requestPath);
 	public:
 		CGIHandler();
