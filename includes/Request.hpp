@@ -1,13 +1,24 @@
 #ifndef REQUEST_HPP
 # define REQUEST_HPP
+# include <map>
+# include <fstream>
 # include <cstring>
+# include <string>
 # include "interfaces/IData.hpp"
 # include "better_string.hpp"
 # include "Method.hpp"
+# include "Data.hpp"
 # include "URL.hpp"
-# include <string>
-# include <map>
 
+typedef enum e_chunked_req_state
+{
+	CH_START,
+	CH_SIZE,
+	CH_DATA,
+	CH_TRAILER,
+	CH_COMPLETE,
+	CH_ERROR
+}			ChunkedReqState;
 class Request: public IData
 {
 	private:
@@ -15,6 +26,9 @@ class Request: public IData
 		better_string						httpVersion;
 		std::map<std::string, std::string>	headers;
 		URL									url;
+		ChunkedReqState						chunked_state;
+		size_t								remaining_chunk_size;
+		std::string							prev_chunk_size;
 	public:
 		ssize_t								content_length;
 		size_t								offset;
@@ -40,5 +54,6 @@ class Request: public IData
 		// Public
 		std::string							toString() const;
 		void								removeHeader(const std::string& key);
+		StringData							save_chunk(std::string output_file);
 };
 #endif
