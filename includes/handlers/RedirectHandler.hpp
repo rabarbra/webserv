@@ -1,8 +1,8 @@
 #ifndef REDIRECTHANDLER_HPP
 # define REDIRECTHANDLER_HPP
-# include "Data.hpp"
-# include "Request.hpp"
-# include "interfaces/IHandler.hpp"
+# include "../Data.hpp"
+# include "../Request.hpp"
+# include "../interfaces/IHandler.hpp"
 
 class RedirectHandler: public IHandler
 {

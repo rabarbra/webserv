@@ -4,8 +4,8 @@ CGIHandler::CGIHandler(): fd(-1), pid(-1), dataForResponse(StringData("", D_NOTH
 {}
 
 CGIHandler::CGIHandler(
-	const std::string& 		path,
-	const std::vector<Method>&	allowed_methods,
+	const std::string& 			path,
+	const std::vector<Method>	&allowed_methods,
 	const std::string&			root_directory,
 	const std::string&			index,
 	const std::string&			path_to_script,
@@ -126,13 +126,6 @@ void CGIHandler::configureCGI(Request &req, std::string &cgiPath)
 	}
 }
 
-
-void CGIHandler::configure(Request &req)
-{
-	return this->configureCGI(req, this->path_to_script);
-}
-
-
 // IHandler impl
 
 IData &CGIHandler::produceData()
@@ -145,7 +138,7 @@ void CGIHandler::acceptData(IData &data)
 	try
 	{
 		Request req = dynamic_cast<Request &>(data);
-		this->configure(req);
+		this->configureCGI(req, this->path_to_script);
 	}
 	catch(const std::exception& e)
 	{

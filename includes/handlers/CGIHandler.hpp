@@ -1,30 +1,29 @@
 #ifndef CGIHANDLER_HPP
 # define CGIHANDLER_HPP
-# include <sys/wait.h>
 # include <string>
 # include <vector>
+# include <sys/wait.h>
 # include "../CGI.hpp"
+# include "../Data.hpp"
 # include "../Method.hpp"
 # include "../Request.hpp"
-# include "interfaces/IHandler.hpp"
-# include "Data.hpp"
+# include "../interfaces/IHandler.hpp"
 # include "../../liblogging/Logger.hpp"
 
 class CGIHandler: public IHandler
 {
 	private:
 		std::string				path;
-		std::vector<Method> 	allowed_methods;// All methods if not specified
-		std::string				root_directory; // Current directory if not specified
-		std::string				index; // index.html by default
+		std::vector<Method> 	allowed_methods;
+		std::string				root_directory;
+		std::string				index;
 		std::string				path_to_script;
-		CGI						cgi; // NULL by default
+		CGI						cgi;
 		int						fd;
 		int						pid;
 		StringData				dataForResponse;
 		Logger					log;
 		void 					configureCGI(Request &req, std::string &cgiPath);
-		void					configure(Request &req);
 		std::string 			build_absolute_path(const better_string& requestPath);
 	public:
 		CGIHandler();

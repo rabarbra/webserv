@@ -7,9 +7,9 @@
 # include <sys/stat.h>
 // Cpp libs
 # include <fstream>
-# include "Data.hpp"
-# include "Request.hpp"
-# include "interfaces/IHandler.hpp"
+# include "../Data.hpp"
+# include "../Request.hpp"
+# include "../interfaces/IHandler.hpp"
 # include "../liblogging/Logger.hpp"
 
 typedef enum e_stat_handler_state
