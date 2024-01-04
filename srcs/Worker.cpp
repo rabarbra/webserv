@@ -37,6 +37,7 @@ Worker::Worker(char *path_to_conf, char **env): queue(-1), ev(env)
 	this->config.parse(conf);
 	this->initQueue();
 	this->create_connections();
+	this->log = Logger("Worker");
 }
 
 // Private
@@ -92,8 +93,6 @@ void Worker::addConnection(int fd, Connection *conn)
 void Worker::accept_connection(int sock)
 {
 	int	conn_fd;
-
-	this->log.INFO << "Accepting: " << sock;
 	if (listen(sock, SOMAXCONN) < 0)
 		throw std::runtime_error("Not listening: " + std::string(strerror(errno)));
 	while (1)
@@ -121,10 +120,9 @@ void Worker::accept_connection(int sock)
 		#endif
 		this->addSocketToQueue(conn_fd);
 		this->connections[conn_fd] = this->connections[sock];
-		//this->conn_map[conn_fd] = this->find_connection(sock);
 		this->log.INFO
-			<< "[" << conn_fd << "]: connected to sock " << sock << " "
-			<< this->connections[sock].getAddress().getHost();
+			<< this->connections[sock].getAddress().getHost()
+			<< " (sock " <<  sock << ") accepted client " << conn_fd;
 	}
 }
 
@@ -145,40 +143,34 @@ void Worker::run()
 		try
 		{
 			num_events = this->getNewEventsCount();
-			this->log.INFO << num_events << " new events";
 			if (num_events < 0)
 				throw std::runtime_error("Queue error: " + std::string(strerror(errno)));
 			for (int i = 0; i < num_events; i++)
 			{
 				event_sock = this->getEventSock(i);
-				this->log.INFO << "Event sock: " << event_sock;
 				switch (this->getEventType(i))
 				{
 					case NEW_CONN:
-						this->log.INFO << "NEW conn";
-						this->log.INFO << "NEW conn";
+						this->log.INFO << "NEW conn " << event_sock;
 						this->accept_connection(event_sock);
 						break;
 					case EOF_CONN:
-						this->log.INFO << "EOF conn";
-						this->log.INFO << "EOF conn";
-						this->deleteSocketFromQueue(i);
+						this->log.INFO << "EOF conn " << event_sock;
+						this->deleteSocketFromQueue(event_sock);
 						this->connections.erase(event_sock);
 						close(event_sock);
 						break;
 					case READ_AVAIL:
-						this->log.INFO << "Read available";
-						this->log.INFO << "Read available";
+						this->log.INFO << "Read available " << event_sock;
 						this->connections[event_sock].receive(event_sock);
 						break;
 					case WRITE_AVAIL:
-						this->log.INFO << "Write available";
-						this->log.INFO << "Write available";
-						this->connections[event_sock].send(event_sock);
+						this->log.INFO << "Write available " << event_sock;
+						if (this->connections.find(event_sock) != this->connections.end())
+							this->connections[event_sock].send(event_sock);
 						break;
 					default:
-						this->log.INFO << "Unknown event type!";
-						this->log.INFO << "Unknown event type!";
+						this->log.INFO << "Unknown event type " << event_sock;
 						break;
 				}
 			}
@@ -188,4 +180,9 @@ void Worker::run()
 			this->log.ERROR << e.what();
 		}
 	}
+}
+
+void Worker::removeConnection(int fd)
+{
+	this->connections.erase(fd);
 }

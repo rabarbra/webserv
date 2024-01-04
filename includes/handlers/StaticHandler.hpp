@@ -7,9 +7,9 @@
 # include <sys/stat.h>
 // Cpp libs
 # include <fstream>
-# include "Data.hpp"
-# include "Request.hpp"
-# include "interfaces/IHandler.hpp"
+# include "../Data.hpp"
+# include "../Request.hpp"
+# include "../interfaces/IHandler.hpp"
 # include "../liblogging/Logger.hpp"
 
 typedef enum e_stat_handler_state
@@ -18,16 +18,6 @@ typedef enum e_stat_handler_state
 	SH_UPLOADING,
 	SH_FINISHED
 }			StatHandlerState;
-
-typedef enum e_chunked_req_state
-{
-	CH_START,
-	CH_SIZE,
-	CH_DATA,
-	CH_TRAILER,
-	CH_COMPLETE,
-	CH_ERROR
-}			ChunkedReqState;
 
 class StaticHandler: public IHandler
 {
@@ -40,17 +30,13 @@ class StaticHandler: public IHandler
 		std::string			full_path;
 		StringData			data;
 		StatHandlerState	state;
-		ChunkedReqState		chunked_state;
-		size_t				remaining_chunk_size;
-		std::string			prev_chunk_size;
 		bool				created;
-		StringData			findFilePath(Request req);
+		StringData			findFilePath(Request &req);
 		std::string 		build_absolute_path(better_string requestPath);
 		StringData			handle_dir_listing(Request req, std::string full_path);
 		StringData			handle_delete(std::string full_path);
-		StringData			handle_create(Request req, std::string full_path);
-		StringData			handle_update(Request req, std::string full_path);
-		StringData			save_chunk(Request req);
+		StringData			handle_create(Request &req, std::string full_path);
+		StringData			handle_update(Request &req, std::string full_path);
 		Logger				log;
 	public:
 		StaticHandler();

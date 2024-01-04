@@ -1,7 +1,9 @@
 #include "../includes/handlers/StaticHandler.hpp"
 
-StaticHandler::StaticHandler(): state(SH_START), chunked_state(CH_START), remaining_chunk_size(0), created(false)
-{}
+StaticHandler::StaticHandler(): state(SH_START)
+{
+	this->log = Logger("StaticHandler");
+}
 
 StaticHandler::StaticHandler(
 	std::string	path,
@@ -9,13 +11,14 @@ StaticHandler::StaticHandler(
 	bool		dir_listing,
 	std::string	index,
 	std::string	static_dir
-): state(SH_START), chunked_state(CH_START), remaining_chunk_size(0), created(false)
+): state(SH_START)
 {
 	this->path = path;
 	this->root_directory = root_directory;
 	this->dir_listing = dir_listing;
 	this->index = index;
 	this->static_dir = static_dir;
+	this->log = Logger("StaticHandler");
 }
 
 StaticHandler::~StaticHandler()
@@ -35,9 +38,6 @@ StaticHandler &StaticHandler::operator=(StaticHandler const &other)
 	this->static_dir = other.static_dir;
 	this->data = other.data;
 	this->state = other.state;
-	this->chunked_state = other.chunked_state;
-	this->remaining_chunk_size = other.remaining_chunk_size;
-	this->prev_chunk_size = other.prev_chunk_size;
 	this->full_path = other.full_path;
 	this->log = other.log;
 	this->created = other.created;
@@ -98,7 +98,6 @@ StringData StaticHandler::handle_dir_listing(Request req, std::string full_path)
 		dir_content += "\n";
 	}
 	closedir(dir);
-	this->log.INFO << dir_content;
 	return this->state = SH_FINISHED, StringData(dir_content, D_DIRLISTING);
 }
 
@@ -123,138 +122,7 @@ StringData StaticHandler::handle_delete(std::string full_path)
 	return this->state = SH_FINISHED, StringData("403");
 }
 
-StringData StaticHandler::save_chunk(Request req)
-{
-	this->log.INFO << "chunk " << req.content_length;
-	std::ofstream output;
-	output.open(full_path.c_str(), std::ios::out | std::ios::binary | std::ios::app);
-	if (req.content_length > 0)
-	{
-		this->log.INFO << "Saving content-length chunk " << req.body_start << " " << req.offset;
-		output.write(req.buff + req.body_start, req.offset - req.body_start);
-		if (req.content_length == output.tellp())
-		{
-			output.close();
-			if (this->created)
-				return this->state = SH_FINISHED, StringData("201");
-			else
-				return this->state = SH_FINISHED, StringData("200");
-		}
-	}
-	else if (req.content_length)
-	{
-		bool processing = true;
-		size_t curr_pos = req.body_start;
-		this->log.INFO << "Transfer-Encoding: chunked. State: " << this->chunked_state << ". Processing: " << std::boolalpha << processing;
-		while (processing)
-		{
-			switch (this->chunked_state)
-			{
-				case CH_START:
-					this->log.INFO << "Starting receiving chunked request";
-					this->chunked_state = CH_SIZE;
-					break ;
-				case CH_SIZE:
-				{
-					this->log.INFO << "Calculating chunk size";
-					size_t end;
-					for (end = curr_pos; end < req.offset; end++)
-					{
-						if (req.buff[end] == '\r' && req.buff[end + 1] == '\n')
-						{
-							this->chunked_state = CH_DATA;
-							break;
-						}
-					}
-					this->prev_chunk_size += std::string(req.buff + curr_pos, end - curr_pos);
-					if (this->prev_chunk_size.size() > 20)
-					{
-						this->prev_chunk_size = "";
-						this->chunked_state = CH_ERROR;
-						break;
-					}
-					this->log.INFO << "Hex size: " << this->prev_chunk_size;
-					curr_pos = end;
-					if (this->chunked_state == CH_DATA)
-					{
-						std::stringstream ss(this->prev_chunk_size);
-						this->prev_chunk_size = "";
-						req.body_start = end + 2;
-						curr_pos += 2;
-						ss >> std::setbase(16) >> this->remaining_chunk_size;
-					}
-					if (curr_pos >= req.offset)
-						processing = false;
-					break;
-				}
-				case CH_DATA:
-				{
-					this->log.INFO << "Saving data";
-					size_t ch_size = req.offset - curr_pos;
-					processing = false;
-					if (this->remaining_chunk_size <= ch_size)
-					{
-						ch_size = this->remaining_chunk_size;
-						processing = true;
-						this->chunked_state = CH_TRAILER;
-					}
-					output.write(req.buff + req.body_start, ch_size);
-					this->log.INFO << "Remaining chunk: " << this->remaining_chunk_size << ", written: " << ch_size;
-					this->remaining_chunk_size -= ch_size;						
-					if (!this->remaining_chunk_size)
-						this->chunked_state = CH_TRAILER;
-					curr_pos += ch_size;
-					if (curr_pos >= req.offset)
-						processing = false;
-					break;
-				}
-				case CH_TRAILER:
-					this->log.INFO << "Trailers";
-					if (req.buff[curr_pos] == '0')
-						this->chunked_state = CH_COMPLETE;
-					else if (curr_pos + 2 > req.offset)
-						processing = false;
-					else if (req.buff[curr_pos + 2] == '0')
-						this->chunked_state = CH_COMPLETE;
-					else
-					{
-						curr_pos += 2;
-						this->chunked_state = CH_SIZE;
-					}
-					break;
-				case CH_COMPLETE:
-					this->log.INFO << "Completed";
-					this->chunked_state = CH_START;
-					output.close();
-					if (this->created)
-						return this->state = SH_FINISHED, StringData("201");
-					else
-						return this->state = SH_FINISHED, StringData("200");
-					break;
-				case CH_ERROR:
-					this->chunked_state = CH_START;
-					this->log.INFO << "Error";
-					return this->state = SH_FINISHED, StringData("500");
-					break;
-				default:
-					this->log.INFO << "State not found";
-					break;
-			}
-		}
-		//std::string chunk = std::string(req.buff + req.body_start, req.offset - req.body_start);
-		//std::stringstream ss(chunk);
-		//size_t pos = chunk.find("\r\n") + 2;
-		//size_t chunk_size;
-		//ss >> std::setbase(16) >> chunk_size;
-		//this->log.INFO << "Chunk size: " << chunk_size << ", chunk: " << chunk;
-	}
-	output.close();
-	if (!req.offset && !req.body_start)
-		return this->state = SH_FINISHED, StringData("", D_FINISHED);
-	return StringData("", D_NOTHING);
-}
-
-StringData StaticHandler::handle_create(Request req, std::string full_path)
+StringData StaticHandler::handle_create(Request &req, std::string full_path)
 {
 	std::ofstream output;
 	output.open(full_path.c_str(), std::ios::out | std::ios::binary);
@@ -264,10 +132,18 @@ StringData StaticHandler::handle_create(Request req, std::string full_path)
 	this->created = true;
 	this->state = SH_UPLOADING;
 	output.close();
-	return this->save_chunk(req);
+	StringData res = req.save_chunk(full_path);
+	if (res.getType() == D_FINISHED)
+	{
+		this->state = SH_FINISHED;
+		return StringData("201");
+	}
+	else if (res.getType() == D_ERROR)
+		this->state = SH_FINISHED;
+	return res;
 }
 
-StringData StaticHandler::handle_update(Request req, std::string full_path)
+StringData StaticHandler::handle_update(Request &req, std::string full_path)
 {
 	std::ofstream output;
 	output.open(full_path.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
@@ -276,10 +152,16 @@ StringData StaticHandler::handle_update(Request req, std::string full_path)
 		return this->state = SH_FINISHED, StringData("507");
 	this->state = SH_UPLOADING;
 	output.close();
-	return this->save_chunk(req);
+	StringData res = req.save_chunk(full_path);
+	if (res.getType() == D_FINISHED)
+	{
+		this->state = SH_FINISHED;
+		return StringData("200");
+	}
+	return res;
 }
 
-StringData StaticHandler::findFilePath(Request req)
+StringData StaticHandler::findFilePath(Request &req)
 {
 	std::string full_path = this->build_absolute_path(req.getUrl().getPath());
 	struct stat st;
@@ -340,21 +222,30 @@ void StaticHandler::acceptData(IData &data)
 	try
 	{
 		Request	&req = dynamic_cast<Request&>(data);
-		this->log.INFO << "Static handler: " << req.getUrl().getFullPath() << " state: " << this->state;
+		this->log.INFO << "accepting: " << req.getUrl().getFullPath() << " state: " << this->state << ", req chunked_state: " << req.getChunkedState();
 		if (this->state == SH_START)
 			this->data = this->findFilePath(req);
 		else if (this->state == SH_UPLOADING)
-			this->data = this->save_chunk(req);
+		{
+			this->data = req.save_chunk(this->full_path);
+			if (this->data.getType() == D_FINISHED || this->data.getType() == D_ERROR)
+			{
+				this->state = SH_FINISHED;
+				if (this->created)
+					this->data = StringData("201");
+				else
+					this->data = StringData("200");
+			}
+		}
 	}
 	catch(const std::exception& e)
 	{
 		try {
 			StringData &str = dynamic_cast<StringData&>(data);
-			this->log.INFO << "Static handler: " << str << " state: " << this->state;
+			this->log.INFO << "accepting: " << str << " state: " << this->state;
 		}
 		catch(const std::exception& e) {
-			this->log.ERROR << "Static handler: " << e.what();
+			this->log.ERROR << "error accepting data: " << e.what();
 		}
 	}
-	
 }

@@ -33,7 +33,7 @@ class RequestReceiver: public IReceiver
 		// Getters
 		better_string						getBody() const;
 		std::string							getTempFile() const;
-		Request								getRequest() const;
+		Request								&getRequest();
 		int									getFd() const;
 		// Public
 		bool								receive_headers();

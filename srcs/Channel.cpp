@@ -1,16 +1,29 @@
 #include "../includes/Channel.hpp"
 
 Channel::Channel(): sender(NULL), receiver(NULL), handler(NULL)
-{}
+{
+	this->log = Logger("Channel");
+}
 
 Channel::~Channel()
 {
-	if (this->handler && !(dynamic_cast<CGIHandler *>(this->handler) && dynamic_cast<ResponseSender *>(this->sender)))
+	this->log.INFO << "destructor";
+	if (this->handler && this->receiver && (dynamic_cast<RequestReceiver *>(this->receiver)))
+	{
+		this->log.INFO << "removing handler";
 		delete this->handler;
+		this->handler = NULL;
+	}
 	if (this->sender)
+	{
 		delete this->sender;
+		this->sender = NULL;
+	}
 	if (this->receiver)
+	{
 		delete this->receiver;
+		this->receiver = NULL;
+	}
 }
 
 Channel::Channel(const Channel &other)
@@ -25,6 +38,7 @@ Channel &Channel::operator=(const Channel &other)
 		this->sender = other.sender;
 		this->receiver = other.receiver;
 		this->handler = other.handler;
+		this->log = other.log;
 	}
 	return *this;
 }
@@ -72,16 +86,11 @@ IHandler *Channel::getHandler()
 void Channel::receive()
 {
 	this->receiver->consume();
-	//if (this->receiver->ready())
-	//{
-	//	this->handler->acceptData(this->receiver->produceData());
-	//	this->send();
-	//}
 }
 
 void Channel::send()
 {
-	if (this->sender->readyToSend())
+	if (this->sender && this->sender->readyToSend())
 		this->sender->sendData();
 }
 

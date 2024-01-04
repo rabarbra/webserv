@@ -42,6 +42,7 @@ class Server: public IRouter
 		// Public
 		//bool									handle_request(RequestReceiver *req, ResponseSender *resp);
 		void									printServer();
+		void									printRoutes(std::string name = "");
 		std::string								printHosts();
 		bool									hasListenDup();
 		// IRouter impl
