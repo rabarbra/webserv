@@ -11,10 +11,11 @@ typedef	enum	e_data_type
 	D_DIRLISTING,
 	D_FINISHED,
 	D_NOTHING,
-	D_CGI
+	D_CGI,
+	D_TMPFILE
 }				DataType;
 
-class StringData: public IData, virtual public std::string
+class StringData: virtual public IData, virtual public std::string
 {
 	private:
 		DataType type;

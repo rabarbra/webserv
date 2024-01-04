@@ -2,7 +2,9 @@
 #include "../includes/Worker.hpp"
 
 Connection::Connection(): servers(), sock(-1), worker(NULL)
-{}
+{
+	this->log = Logger("Connection");
+}
 
 Connection::~Connection()
 {
@@ -19,6 +21,7 @@ Connection::Connection(const Connection &other):
 Connection::Connection(Address &addr):
 	servers(), address(addr), sock(-1), worker(NULL)
 {
+	this->log = Logger("Connection");
 	this->sock = socket(
 		addr.getAddr()->ai_family,
 		addr.getAddr()->ai_socktype,
@@ -55,8 +58,8 @@ Connection::Connection(Address &addr):
 	setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &reuseaddr, sizeof(reuseaddr));
 	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(reuseaddr));
 	this->log.INFO
-		<< "New connection with socket: " << sock
-		<< ", addr: " << addr.getHost();
+		<< "created " << addr.getHost()
+		<< ", socket: " << sock;
 }
 
 Connection &Connection::operator=(const Connection &other)
@@ -101,10 +104,10 @@ void Connection::addServer(Server server)
 	{
 		this->log.INFO
 			<< "Server " << server.printHosts()
-			<< " added as default to connection "
-			<< this->address.getHost()
-			<< " (socket: " << this->sock << ")";
+			<< " added as default to "
+			<< this->address.getHost();
 		this->servers["default"] = server;
+		server.printRoutes();
 	}
 	for (size_t i = 0; i < names.size(); i++)
 	{
@@ -112,10 +115,10 @@ void Connection::addServer(Server server)
 		{
 			this->log.INFO
 				<< "Server " << server.printHosts()
-				<< " added with server name " << names[i] << " to connection "
-				<< this->address.getHost()
-				<< " (socket: " << this->sock << ")";
+				<< " added with name " << names[i] << " to "
+				<< this->address.getHost();
 			this->servers[names[i]] = server;
+			server.printRoutes(names[i]);
 		}
 	}
 }
@@ -137,9 +140,11 @@ void Connection::receive(int fd)
 	switch (this->channels[fd]->getReceiver()->getState())
 	{
 		case R_WAITING:
-			return ;			this->log.INFO << "Connection: error";
+			this->log.INFO << "receiving: R_WAITING";
+			return ;
 			break;
 		case R_ERROR:
+			this->log.INFO << "receiving: R_ERROR";
 			this->channels[fd]->getHandler()->acceptData(this->channels[fd]->getReceiver()->produceData());
 			this->channels[fd]->send();
 			delete this->channels[fd];
@@ -149,8 +154,9 @@ void Connection::receive(int fd)
 			break;
 		case R_REQUEST:
 		{
+			this->log.INFO << "receiving: R_REQUEST";
 			StringData error("");
-			Request req = dynamic_cast<RequestReceiver *>(this->channels[fd]->getReceiver())->getRequest();
+			Request &req = dynamic_cast<RequestReceiver *>(this->channels[fd]->getReceiver())->getRequest();
 			if (this->servers.find(req.getUrl().getDomain()) != this->servers.end())
 				this->channels[fd]->setHandler(this->servers[req.getUrl().getDomain()].route(req, error));
 			else
@@ -169,7 +175,7 @@ void Connection::receive(int fd)
 					this->channels[cgiHandler->getFd()]->setHandler(cgiHandler);
 					this->worker->addSocketToQueue(cgiHandler->getFd());
 					this->worker->addConnection(cgiHandler->getFd(), this);
-					//this->worker->listenWriteAvailable(cgiHandler->getFd());
+					this->worker->listenWriteAvailable(cgiHandler->getFd());
 				}
 			}
 			this->worker->listenWriteAvailable(fd);
@@ -177,22 +183,33 @@ void Connection::receive(int fd)
 		}
 		case R_BODY:
 		{
-			this->log.INFO << "Connection: receiving body";
+			this->log.INFO << "receiving: R_BODY";
 			this->channels[fd]->getHandler()->acceptData(this->channels[fd]->getReceiver()->produceData());
-			if (dynamic_cast<ResponseSender *>(this->channels[fd]->getSender()))
+			CGIHandler	*cgiHandler = dynamic_cast<CGIHandler *>(this->channels[fd]->getHandler());
+			if (cgiHandler && cgiHandler->getFd() > 0)
 			{
-				this->channels[fd]->send();
-				if (this->channels[fd]->getSender()->finished())
-				{
-					delete this->channels[fd];
-					this->channels.erase(fd);
-					this->worker->deleteSocketFromQueue(fd);
-				}
+				this->channels[cgiHandler->getFd()] = new Channel();
+				this->channels[cgiHandler->getFd()]->setReceiver(new CGIReceiver(cgiHandler->getFd()));
+				this->channels[cgiHandler->getFd()]->setSender(new CGISender(cgiHandler->getFd()));
+				this->channels[cgiHandler->getFd()]->setHandler(cgiHandler);
+				this->worker->addSocketToQueue(cgiHandler->getFd());
+				this->worker->addConnection(cgiHandler->getFd(), this);
+				this->worker->listenWriteAvailable(cgiHandler->getFd());
 			}
+			//if (dynamic_cast<ResponseSender *>(this->channels[fd]->getSender()))
+			//{
+			//	this->channels[fd]->send();
+			//	if (this->channels[fd]->getSender()->finished())
+			//	{
+			//		delete this->channels[fd];
+			//		this->channels.erase(fd);
+			//		this->worker->deleteSocketFromQueue(fd);
+			//	}
+			//}
 			break;
 		}
 		default:
-			this->log.INFO << "Connection: default";
+			this->log.INFO << "receiving: default";
 			break;
 	}
 }
@@ -202,20 +219,35 @@ void Connection::send(int fd)
 	if (this->channels.find(fd) != this->channels.end())
 	{
 		this->channels[fd]->getSender()->setData(this->channels[fd]->getHandler()->produceData());
+		this->log.INFO << "sending";
 		this->channels[fd]->send();
 		if (this->channels[fd]->senderFinished())
 		{
+			this->log.INFO << "Sender finished";
+			CGISender *cgiSender = dynamic_cast<CGISender *>(this->channels[fd]->getSender());
+			if (cgiSender)
+			{
+				this->worker->addSocketToQueue(cgiSender->getFd());
+				return ;
+			}
 			CGIHandler *cgiHandler = dynamic_cast<CGIHandler *>(this->channels[fd]->getHandler());
-			delete this->channels[fd];
-			this->channels.erase(fd);
-			this->worker->deleteSocketFromQueue(fd);
+			this->log.INFO << "Removing channel";
 			if (cgiHandler)
 			{
+				this->log.INFO << "SENDER FINISHED";
 				int cgiFd = cgiHandler->getFd();
-				//delete this->channels[cgiFd];
-				//this->channels.erase(cgiFd);
+				this->log.INFO << "Removing from queue: " << cgiFd;
 				this->worker->deleteSocketFromQueue(cgiFd);
+				this->log.INFO << "removing CGI channel";
+				delete this->channels[cgiFd];
+				this->channels.erase(cgiFd);
+				this->worker->removeConnection(cgiFd);
+				close(cgiFd);
 			}
+			this->log.INFO << "removing Conn channel";
+			delete this->channels[fd];
+			this->channels.erase(fd);
+			//this->worker->deleteSocketFromQueue(fd);
 			//close (fd);
 		}
 	}

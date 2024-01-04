@@ -122,20 +122,8 @@ bool Server::hasListenDup() {
 	return (s.size() != this->hosts.size());
 }
 
-void		Server::printServer() {
-	this->log.INFO << "---------Server-----------";
-	for (std::multimap<std::string, std::string>::iterator i = this->hosts.begin(); i != this->hosts.end(); i++)
-		this->log.INFO << "Host: " << i->first << " Port: " << i->second;
-	this->log.INFO << "Client Max body size : " << this->max_body_size;
-	for (long unsigned int i = 0; i < this->server_names.size(); i++)
-		this->log.INFO << "Server name [" << i  << "]: " << this->server_names[i];
-	for (std::map<int, std::string>::iterator i = this->error_pages.begin(); i != this->error_pages.end(); i++)
-		this->log.INFO << "Error code path["<< i->first << "]: " << i->second;
-	for (std::vector<Route>::iterator i = this->routes.begin(); i != this->routes.end(); i++)
-	{
-		this->log.INFO << "Route path: " << i->getPath();
-		i->printRoute();
-	}
+void Server::printRoutes(std::string name)
+{
 	for (size_t i = 0; i < this->routes.size(); i++)
 	{
 		std::string route_type;
@@ -155,10 +143,28 @@ void		Server::printServer() {
 				route_type = "unkn:\t";
 				break;
 		}
+		if (name.empty())
+			name = this->hosts.begin()->first + ":" + this->hosts.begin()->second;
 		this->log.INFO
 			<< route_type
-			<< "http://" << this->hosts.begin()->first << ":" << this->hosts.begin()->second << this->routes[i].getPath()
+			<< "http://" << name << this->routes[i].getPath()
 			<< (this->routes[i].getRedirectUrl().size() ? "\n\t\t\t\t=> " + this->routes[i].getRedirectUrl() : "");
+	}
+}
+
+void		Server::printServer() {
+	this->log.INFO << "---------Server-----------";
+	for (std::multimap<std::string, std::string>::iterator i = this->hosts.begin(); i != this->hosts.end(); i++)
+		this->log.INFO << "Host: " << i->first << " Port: " << i->second;
+	this->log.INFO << "Client Max body size : " << this->max_body_size;
+	for (long unsigned int i = 0; i < this->server_names.size(); i++)
+		this->log.INFO << "Server name [" << i  << "]: " << this->server_names[i];
+	for (std::map<int, std::string>::iterator i = this->error_pages.begin(); i != this->error_pages.end(); i++)
+		this->log.INFO << "Error code path["<< i->first << "]: " << i->second;
+	for (std::vector<Route>::iterator i = this->routes.begin(); i != this->routes.end(); i++)
+	{
+		this->log.INFO << "Route path: " << i->getPath();
+		i->printRoute();
 	}
 }
 

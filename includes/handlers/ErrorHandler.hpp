@@ -1,7 +1,7 @@
 #ifndef ERRORHANDLER_HPP
 # define ERRORHANDLER_HPP
-# include "interfaces/IHandler.hpp"
-# include "Data.hpp"
+# include "../Data.hpp"
+# include "../interfaces/IHandler.hpp"
 
 class ErrorHandler: public IHandler
 {

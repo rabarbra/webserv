@@ -1,16 +1,17 @@
 #include "../includes/RequestReceiver.hpp"
 
 RequestReceiver::RequestReceiver(int fd): _fd(fd), state(R_WAITING), _header_pos(0), headersOk(false)
-{}
+{
+	this->log = Logger("RequestReceiver");
+}
 
 RequestReceiver::RequestReceiver(): _fd(-1), state(R_WAITING), _header_pos(0), headersOk(false)
-{}
+{
+	this->log = Logger("RequestReceiver");
+}
 
 RequestReceiver::~RequestReceiver()
-{
-	//if (!this->tmp_file.empty())
-	//	std::remove(this->tmp_file.c_str());
-}
+{}
 
 RequestReceiver::RequestReceiver(const RequestReceiver &other)
 {
@@ -29,6 +30,7 @@ RequestReceiver &RequestReceiver::operator=(const RequestReceiver &other)
 		this->req = other.req;
 		this->headersOk = other.headersOk;
 		this->error_code = other.error_code;
+		this->log = other.log;
 	}
 	return *this;
 }
@@ -50,7 +52,7 @@ ReceiverState RequestReceiver::getState() const
 	return this->state;
 }
 
-Request RequestReceiver::getRequest() const
+Request &RequestReceiver::getRequest()
 {
 	return this->req;
 }
@@ -67,7 +69,6 @@ bool RequestReceiver::receive_body()
 	ssize_t bytes_read = recv(this->_fd, this->req.buff, this->req.buff_size, 0);
 	if (bytes_read < 0)
 		throw std::runtime_error("Error receiving request: " + std::string(strerror(errno)));
-	this->log.INFO << "Setting body start to 0";
 	this->req.body_start = 0;
 	this->req.offset = bytes_read;
 	if (!bytes_read)
@@ -81,7 +82,7 @@ bool RequestReceiver::parse_completed_lines()
 	better_string		key;
 	better_string		value;
 	better_string		pathquery;
-	std::string			lines(this->req.buff + this->_header_pos, req.offset - this->_header_pos);
+	std::string			lines(this->req.buff + this->_header_pos, this->req.offset - this->_header_pos);
 	std::stringstream	ss(lines);
 
 	while (std::getline(ss, line, '\n'))
@@ -218,7 +219,7 @@ bool RequestReceiver::receive_headers()
 			std::stringstream(headers["Content-Length"]) >> this->req.content_length;
 		}
 		this->headersOk = true;
-		req.body_start = this->_header_pos;
+		this->req.body_start = this->_header_pos;
 		return true;
 	}
 	if (this->req.offset == Request::buff_size && !this->headersOk)
@@ -241,7 +242,6 @@ void RequestReceiver::consume()
 		if (this->headersOk)
 			this->state = R_REQUEST;
 	}
-	//this->log.INFO << this->req.toString();
 }
 
 IData &RequestReceiver::produceData()

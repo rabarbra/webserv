@@ -7,11 +7,12 @@ Route::Route():
 	type(PATH_), allowed_methods(std::vector<Method>()),
 	root_directory(""), redirect_url(""), redirectStatusCode(""), dir_listing(false),
 	index("index.html"), static_dir(), ev(NULL)
-{}
+{
+	this->logger = Logger("Route");
+}
 
 Route::~Route()
-{
-}
+{}
 
 Route::Route(const Route &other): ev(NULL)
 {
@@ -284,7 +285,7 @@ bool Route::isCgiEnabled() const
 
 IHandler *Route::route(IData &request, StringData &error)
 {
-	Request req = dynamic_cast<Request&>(request);
+	Request &req = dynamic_cast<Request&>(request);
 	if (
 		this->allowed_methods.size() &&
 		std::find(

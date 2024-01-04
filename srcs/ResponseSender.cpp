@@ -3,12 +3,16 @@
 ResponseSender::ResponseSender():
 	httpVersion("HTTP/1.1"), statusCode("200"), reason("OK"),
 	sent(0), fd(-1), ready(false), _finished(false)
-{}
+{
+	this->log = Logger("ResponseSender");
+}
 
 ResponseSender::ResponseSender(int fd):
 	httpVersion("HTTP/1.1"), statusCode("200"), reason("OK"),
 	sent(0), fd(fd), ready(false), _finished(false)
-{}
+{
+	this->log = Logger("ResponseSender");
+}
 
 ResponseSender::~ResponseSender()
 {}
@@ -33,6 +37,7 @@ ResponseSender ResponseSender::operator=(const ResponseSender &other)
 		this->file = other.file;
 		this->ready = other.ready;
 		this->_finished = other._finished;
+		this->log = other.log;
 	}
 	return *this;
 }
@@ -365,46 +370,38 @@ void ResponseSender::setData(IData &data)
 		switch (d.getType())
 		{
 			case D_ERROR:
-				this->log.INFO << "Response gets D_ERROR: " << d;
 				this->build_error(d);
 				this->ready = true;
 				break;
 			case D_FILEPATH:
-				this->log.INFO << "Response gets D_FILEPATH: " << d;
 				this->build_file(d);
 				this->ready = true;
 				break;
 			case D_DIRLISTING:
-				this->log.INFO << "Response gets D_DIRLISTING: " << d;
 				this->build_dir_listing(d);
 				this->ready = true;
 				break;
 			case D_REDIR:
-				this->log.INFO << "Response gets D_REDIR: " << d;
 				this->build_redirect(d);
 				this->ready = true;
 				break;
 			case D_CGI:
-				this->log.INFO << "Response gets D_CGI: " << d;
 				this->build_cgi_response(d);
 				this->ready = true;
 				break;
 			case D_FINISHED:
-				this->log.INFO << "Response gets D_FINISHED: " << d;
 				this->_finished = true;
 				break;
 			case D_NOTHING:
-				this->log.INFO << "Response gets D_NOTHING: " << d;
 				this->ready = false;
 				break ;
 			default:
-				this->log.INFO << "Response gets something strange: " << d;
 				break;
 		}
 	}
 	catch(const std::bad_cast& e)
 	{
-		std::cerr << e.what() << '\n';
+		this->log.ERROR << e.what();
 	}
 }
 
