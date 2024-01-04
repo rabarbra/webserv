@@ -1,9 +1,9 @@
 #include "BaseHandler.hpp"
 
-BaseHandler::BaseHandler(): lvl(_INFO), limit(_INFO), first(true), copy(NULL)
+BaseHandler::BaseHandler(std::string name): lvl(_INFO), limit(_INFO), first(true), name(name), copy(NULL)
 {}
 
-BaseHandler::BaseHandler(t_lvl lvl, t_lvl limit): lvl(lvl), limit(limit), first(true), copy(NULL)
+BaseHandler::BaseHandler(t_lvl lvl, t_lvl limit, std::string name): lvl(lvl), limit(limit), first(true), name(name), copy(NULL)
 {}
 
 BaseHandler::~BaseHandler()
@@ -24,6 +24,7 @@ BaseHandler &BaseHandler::operator=(const BaseHandler &other)
 		this->first = other.first;
 		this->lvl = other.lvl;
 		this->limit = other.limit;
+		this->name = other.name;
 	}
 	return (*this);
 }

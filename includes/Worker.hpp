@@ -49,9 +49,10 @@ class Worker
 		Worker(char *path_to_conf, char **ev);
 		void						run();
 		void						addSocketToQueue(int sock);
-		void						deleteSocketFromQueue(int num_event);
+		void						deleteSocketFromQueue(int sock);
 		void						listenWriteAvailable(int socket);
 		void						addConnection(int fd, Connection *conn);
+		void						removeConnection(int fd);
 };
 
 #endif

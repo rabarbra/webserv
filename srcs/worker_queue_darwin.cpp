@@ -69,11 +69,9 @@ void Worker::listenWriteAvailable(int socket)
 	this->log.INFO << "Added EVFILT_WRITE for socket " << socket;
 }
 
-void Worker::deleteSocketFromQueue(int num_event)
+void Worker::deleteSocketFromQueue(int sock)
 {
 	struct kevent	evSet;
-
-	int sock = this->getEventSock(num_event);
 	EV_SET(&evSet, sock, EVFILT_READ, EV_DELETE, 0, 0, NULL);
     if (kevent(this->queue, &evSet, 1, NULL, 0, NULL) < 0)
 		throw std::runtime_error("Kevent error 4: "

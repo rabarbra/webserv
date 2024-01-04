@@ -4,8 +4,11 @@ CGIHandler::CGIHandler():
 	fd(-1),
 	pid(-1),
 	dataForResponse(StringData("", D_NOTHING)),
-	tmp_file("")
-{}
+	tmp_file(""),
+	finished(false)
+{
+	this->log = Logger("CGIHandler");
+}
 
 CGIHandler::CGIHandler(
 	const std::string& 			path,
@@ -18,7 +21,8 @@ CGIHandler::CGIHandler(
 	fd(-1),
 	pid(-1),
 	dataForResponse(StringData("", D_NOTHING)),
-	tmp_file("")
+	tmp_file(""),
+	finished(false)
 {
 	this->path = path;
 	this->allowed_methods = allowed_methods;
@@ -26,10 +30,14 @@ CGIHandler::CGIHandler(
 	this->index = index;
 	this->path_to_script = path_to_script;
 	this->cgi = cgi;
+	this->log = Logger("CGIHandler");
 }
 
 CGIHandler::~CGIHandler()
-{}
+{
+	if (!this->tmp_file.empty())
+		std::remove(this->tmp_file.c_str());
+}
 
 CGIHandler::CGIHandler(const CGIHandler &other) : fd(-1), pid(-1)
 {
@@ -49,6 +57,7 @@ CGIHandler &CGIHandler::operator=(CGIHandler const &other)
 	this->dataForResponse = other.dataForResponse;
 	this->tmp_file = other.tmp_file;
 	this->log = other.log;
+	this->finished = other.finished;
 	return *this;
 }
 
@@ -80,6 +89,18 @@ void CGIHandler::configureCGI(Request &req)
 	pid_t tmp_pid;
 	int sv[2];
 
+	if (req.content_length == -1)
+	{
+		std::ifstream tmp(
+			this->tmp_file.c_str(),
+			std::ifstream::ate | std::ifstream::binary
+		);
+		std::stringstream ss;
+		ss << tmp.tellg();
+		req.removeHeader("Transfer-Encoding");
+		req.setHeader("Content-Length", ss.str());
+		tmp.close();
+	}
 	this->cgi.createEnv(req);
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == -1)
 	{
@@ -87,6 +108,11 @@ void CGIHandler::configureCGI(Request &req)
 		return ;
 	}
 	this->fd = sv[0];
+	fcntl(this->fd, F_SETFL, O_NONBLOCK, FD_CLOEXEC);
+	#ifdef __APPLE__
+		int nosigpipe = 1;
+		setsockopt(this->fd, SOL_SOCKET, SO_NOSIGPIPE, &nosigpipe, sizeof(nosigpipe));
+	#endif
 	if ((tmp_pid = fork()) == -1)
 	{
 		this->dataForResponse = StringData("502");
@@ -139,6 +165,35 @@ void CGIHandler::configureCGI(Request &req)
 
 IData &CGIHandler::produceData()
 {
+	int	status;
+	if (this->pid >= 0)
+	{
+		waitpid(this->pid, &status, WNOHANG);
+		if (
+			WIFEXITED(status) && WEXITSTATUS(status)
+			&& this->dataForResponse.getType() == D_NOTHING
+		)
+		{
+			this->log.INFO << "producing error 500";
+			this->dataForResponse = StringData("500");
+		}
+		else if (WIFEXITED(status))
+		{
+			this->log.INFO << "producing D_NOTHING";
+			this->dataForResponse = StringData("", D_NOTHING);
+		}
+		else if (!this->tmp_file.empty())
+		{
+			this->log.INFO << "producing D_TMPFILE " << this->tmp_file;
+			this->dataForResponse = StringData(this->tmp_file, D_TMPFILE);
+		}
+	}
+	//if (this->finished)
+	//{
+	//	this->dataForResponse = StringData("", D_FINISHED);
+	//}
+	//if (this->dataForResponse.getType() == D_CGI)
+	//	this->finished = true;
 	return this->dataForResponse;
 }
 
@@ -146,8 +201,8 @@ void CGIHandler::acceptData(IData &data)
 {
 	try
 	{
-		Request req = dynamic_cast<Request &>(data);
-		this->log.INFO << "CGIHandler accepts Request " << req.getUrl().getFullPath();
+		Request &req = dynamic_cast<Request &>(data);
+		this->log.INFO << "accepting Request " << req.getUrl().getFullPath();
 		if (req.content_length && !req.isBodyReceived())
 		{
 			if (this->tmp_file.empty())
@@ -161,19 +216,20 @@ void CGIHandler::acceptData(IData &data)
 		}
 		if (req.isBodyReceived())
 			this->configureCGI(req);
-
 	}
 	catch(const std::exception& e)
 	{
 		try
 		{
 			StringData rsp = dynamic_cast<StringData &>(data);
-			this->log.INFO << "CGIHandler accepts StringData of type " << rsp.getType();
+			this->log.INFO << "accepting StringData of type " << rsp.getType();
 			this->dataForResponse = rsp;
+			kill(this->pid, SIGINT);
+			this->pid = -1;
 		}
 		catch(const std::exception& e)
 		{
-			this->log.ERROR << "CHIHandler accepting unknown data type";
+			this->log.ERROR << "accepting unknown data type";
 		}
 	}	
 }

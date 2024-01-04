@@ -1,7 +1,9 @@
 #include "../includes/handlers/StaticHandler.hpp"
 
 StaticHandler::StaticHandler(): state(SH_START)
-{}
+{
+	this->log = Logger("StaticHandler");
+}
 
 StaticHandler::StaticHandler(
 	std::string	path,
@@ -16,6 +18,7 @@ StaticHandler::StaticHandler(
 	this->dir_listing = dir_listing;
 	this->index = index;
 	this->static_dir = static_dir;
+	this->log = Logger("StaticHandler");
 }
 
 StaticHandler::~StaticHandler()
@@ -95,7 +98,6 @@ StringData StaticHandler::handle_dir_listing(Request req, std::string full_path)
 		dir_content += "\n";
 	}
 	closedir(dir);
-	this->log.INFO << dir_content;
 	return this->state = SH_FINISHED, StringData(dir_content, D_DIRLISTING);
 }
 
@@ -120,7 +122,7 @@ StringData StaticHandler::handle_delete(std::string full_path)
 	return this->state = SH_FINISHED, StringData("403");
 }
 
-StringData StaticHandler::handle_create(Request req, std::string full_path)
+StringData StaticHandler::handle_create(Request &req, std::string full_path)
 {
 	std::ofstream output;
 	output.open(full_path.c_str(), std::ios::out | std::ios::binary);
@@ -136,10 +138,12 @@ StringData StaticHandler::handle_create(Request req, std::string full_path)
 		this->state = SH_FINISHED;
 		return StringData("201");
 	}
+	else if (res.getType() == D_ERROR)
+		this->state = SH_FINISHED;
 	return res;
 }
 
-StringData StaticHandler::handle_update(Request req, std::string full_path)
+StringData StaticHandler::handle_update(Request &req, std::string full_path)
 {
 	std::ofstream output;
 	output.open(full_path.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
@@ -157,7 +161,7 @@ StringData StaticHandler::handle_update(Request req, std::string full_path)
 	return res;
 }
 
-StringData StaticHandler::findFilePath(Request req)
+StringData StaticHandler::findFilePath(Request &req)
 {
 	std::string full_path = this->build_absolute_path(req.getUrl().getPath());
 	struct stat st;
@@ -218,7 +222,7 @@ void StaticHandler::acceptData(IData &data)
 	try
 	{
 		Request	&req = dynamic_cast<Request&>(data);
-		this->log.INFO << "Static handler: " << req.getUrl().getFullPath() << " state: " << this->state;
+		this->log.INFO << "accepting: " << req.getUrl().getFullPath() << " state: " << this->state << ", req chunked_state: " << req.getChunkedState();
 		if (this->state == SH_START)
 			this->data = this->findFilePath(req);
 		else if (this->state == SH_UPLOADING)
@@ -238,11 +242,10 @@ void StaticHandler::acceptData(IData &data)
 	{
 		try {
 			StringData &str = dynamic_cast<StringData&>(data);
-			this->log.INFO << "Static handler: " << str << " state: " << this->state;
+			this->log.INFO << "accepting: " << str << " state: " << this->state;
 		}
 		catch(const std::exception& e) {
-			this->log.ERROR << "Static handler: " << e.what();
+			this->log.ERROR << "error accepting data: " << e.what();
 		}
 	}
-	
 }

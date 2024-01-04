@@ -3,7 +3,7 @@
 #include <stdio.h>
 int	main(int ac, char **av, char **ev)
 {
-	Logger log;
+	Logger log("main");
 	if (ac != 2)
 	{
 		log.ERROR << "2 args required!\n";

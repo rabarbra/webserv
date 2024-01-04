@@ -1,5 +1,6 @@
 #ifndef CHANNEL_HPP
 # define CHANNEL_HPP
+# include "CGIReceiver.hpp"
 # include "RequestReceiver.hpp"
 # include "handlers/CGIHandler.hpp"
 # include "interfaces/ISender.hpp"
@@ -13,6 +14,7 @@ class Channel: IChannel
 		ISender		*sender;
 		IReceiver	*receiver;
 		IHandler	*handler;
+		Logger		log;
 	public:
 		Channel();
 		~Channel();

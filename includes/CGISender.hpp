@@ -7,6 +7,8 @@
 # include <sys/types.h>
 # include <sys/socket.h>
 # include <typeinfo>
+// CPP headers
+# include <fstream>
 // Our headers
 # include "Data.hpp"
 # include "interfaces/ISender.hpp"
@@ -24,6 +26,8 @@ class CGISender: public ISender
 		int				fd;
 		bool			ready;
 		bool			_finished;
+		std::string		tmp_file;
+		size_t			pos;
 		Logger			log;
 	public:
 		CGISender();

@@ -8,7 +8,9 @@ Request::Request():
 	offset(0),
 	body_start(0),
 	buff()
-{}
+{
+	this->log = Logger("Request");
+}
 
 Request::~Request()
 {}
@@ -42,6 +44,7 @@ Request &Request::operator=(const Request &other)
 		this->content_length = other.content_length;
 		std::memcpy(this->buff, other.buff, this->buff_size);
 	}
+	this->log.INFO << "copy";
 	return *this;
 }
 
@@ -99,6 +102,11 @@ URL Request::getUrl() const
 	return this->url;
 }
 
+ChunkedReqState Request::getChunkedState() const
+{
+	return this->chunked_state;
+}
+
 // Public
 
 std::string Request::toString() const
@@ -132,6 +140,7 @@ StringData Request::save_chunk(std::string output_file)
 		if (this->content_length == output.tellp())
 		{
 			output.close();
+			this->chunked_state = CH_COMPLETE;
 			this->log.INFO << output_file << ": completed";
 			return StringData("", D_FINISHED);
 		}
@@ -152,7 +161,7 @@ StringData Request::save_chunk(std::string output_file)
 					size_t end;
 					for (end = curr_pos; end < this->offset; end++)
 					{
-						if (this->buff[end] == '\r' && this->buff[end + 1] == '\n')
+						if ((this->buff[end] == '\r' && this->buff[end + 1] == '\n') || this->buff[end] == '\n') // Check this condition
 						{
 							this->chunked_state = CH_DATA;
 							break;
@@ -192,7 +201,9 @@ StringData Request::save_chunk(std::string output_file)
 					this->remaining_chunk_size -= ch_size;						
 					this->log.INFO << output_file << ": saved " << output.tellp() << " from " << this->content_length << ", remaining chunk size: " << this->remaining_chunk_size;
 					if (!this->remaining_chunk_size)
+					{
 						this->chunked_state = CH_TRAILER;
+					}
 					curr_pos += ch_size;
 					if (curr_pos >= this->offset)
 						processing = false;
@@ -200,11 +211,15 @@ StringData Request::save_chunk(std::string output_file)
 				}
 				case CH_TRAILER:
 					if (this->buff[curr_pos] == '0')
+					{
 						this->chunked_state = CH_COMPLETE;
+					}
 					else if (curr_pos + 2 > this->offset)
 						processing = false;
 					else if (this->buff[curr_pos + 2] == '0')
+					{
 						this->chunked_state = CH_COMPLETE;
+					}
 					else
 					{
 						curr_pos += 2;
@@ -212,13 +227,13 @@ StringData Request::save_chunk(std::string output_file)
 					}
 					break;
 				case CH_COMPLETE:
-					this->chunked_state = CH_START;
+					//this->chunked_state = CH_START;
 					output.close();
 					this->log.INFO << output_file << ": completed";
 					return StringData("", D_FINISHED);
 					break;
 				case CH_ERROR:
-					this->chunked_state = CH_START;
+					//this->chunked_state = CH_START;
 					this->log.INFO << output_file << ": error";
 					return StringData("500");
 					break;

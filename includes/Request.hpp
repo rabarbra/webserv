@@ -20,7 +20,7 @@ typedef enum e_chunked_req_state
 	CH_COMPLETE,
 	CH_ERROR
 }			ChunkedReqState;
-class Request: public IData
+class Request: virtual public IData
 {
 	private:
 		Method								method;
@@ -53,6 +53,7 @@ class Request: public IData
 		Method								getMethod() const;
 		std::map<std::string, std::string>	getHeaders() const;
 		URL									getUrl() const;
+		ChunkedReqState						getChunkedState() const;
 		// Public
 		std::string							toString() const;
 		void								removeHeader(const std::string& key);

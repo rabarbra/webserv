@@ -60,9 +60,9 @@ void Worker::listenWriteAvailable(int socket)
 //	this->log.INFO << "Added response to file descriptor " <<  resp->getFd();
 //}
 
-void Worker::deleteSocketFromQueue(int num_event)
+void Worker::deleteSocketFromQueue(int sock)
 {
-	int sock = this->getEventSock(num_event);
+	//int sock = this->getEventSock(num_event);
 	epoll_ctl(this->queue, EPOLL_CTL_DEL, sock, NULL);
 	//EpollData *data = static_cast<EpollData *>(this->evList[num_event].data.ptr);
 	//delete data;

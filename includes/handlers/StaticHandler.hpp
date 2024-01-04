@@ -31,12 +31,12 @@ class StaticHandler: public IHandler
 		StringData			data;
 		StatHandlerState	state;
 		bool				created;
-		StringData			findFilePath(Request req);
+		StringData			findFilePath(Request &req);
 		std::string 		build_absolute_path(better_string requestPath);
 		StringData			handle_dir_listing(Request req, std::string full_path);
 		StringData			handle_delete(std::string full_path);
-		StringData			handle_create(Request req, std::string full_path);
-		StringData			handle_update(Request req, std::string full_path);
+		StringData			handle_create(Request &req, std::string full_path);
+		StringData			handle_update(Request &req, std::string full_path);
 		Logger				log;
 	public:
 		StaticHandler();

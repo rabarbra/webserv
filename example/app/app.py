@@ -7,13 +7,20 @@ app = Flask(__name__)
 def index():
     return render_template('index.html')
 
-# Route for the POST method
-@app.route('/submit', methods=['GET','POST'])
-def submit():
-    # Access form data
-    name = "vasilis"
-    return render_template('submit.html', name=name)
+@app.route('/upload/<name>', methods=['GET','POST'])
+def submit(name: str):
+    with open(name, "wb") as f:
+        f.write(request.data)
+    return render_template('index.html')
+
+@app.route('/form_upload', methods=['GET','POST'])
+def form():
+    if request.method == 'GET':
+        return render_template("post.html")
+    else:
+        file = request.files['file']
+        file.save(file.filename);
+        return render_template("post.html", result="OK", name=file.filename)
 
 if __name__ == '__main__':
     app.run(debug=True)
-
