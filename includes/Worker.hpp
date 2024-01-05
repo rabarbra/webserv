@@ -13,6 +13,7 @@ typedef enum	e_event_type
 	NEW_CONN,
 	READ_AVAIL,
 	WRITE_AVAIL,
+	READWRITE_AVAIL,
 	EOF_CONN
 }				EventType;
 class Worker
