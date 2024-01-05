@@ -227,7 +227,7 @@ void Connection::send(int fd)
 			CGISender *cgiSender = dynamic_cast<CGISender *>(this->channels[fd]->getSender());
 			if (cgiSender)
 			{
-				this->worker->addSocketToQueue(cgiSender->getFd());
+				//this->worker->addSocketToQueue(cgiSender->getFd());
 				return ;
 			}
 			CGIHandler *cgiHandler = dynamic_cast<CGIHandler *>(this->channels[fd]->getHandler());

@@ -169,6 +169,12 @@ void Worker::run()
 						if (this->connections.find(event_sock) != this->connections.end())
 							this->connections[event_sock].send(event_sock);
 						break;
+					case READWRITE_AVAIL:
+						this->log.INFO << "ReadWrite available " << event_sock;
+						this->connections[event_sock].receive(event_sock);
+						if (this->connections.find(event_sock) != this->connections.end())
+							this->connections[event_sock].send(event_sock);
+						break;
 					default:
 						this->log.INFO << "Unknown event type " << event_sock;
 						break;

@@ -19,12 +19,13 @@ void Worker::addSocketToQueue(int sock)
 	struct epoll_event	conn_event;
 	//EpollData			*data;
 
-	conn_event.events = EPOLLIN | EPOLLET;
+	conn_event.events =  EPOLLIN;
 	//data = new EpollData;
 	//data->fd = sock;
 	//data->resp = NULL;
 	//conn_event.data.ptr = data;
 	conn_event.data.fd = sock;
+	this->log.INFO << "Adding to epoll: " << sock;
     if (epoll_ctl(this->queue, EPOLL_CTL_ADD, sock, &conn_event))
 		throw std::runtime_error("Error adding connection socket to epoll: " + std::string(strerror(errno)));
 }
@@ -32,13 +33,8 @@ void Worker::addSocketToQueue(int sock)
 void Worker::listenWriteAvailable(int socket)
 {
 	struct epoll_event	conn_event;
-	//EpollData			*data;
 
-	conn_event.events = EPOLLIN | EPOLLOUT | EPOLLET;
-	//data = new EpollData;
-	//data->fd = socket;
-	//data->resp = NULL;
-	//conn_event.data.ptr = data;
+	conn_event.events = EPOLLIN | EPOLLOUT;
 	conn_event.data.fd = socket;
     if (epoll_ctl(this->queue, EPOLL_CTL_MOD, socket, &conn_event))
 		throw std::runtime_error("Error adding EPOLLOUT socket: " + std::string(strerror(errno)));
@@ -93,10 +89,12 @@ EventType Worker::getEventType(int num_event)
 		return EOF_CONN;
 	if (this->is_socket_accepting_connection(this->getEventSock(num_event)))
 		return NEW_CONN;
-	if (evList[num_event].events & EPOLLOUT)
-		return WRITE_AVAIL;
+	if ((evList[num_event].events & EPOLLOUT) && (evList[num_event].events & EPOLLIN))
+		return READWRITE_AVAIL;
 	if (evList[num_event].events & EPOLLIN)
 		return READ_AVAIL;
+	if (evList[num_event].events & EPOLLOUT)
+		return WRITE_AVAIL;
 	throw std::runtime_error("Unknown event!");
 }
 
