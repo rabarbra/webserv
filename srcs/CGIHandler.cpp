@@ -222,7 +222,7 @@ void CGIHandler::acceptData(IData &data)
 		try
 		{
 			StringData rsp = dynamic_cast<StringData &>(data);
-			this->log.INFO << "accepting StringData of type " << rsp.getType();
+			this->log.INFO << "accepting StringData of type " << rsp.getType() << " " << rsp;
 			this->dataForResponse = rsp;
 			kill(this->pid, SIGINT);
 			this->pid = -1;
