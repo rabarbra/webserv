@@ -40,6 +40,7 @@ CGI	&CGI::operator=(const CGI &other)
 		this->prevURL = other.prevURL;
 		this->prevExecPath = other.prevExecPath;
 		this->enabled = other.enabled;
+		this->requestURI = this->requestURI;
 	}
 	return (*this);
 }
@@ -234,25 +235,27 @@ void CGI::createEnv(Request &req)
         this->setEnv(ev);
 }
 
-better_string CGI::pathToScript(better_string cgiPath, const better_string& index, better_string filePath, Request &req)
+better_string CGI::pathToScript(better_string cgiPath, const better_string& index, better_string filePath, Request &req, better_string route_path)
 {
+	better_string route_root = cgiPath; // Route root dir
 	filePath = URL::removeFromStart(filePath, cgiPath);
 	filePath = URL::removeFromStart(filePath, "/");
 	better_string token;
 	std::stringstream ss(filePath);
 	while (std::getline(ss, token, '/')) {
-		cgiPath +=  "/" + token;
+		cgiPath = URL::concatPaths(cgiPath, token);
+		route_path = URL::concatPaths(route_path, token);
 		struct stat st;
 		if (stat(cgiPath.c_str(), &st) == 0)
         {
 			if (S_ISREG(st.st_mode)) {
 				better_string result = this->checkRegFile(cgiPath, req);
 				if (
-					result != ("403") &&
-					result !=("404") &&
-					result != ("HandlePath")
+					result.compare("403") && 
+					result.compare("404") && 
+					result.compare("HandlePath")
 					)
-					this->setupCGI(cgiPath, token, filePath); // setup basic variables for the env array
+					this->setupCGI(cgiPath, token, filePath, route_path, route_root); // setup basic variables for the env array
 				return (result);
 			}
 			else if (!S_ISDIR(st.st_mode))
@@ -262,33 +265,37 @@ better_string CGI::pathToScript(better_string cgiPath, const better_string& inde
 			return "404";
 	}
 	cgiPath = URL::concatPaths(cgiPath, index);
+	route_path = URL::concatPaths(route_path, index);
 	better_string result = this->checkRegFile(cgiPath, req);
 	if (
-		result != "403" &&
-		result != "404" &&
-		result != "HandlePath"
+		result.compare("403") && 
+		result.compare("404") && 
+		result.compare("HandlePath")
 		)
-		this->setupCGI(cgiPath, index, filePath); // setup basic variables for the env array
+		this->setupCGI(cgiPath, index, filePath, route_path, route_root); // setup basic variables for the env array
     return (this->checkRegFile(cgiPath, req));
 }
 
-void CGI::setupCGI(const better_string& cgiPath, const better_string& script, const better_string& filePath)
+void CGI::setupCGI(better_string cgiPath, better_string script, better_string filePath, better_string route_path, better_string route_root)
 {
-	this->pathInfo.clear();
-	this->pathTranslated.clear();
-	this->documentRoot.clear();
+        this->pathInfo.clear();
+        this->pathTranslated.clear();
+        this->documentRoot.clear();
 
-	// Clear previous entries
+        // Clear previous entries
 
-	this->scriptName = "/" + script;
-	this->requestURI = filePath; // from scriptname onwards;
-	unsigned long pos = cgiPath.find_last_of("/");
-	if (pos != std::string::npos)
-		this->documentRoot = cgiPath.substr(0, pos); // Root location of script;
-	this->scriptFilename = cgiPath;
-	this->pathInfo = URL::removeFromStart(filePath, script);
-	if (!this->pathInfo.empty())
-		this->pathTranslated = this->documentRoot + this->pathInfo; 
+        this->scriptName = route_path;
+        this->requestURI = filePath; // from scriptname onwards;
+		this->documentRoot = route_root;
+        this->scriptFilename = cgiPath;
+		size_t pos = filePath.find(script);
+		if (pos != std::string::npos && pos + script.size() != filePath.size())
+		this->pathInfo = filePath.substr(pos + script.size());
+        if (!this->pathInfo.empty())
+		{
+            this->pathTranslated = this->documentRoot + ("/" + URL::removeFromEnd(filePath, script));
+			this->pathTranslated.find_first_and_replace("/" + script, "");
+		}
 }
 
 bool CGI::isEnabled() const

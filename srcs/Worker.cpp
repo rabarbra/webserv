@@ -156,9 +156,10 @@ void Worker::run()
 						break;
 					case EOF_CONN:
 						this->log.INFO << "EOF conn " << event_sock;
-						this->deleteSocketFromQueue(event_sock);
-						this->connections.erase(event_sock);
-						close(event_sock);
+						this->connections[event_sock].receive(event_sock);
+						//this->deleteSocketFromQueue(event_sock);
+						//this->connections.erase(event_sock);
+						//close(event_sock);
 						break;
 					case READ_AVAIL:
 						this->log.INFO << "Read available " << event_sock;

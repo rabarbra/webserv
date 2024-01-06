@@ -46,6 +46,7 @@ class ResponseSender: public ISender
 		int									fd;
 		bool								ready;
 		bool								_finished;
+		bool								cgi;
 		Logger								log;
 		void								_build();
 		bool								_send_plain();
@@ -74,6 +75,7 @@ class ResponseSender: public ISender
 		void		build_dir_listing(const std::string& content);
 		void		build_redirect(const std::string& redirect);
 		void		build_cgi_response(const std::string& response);
+		void		build_cgi_body_chunk(const std::string& response);
 		bool		run();
 		bool		_send();
 		// ISender impl

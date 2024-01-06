@@ -312,7 +312,8 @@ IHandler *Route::route(IData &request, StringData &error)
 			this->root_directory,
 			this->index,
 			this->build_absolute_path(req),
-			req
+			req,
+			this->path
 		);
 		if (cgi_path == "404" || cgi_path == "403")
 		{

@@ -149,7 +149,8 @@ void Connection::receive(int fd)
 			this->channels[fd]->send();
 			delete this->channels[fd];
 			this->channels.erase(fd);
-			this->worker->deleteSocketFromQueue(fd);
+			close(fd);
+			//this->worker->deleteSocketFromQueue(fd);
 			return ;
 			break;
 		case R_REQUEST:
@@ -173,9 +174,10 @@ void Connection::receive(int fd)
 					this->channels[cgiHandler->getFd()]->setReceiver(new CGIReceiver(cgiHandler->getFd()));
 					this->channels[cgiHandler->getFd()]->setSender(new CGISender(cgiHandler->getFd()));
 					this->channels[cgiHandler->getFd()]->setHandler(cgiHandler);
-					this->worker->addSocketToQueue(cgiHandler->getFd());
 					this->worker->addConnection(cgiHandler->getFd(), this);
-					this->worker->listenWriteAvailable(cgiHandler->getFd());
+					this->worker->addSocketToQueue(cgiHandler->getFd());
+					if (req.content_length)
+						this->worker->listenWriteAvailable(cgiHandler->getFd());
 				}
 			}
 			this->worker->listenWriteAvailable(fd);
@@ -186,15 +188,17 @@ void Connection::receive(int fd)
 			this->log.INFO << "receiving: R_BODY";
 			this->channels[fd]->getHandler()->acceptData(this->channels[fd]->getReceiver()->produceData());
 			CGIHandler	*cgiHandler = dynamic_cast<CGIHandler *>(this->channels[fd]->getHandler());
-			if (cgiHandler && cgiHandler->getFd() > 0)
+			RequestReceiver *rec = dynamic_cast<RequestReceiver *>(this->channels[fd]->getReceiver());
+			if (rec && cgiHandler && cgiHandler->getFd() > 0)
 			{
 				this->channels[cgiHandler->getFd()] = new Channel();
 				this->channels[cgiHandler->getFd()]->setReceiver(new CGIReceiver(cgiHandler->getFd()));
 				this->channels[cgiHandler->getFd()]->setSender(new CGISender(cgiHandler->getFd()));
 				this->channels[cgiHandler->getFd()]->setHandler(cgiHandler);
-				this->worker->addSocketToQueue(cgiHandler->getFd());
 				this->worker->addConnection(cgiHandler->getFd(), this);
-				this->worker->listenWriteAvailable(cgiHandler->getFd());
+				this->worker->addSocketToQueue(cgiHandler->getFd());
+				if (rec->getRequest().content_length)
+					this->worker->listenWriteAvailable(cgiHandler->getFd());
 			}
 			//if (dynamic_cast<ResponseSender *>(this->channels[fd]->getSender()))
 			//{
@@ -208,6 +212,15 @@ void Connection::receive(int fd)
 			//}
 			break;
 		}
+		//case R_FINISHED:
+		//{
+		//	delete this->channels[fd];
+		//	this->channels.erase(fd);
+		//	this->worker->deleteSocketFromQueue(fd);
+		//	this->worker->removeConnection(fd);
+		//	close(fd);
+		//	break;
+		//}
 		default:
 			this->log.INFO << "receiving: default";
 			break;
@@ -225,30 +238,32 @@ void Connection::send(int fd)
 		{
 			this->log.INFO << "Sender finished";
 			CGISender *cgiSender = dynamic_cast<CGISender *>(this->channels[fd]->getSender());
+			CGIHandler *cgiHandler = dynamic_cast<CGIHandler *>(this->channels[fd]->getHandler());
 			if (cgiSender)
 			{
+				this->worker->listenOnlyRead(cgiSender->getFd());
+				cgiHandler->removeTmpFile();
 				//this->worker->addSocketToQueue(cgiSender->getFd());
 				return ;
 			}
-			CGIHandler *cgiHandler = dynamic_cast<CGIHandler *>(this->channels[fd]->getHandler());
 			this->log.INFO << "Removing channel";
 			if (cgiHandler)
 			{
 				this->log.INFO << "SENDER FINISHED";
 				int cgiFd = cgiHandler->getFd();
 				this->log.INFO << "Removing from queue: " << cgiFd;
-				this->worker->deleteSocketFromQueue(cgiFd);
+				//this->worker->deleteSocketFromQueue(cgiFd);
 				this->log.INFO << "removing CGI channel";
+				close(cgiFd);
 				delete this->channels[cgiFd];
 				this->channels.erase(cgiFd);
 				this->worker->removeConnection(cgiFd);
-				close(cgiFd);
 			}
 			this->log.INFO << "removing Conn channel";
 			delete this->channels[fd];
 			this->channels.erase(fd);
 			//this->worker->deleteSocketFromQueue(fd);
-			//close (fd);
+			close (fd);
 		}
 	}
 }

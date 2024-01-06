@@ -194,6 +194,11 @@ bool RequestReceiver::receive_headers()
 		this->state = R_FINISHED;
 		return false;
 	}
+	if (bytes_read == 0)
+	{
+		this->state = R_FINISHED;
+		return true;
+	}
 	this->req.offset += bytes_read;
 	if (parse_completed_lines())
 	{
@@ -229,6 +234,7 @@ bool RequestReceiver::receive_headers()
 
 void RequestReceiver::consume()
 {
+	this->log.INFO << "consume";
 	if (this->headersOk)
 	{
 		if (this->req.content_length)

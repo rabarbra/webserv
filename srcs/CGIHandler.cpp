@@ -107,6 +107,7 @@ void CGIHandler::configureCGI(Request &req)
 		this->dataForResponse = StringData("501");
 		return ;
 	}
+	this->log.INFO << "CGI SOCKET: " << sv[0];
 	this->fd = sv[0];
 	fcntl(this->fd, F_SETFL, O_NONBLOCK, FD_CLOEXEC);
 	#ifdef __APPLE__
@@ -125,6 +126,7 @@ void CGIHandler::configureCGI(Request &req)
 	}
 	else
 	{
+		close(sv[1]);
 		this->pid = tmp_pid;
 		//int status;
 		//waitpid(this->pid, &status, 0);
@@ -161,6 +163,13 @@ void CGIHandler::configureCGI(Request &req)
 	}
 }
 
+void CGIHandler::removeTmpFile()
+{
+	if (!this->tmp_file.empty())
+		std::remove(this->tmp_file.c_str());
+	this->tmp_file = "";
+}
+
 // IHandler impl
 
 IData &CGIHandler::produceData()
@@ -177,11 +186,11 @@ IData &CGIHandler::produceData()
 			this->log.INFO << "producing error 500";
 			this->dataForResponse = StringData("500");
 		}
-		else if (WIFEXITED(status))
-		{
-			this->log.INFO << "producing D_NOTHING";
-			this->dataForResponse = StringData("", D_NOTHING);
-		}
+		//else if (WIFEXITED(status))
+		//{
+		//	this->log.INFO << "producing D_NOTHING";
+		//	this->dataForResponse = StringData("", D_NOTHING);
+		//}
 		else if (!this->tmp_file.empty())
 		{
 			this->log.INFO << "producing D_TMPFILE " << this->tmp_file;
@@ -224,8 +233,8 @@ void CGIHandler::acceptData(IData &data)
 			StringData rsp = dynamic_cast<StringData &>(data);
 			this->log.INFO << "accepting StringData of type " << rsp.getType();
 			this->dataForResponse = rsp;
-			kill(this->pid, SIGINT);
-			this->pid = -1;
+			//kill(this->pid, SIGINT);
+			//this->pid = -1;
 		}
 		catch(const std::exception& e)
 		{

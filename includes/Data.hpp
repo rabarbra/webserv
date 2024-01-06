@@ -12,6 +12,7 @@ typedef	enum	e_data_type
 	D_FINISHED,
 	D_NOTHING,
 	D_CGI,
+	D_CGI_BODY,
 	D_TMPFILE
 }				DataType;
 

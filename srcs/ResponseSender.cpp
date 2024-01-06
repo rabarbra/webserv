@@ -2,14 +2,14 @@
 
 ResponseSender::ResponseSender():
 	httpVersion("HTTP/1.1"), statusCode("200"), reason("OK"),
-	sent(0), fd(-1), ready(false), _finished(false)
+	sent(0), fd(-1), ready(false), _finished(false), cgi(false)
 {
 	this->log = Logger("ResponseSender");
 }
 
 ResponseSender::ResponseSender(int fd):
 	httpVersion("HTTP/1.1"), statusCode("200"), reason("OK"),
-	sent(0), fd(fd), ready(false), _finished(false)
+	sent(0), fd(fd), ready(false), _finished(false), cgi(false)
 {
 	this->log = Logger("ResponseSender");
 }
@@ -37,6 +37,7 @@ ResponseSender ResponseSender::operator=(const ResponseSender &other)
 		this->file = other.file;
 		this->ready = other.ready;
 		this->_finished = other._finished;
+		this->cgi = other.cgi;
 		this->log = other.log;
 	}
 	return *this;
@@ -360,10 +361,17 @@ void ResponseSender::build_cgi_response(const std::string& response)
 	this->_plain = new_response;
 }
 
+void ResponseSender::build_cgi_body_chunk(const std::string &response)
+{
+	this->log.INFO << "cgi body chunk: " << response;
+	this->_plain = response;
+}
+
 // ISender impl
 
 void ResponseSender::setData(IData &data)
 {
+	this->cgi = false;
 	try
 	{
 		StringData &d = dynamic_cast<StringData&>(data);
@@ -387,6 +395,12 @@ void ResponseSender::setData(IData &data)
 				break;
 			case D_CGI:
 				this->build_cgi_response(d);
+				this->cgi = true;
+				this->ready = true;
+				break;
+			case D_CGI_BODY:
+				this->build_cgi_body_chunk(d);
+				this->cgi = true;
 				this->ready = true;
 				break;
 			case D_FINISHED:
@@ -417,6 +431,7 @@ bool ResponseSender::finished()
 
 void ResponseSender::sendData()
 {
+	this->log.INFO << "sending";
 	bool res = this->run();
 	if (this->statusCode == "100")
 		this->_finished = false;

@@ -52,5 +52,6 @@ class CGIHandler: public IHandler
 		// IHandler impl
 		IData	&produceData();
 		void	acceptData(IData &data);
+		void	removeTmpFile();
 };
 #endif
