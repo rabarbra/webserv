@@ -137,7 +137,7 @@ void Worker::run()
 		it++
 	)
 		if (it->first == it->second.getSocket())
-			this->addSocketToQueue(it->first);
+			this->addConnSocketToQueue(it->first);
 	while (1)
 	{
 		try
@@ -156,22 +156,26 @@ void Worker::run()
 						break;
 					case EOF_CONN:
 						this->log.INFO << "EOF conn " << event_sock;
-						this->connections[event_sock].receive(event_sock);
-						//this->deleteSocketFromQueue(event_sock);
-						//this->connections.erase(event_sock);
-						//close(event_sock);
+						if (this->connections[event_sock].isCGI(event_sock))
+							this->connections[event_sock].receive(event_sock);
+						else
+						{
+							//this->deleteSocketFromQueue(event_sock);
+							this->connections.erase(event_sock);
+							close(event_sock);
+						}
 						break;
 					case READ_AVAIL:
-						this->log.INFO << "Read available " << event_sock;
+						//this->log.INFO << "Read available " << event_sock;
 						this->connections[event_sock].receive(event_sock);
 						break;
 					case WRITE_AVAIL:
-						this->log.INFO << "Write available " << event_sock;
+						//this->log.INFO << "Write available " << event_sock;
 						if (this->connections.find(event_sock) != this->connections.end())
 							this->connections[event_sock].send(event_sock);
 						break;
 					case READWRITE_AVAIL:
-						this->log.INFO << "ReadWrite available " << event_sock;
+						//this->log.INFO << "ReadWrite available " << event_sock;
 						this->connections[event_sock].receive(event_sock);
 						if (this->connections.find(event_sock) != this->connections.end())
 							this->connections[event_sock].send(event_sock);

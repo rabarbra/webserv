@@ -57,6 +57,11 @@ void CGIReceiver::consume()
 	}
 	if (received == 0)
 	{
+		if (this->headers.empty())
+		{
+			this->state = R_CLOSED;
+			return ;
+		}
 		this->data = StringData(this->headers, D_CGI);
 		this->state = R_BODY;
 		return ;

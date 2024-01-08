@@ -19,6 +19,17 @@ void Worker::addSocketToQueue(int sock)
 		throw std::runtime_error("Error adding EPOLLIN socket: " + std::string(strerror(errno)));
 }
 
+void Worker::addConnSocketToQueue(int sock)
+{
+	struct epoll_event	conn_event;
+
+	conn_event.events =  EPOLLIN | EPOLLET;
+	conn_event.data.fd = sock;
+	this->log.INFO << "Adding EPOLLIN | EPOLLET with EPOLL_CTL_ADD: " << sock;
+    if (epoll_ctl(this->queue, EPOLL_CTL_ADD, sock, &conn_event))
+		throw std::runtime_error("Error adding EPOLLIN socket: " + std::string(strerror(errno)));
+}
+
 void Worker::listenWriteAvailable(int socket)
 {
 	struct epoll_event	conn_event;

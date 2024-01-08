@@ -1,11 +1,11 @@
 #include "../includes/CGISender.hpp"
 
-CGISender::CGISender(): fd(-1), pos(0)
+CGISender::CGISender(): fd(-1), ready(false), _finished(false), pos(0)
 {
 	this->log = Logger("CGISender");
 }
 
-CGISender::CGISender(int fd): fd(fd), pos(0)
+CGISender::CGISender(int fd): fd(fd), ready(false), _finished(false), pos(0)
 {
 	this->log = Logger("CGISender");
 }
@@ -61,6 +61,7 @@ void CGISender::setData(IData &data)
 				break;
 			case D_FINISHED:
 				this->_finished = true;
+				this->ready = false;
 				break;
 			default:
 				break;
@@ -99,9 +100,11 @@ void CGISender::sendData()
 		ssize_t sent = send(this->fd, buff, to_sent, SEND_FLAGS);
 		if (sent > 0)
 			this->pos += sent;
-		this->log.INFO << "SENT TO CGI: " << sent << ", pos: " << this->pos << "/" << file_size;
+		this->log.INFO << this << " SENT TO CGI: " << sent << ", pos: " << this->pos << "/" << file_size << ", file: " << this->tmp_file;
 		if (this->pos >= file_size)
 		{
+			this->log.INFO << this << " SENT EVERYTHING";
+			this->tmp_file.clear();
 			this->ready = false;
 			this->_finished = true;
 		}

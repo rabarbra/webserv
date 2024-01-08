@@ -2,14 +2,14 @@
 
 ResponseSender::ResponseSender():
 	httpVersion("HTTP/1.1"), statusCode("200"), reason("OK"),
-	sent(0), fd(-1), ready(false), _finished(false), cgi(false)
+	sent(0), fd(-1), ready(false), _finished(false), cgi(false), plain_sent(false)
 {
 	this->log = Logger("ResponseSender");
 }
 
 ResponseSender::ResponseSender(int fd):
 	httpVersion("HTTP/1.1"), statusCode("200"), reason("OK"),
-	sent(0), fd(fd), ready(false), _finished(false), cgi(false)
+	sent(0), fd(fd), ready(false), _finished(false), cgi(false), plain_sent(false)
 {
 	this->log = Logger("ResponseSender");
 }
@@ -38,6 +38,7 @@ ResponseSender ResponseSender::operator=(const ResponseSender &other)
 		this->ready = other.ready;
 		this->_finished = other._finished;
 		this->cgi = other.cgi;
+		this->plain_sent = other.plain_sent;
 		this->log = other.log;
 	}
 	return *this;
@@ -121,34 +122,6 @@ void ResponseSender::_build()
 		this->_plain += this->body;
 }
 
-bool ResponseSender::_send_plain()
-{
-	size_t	sent_local = 0;
-	size_t	left;
-	size_t	chunk_size;
-	ssize_t	chunk;
-
-	chunk_size = 2048;
-	left = this->_plain.size();
-	if (left < chunk_size)
-		chunk_size = left;
-	while (this->_plain.size() && sent_local < this->_plain.size())
-	{
-		chunk = send(this->fd, this->_plain.c_str() + sent_local, chunk_size, SEND_FLAGS);
-		if (chunk < 0)
-		{
-			this->sent += sent_local;
-			return false;
-		}
-		sent_local += chunk;
-		left -= chunk;
-		if (left < chunk_size)
-			chunk_size = left;
-	}
-	this->sent += sent_local;
-	return true;
-}
-
 // Public
 
 bool ResponseSender::_send()
@@ -156,39 +129,37 @@ bool ResponseSender::_send()
 	size_t	left;
 	size_t	chunk_size;
 	ssize_t	chunk;
-
 	if (this->_plain.empty())
 		this->_build();
-	chunk_size = 2048;
+	chunk_size = 8192;
 	left = this->_plain.size() - this->sent;
 	if (left < chunk_size)
 		chunk_size = left;
-	while (!this->_plain.empty() && this->sent < this->_plain.size())
+	if (!this->_plain.empty() && this->sent < this->_plain.size())
 	{
 		chunk = send(this->fd, this->_plain.c_str() + this->sent, chunk_size, SEND_FLAGS);
 		if (chunk < 0)
-		{
-			std::stringstream sent_s;
-			std::stringstream left_s;
-			sent_s << this->sent;
-			left_s << left;
 			return false;
-		}
 		this->sent += chunk;
 		left -= chunk;
 		if (left < chunk_size)
 			chunk_size = left;
+		if (this->file.empty() && this->sent >= this->_plain.size())
+			return true;
+		return false;
 	}
 	if (!this->file.empty())
 	{
 		std::ifstream file_s(this->file.c_str(), std::ios::binary | std::ios::ate);
 		if (!file_s.is_open())
 		{
+			this->log.ERROR << "File is not open: " << this->file;
 			this->build_error("404");
 			return this->run();
 		}
 		if (!file_s.good())
 		{
+			this->log.ERROR << "File is not good: " << this->file;
 			this->build_error("500");
 			return this->run();
 		}
@@ -199,40 +170,29 @@ bool ResponseSender::_send()
 				chunk_size = left;
 		file_s.seekg(this->sent - this->_plain.size(), std::ios::beg);
 		char *buffer = new char[chunk_size];
-		chunk = 1;
-		while (file_s.is_open() && chunk && this->sent < this->_plain.size() + size && !file_s.eof())
+		if (file_s.is_open() && this->sent < this->_plain.size() + size && !file_s.eof())
 		{
 			this->log.INFO <<"Sent: " << this->sent << ", left: " << left;
     		file_s.read(buffer, chunk_size);
-			chunk = 0;
-			while (chunk < file_s.gcount())
+			int res = send(this->fd, buffer, file_s.gcount(), SEND_FLAGS);
+			if (res < 0)
 			{
-				int res = send(this->fd, buffer + chunk, file_s.gcount() - chunk, SEND_FLAGS);
-				if (res < 0)
-				{
-					this->sent += chunk;
-					std::stringstream sent_s;
-					std::stringstream left_s;
-					sent_s << this->sent;
-					left_s << left;
-					delete []buffer;
-					file_s.close();
-					return false;
-				}
-				chunk += res;
-			}
-			this->sent += chunk;
-			left -= chunk;
-			if (left < chunk_size)
-				chunk_size = left;
-			if (this->sent < this->_plain.size() + size && !file_s.eof())
+				delete []buffer;
+				file_s.close();
 				return false;
+			}
+			this->sent += res;
+			left -= res;
+			if (this->sent < this->_plain.size() + size && !file_s.eof())
+			{
+				delete []buffer;
+				file_s.close();
+				return false;
+			}
 		}
 		delete []buffer;
 		file_s.close();
 	}
-	if (this->fd > 0)
-		close(this->fd);
 	return true;
 }
 
@@ -248,13 +208,6 @@ bool ResponseSender::run()
 	return this->_send();
 }
 
-void ResponseSender::build_ok(const std::string& statuscode)
-{
-	StatusCodes		status;
-	this->setStatusCode(statuscode);
-	this->setReason(status.getDescription(statuscode));
-}
-
 void ResponseSender::build_file(const std::string& filename)
 {
 	this->setContentTypes(filename);
@@ -267,6 +220,7 @@ void ResponseSender::build_error(const std::string& status_code)
 	this->log.INFO << "status code: " << status_code;
 	this->log.INFO << "status code: " << status_code;
 	this->_plain = "";
+	this->file = "";
 	this->setStatusCode(status_code);
 	this->setReason(status.getDescription(status_code));
 	int statusInt = std::atoi(status_code.c_str());
@@ -361,12 +315,6 @@ void ResponseSender::build_cgi_response(const std::string& response)
 	this->_plain = new_response;
 }
 
-void ResponseSender::build_cgi_body_chunk(const std::string &response)
-{
-	this->log.INFO << "cgi body chunk: " << response;
-	this->_plain = response;
-}
-
 // ISender impl
 
 void ResponseSender::setData(IData &data)
@@ -398,11 +346,6 @@ void ResponseSender::setData(IData &data)
 				this->cgi = true;
 				this->ready = true;
 				break;
-			case D_CGI_BODY:
-				this->build_cgi_body_chunk(d);
-				this->cgi = true;
-				this->ready = true;
-				break;
 			case D_FINISHED:
 				this->_finished = true;
 				break;
@@ -431,7 +374,6 @@ bool ResponseSender::finished()
 
 void ResponseSender::sendData()
 {
-	this->log.INFO << "sending";
 	bool res = this->run();
 	if (this->statusCode == "100")
 		this->_finished = false;

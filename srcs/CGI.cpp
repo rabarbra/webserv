@@ -16,6 +16,14 @@ CGI::CGI(const std::vector<std::string>& handler, char **env): handler(handler),
 
 CGI::~CGI()
 {
+	if (this->env)
+	{
+		for (int i = 0; this->env[i]; i++)
+		{
+			delete[] this->env[i];
+		}
+		delete[] this->env;
+	}
 }
 
 CGI::CGI(const CGI &other) : handler(), env(NULL), executablePath(), enabled(false)
@@ -40,7 +48,7 @@ CGI	&CGI::operator=(const CGI &other)
 		this->prevURL = other.prevURL;
 		this->prevExecPath = other.prevExecPath;
 		this->enabled = other.enabled;
-		this->requestURI = this->requestURI;
+		this->requestURI = other.requestURI;
 	}
 	return (*this);
 }
@@ -191,12 +199,12 @@ void CGI::createEnv(Request &req)
 {
 		int i = -1;
 		std::vector<std::string> envp;
-        envp.push_back("SCRIPT_FILENAME=" + this->scriptFilename);
+		envp.push_back("SCRIPT_FILENAME=" + this->scriptFilename);
 		envp.push_back("SCRIPT_NAME=" + this->scriptName);
 		if (!this->pathInfo.empty())
 		{
-        	envp.push_back("PATH_INFO=" + this->pathInfo);
-        	envp.push_back("PATH_TRANSLATED=" + this->pathTranslated);
+			envp.push_back("PATH_INFO=" + this->pathInfo);
+			envp.push_back("PATH_TRANSLATED=" + this->pathTranslated);
 		}
 		envp.push_back("DOCUMENT_ROOT=" + this->documentRoot);
         envp.push_back("QUERY_STRING=" + this->prevURL.getQuery());
@@ -285,12 +293,12 @@ void CGI::setupCGI(better_string cgiPath, better_string script, better_string fi
         // Clear previous entries
 
         this->scriptName = route_path;
-        this->requestURI = filePath; // from scriptname onwards;
+		this->requestURI = filePath; // from scriptname onwards;
 		this->documentRoot = route_root;
-        this->scriptFilename = cgiPath;
+		this->scriptFilename = cgiPath;
 		size_t pos = filePath.find(script);
 		if (pos != std::string::npos && pos + script.size() != filePath.size())
-		this->pathInfo = filePath.substr(pos + script.size());
+			this->pathInfo = filePath.substr(pos + script.size());
         if (!this->pathInfo.empty())
 		{
             this->pathTranslated = this->documentRoot + ("/" + URL::removeFromEnd(filePath, script));

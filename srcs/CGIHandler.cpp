@@ -128,46 +128,34 @@ void CGIHandler::configureCGI(Request &req)
 	{
 		close(sv[1]);
 		this->pid = tmp_pid;
-		//int status;
-		//waitpid(this->pid, &status, 0);
-	//	if (WEXITSTATUS(status))
-	//	{
-	//		this->dataForResponse = StringData("502");
-	//		return ;
-	//	}
-		// if (req.getBody().size())
-		// 	write(sv[0], req.getBody().c_str(), req.getBody().size());
-		// close(sv[1]);
-		// char buffer[1024];
-		// int bytes_read;
-		// std::string response;
-		// while ((bytes_read = read(sv[0], buffer, 1024)) > 0)
-		// {
-		// 	response += std::string(buffer, bytes_read);
-		// 	bzero(buffer, 1024);
-		// }
-		// close(sv[0]);
-		// int status;
-		// waitpid(tmp_pid, &status, 0);
-		// if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
-		// {
-		// 	resp->build_cgi_response(response);
-		// 	return resp->_send();
-		// }
-		// else
-		// {
-		// 	this->logger.ERROR << "CGI failed";
-		// 	resp->build_error("500");
-		// 	return resp->run();
-		// }
 	}
 }
 
 void CGIHandler::removeTmpFile()
 {
+	this->log.INFO << this << " removing " << this->tmp_file;
+	this->dataForResponse = StringData("", D_NOTHING);
 	if (!this->tmp_file.empty())
 		std::remove(this->tmp_file.c_str());
-	this->tmp_file = "";
+	this->tmp_file.clear();
+}
+
+int CGIHandler::_rand()
+{
+	unsigned long a = clock();
+	unsigned long b = time(NULL);
+	unsigned long c = this->pid;
+	a=a-b;  a=a-c;  a=a^(c >> 13);
+    b=b-c;  b=b-a;  b=b^(a << 8);
+    c=c-a;  c=c-b;  c=c^(b >> 13);
+    a=a-b;  a=a-c;  a=a^(c >> 12);
+    b=b-c;  b=b-a;  b=b^(a << 16);
+    c=c-a;  c=c-b;  c=c^(b >> 5);
+    a=a-b;  a=a-c;  a=a^(c >> 3);
+    b=b-c;  b=b-a;  b=b^(a << 10);
+    c=c-a;  c=c-b;  c=c^(b >> 15);
+	std::srand(c);
+	return std::rand();
 }
 
 // IHandler impl
@@ -178,31 +166,14 @@ IData &CGIHandler::produceData()
 	if (this->pid >= 0)
 	{
 		waitpid(this->pid, &status, WNOHANG);
-		if (
-			WIFEXITED(status) && WEXITSTATUS(status)
-			&& this->dataForResponse.getType() == D_NOTHING
-		)
+		if (WIFEXITED(status) && WEXITSTATUS(status))
 		{
-			this->log.INFO << "producing error 500";
+			this->log.INFO << "cgi finished with status code: " << WEXITSTATUS(status);
 			this->dataForResponse = StringData("500");
 		}
-		//else if (WIFEXITED(status))
-		//{
-		//	this->log.INFO << "producing D_NOTHING";
-		//	this->dataForResponse = StringData("", D_NOTHING);
-		//}
 		else if (!this->tmp_file.empty())
-		{
-			this->log.INFO << "producing D_TMPFILE " << this->tmp_file;
 			this->dataForResponse = StringData(this->tmp_file, D_TMPFILE);
-		}
 	}
-	//if (this->finished)
-	//{
-	//	this->dataForResponse = StringData("", D_FINISHED);
-	//}
-	//if (this->dataForResponse.getType() == D_CGI)
-	//	this->finished = true;
 	return this->dataForResponse;
 }
 
@@ -216,9 +187,8 @@ void CGIHandler::acceptData(IData &data)
 		{
 			if (this->tmp_file.empty())
 			{
-				std::srand(std::time(NULL));
 				std::stringstream ss;
-				ss << "test_tmp_" << std::rand();
+				ss << "test_tmp_" << this->_rand();
 				this->tmp_file = ss.str();
 			}
 			req.save_chunk(this->tmp_file);

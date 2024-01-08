@@ -36,6 +36,7 @@ class Worker
 		int							getEventSock(int num_event);
 		EventType					getEventType(int num_event);
 		// Private
+		void						addConnSocketToQueue(int sock);
 		void						create_connections();
 		bool						is_socket_accepting_connection(int sock);
 		void						accept_connection(int sock);

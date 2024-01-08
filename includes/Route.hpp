@@ -73,6 +73,8 @@ class Route: public IRouter
 		bool						isCgiEnabled() const;
 		// IRouter impl
 		IHandler					*route(IData &url, StringData &error);
+
+		std::string					getFileExt() const;
 };
 
 std::string							convertSize(size_t size);

@@ -343,6 +343,20 @@ IHandler *Route::route(IData &request, StringData &error)
 			this->redirectStatusCode
 		);
 	else
+	{
+		this->logger.INFO << "no route found";
 		error = StringData("500");
+	}
 	return NULL;
+}
+
+
+std::string Route::getFileExt() const 
+{
+	std::stringstream result;
+	for (std::vector<std::string>::const_iterator it = this->file_extensions.begin(); it != this->file_extensions.end(); it++)
+	{
+		result << *it << " ";
+	}
+	return result.str();
 }
