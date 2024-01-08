@@ -2,16 +2,19 @@ NAME =			webserv
 
 CXX =			c++
 
-CXXFLAGS =		-std=c++98 -Wall -Wextra -Werror
+CXXFLAGS =		-std=c++98 -Wall -Wextra -Werror -g# -fsanitize=address
 
 OBJ_DIR =		build
 SRC_DIR =		srcs
 INC_DIR =		includes
 
-SRC =			main Worker Server Connection Route Request Response \
+SRC =			main \
+				Worker Server Route Connection Address Channel \
 				worker_queue_darwin worker_queue_linux better_string \
-				ParseUtils cgi StatusCodes MimeTypes Config Method \
-				Address URL
+				Config ParseUtils StatusCodes MimeTypes Method URL \
+				Data Request RequestReceiver ResponseSender \
+				StaticHandler RedirectHandler ErrorHandler \
+				CGI CGIHandler CGISender CGIReceiver
 OBJ =			$(addprefix $(OBJ_DIR)/, $(addsuffix .o, $(SRC)))
 
 LIBLOGGING =	liblogging

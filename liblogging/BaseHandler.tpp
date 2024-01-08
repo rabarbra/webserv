@@ -6,17 +6,23 @@ BaseHandler &BaseHandler::operator<<(T msg)
 {
 	if (this->filter())
 	{
-		if (this->lvl == _DEBUG)
-			std::cout << BLUE;
-		else if (this->lvl == _INFO)
-			std::cout << GREEN;
-		else if (this->lvl == _WARN)
-			std::cout << YELLOW;
-		else
-			std::cout << RED;
 		if (this->first)
-			std::cout << "\n[" << this->returnLevel() << "] ";
-		std::cout << msg << RESET;
+		{
+			if (this->lvl == _DEBUG)
+				std::cerr << BLUE;
+			else if (this->lvl == _INFO)
+				std::cerr << GREEN;
+			else if (this->lvl == _WARN)
+				std::cerr << YELLOW;
+			else
+				std::cerr << RED;
+			std::cerr 
+				<< "\n[" << this->returnLevel() << "] "
+				<< std::setw(16) << std::left
+				<< this->name
+				<< RESET << " ";
+		}
+		std::cerr << msg;
 	}
 	if (!this->first)
 		return *this;

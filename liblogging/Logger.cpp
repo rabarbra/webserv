@@ -1,19 +1,19 @@
 #include "Logger.hpp"
 
-Logger::Logger(): lvl(_INFO)
+Logger::Logger(std::string loggerName): lvl(_INFO), loggerName(loggerName)
 {
-	this->DEBUG = BaseHandler(_DEBUG, this->lvl);
-	this->INFO = BaseHandler(_INFO, this->lvl);
-	this->WARN = BaseHandler(_WARN, this->lvl);
-	this->ERROR = BaseHandler(_ERROR, this->lvl);
+	this->DEBUG = BaseHandler(_DEBUG, this->lvl, loggerName);
+	this->INFO = BaseHandler(_INFO, this->lvl, loggerName);
+	this->WARN = BaseHandler(_WARN, this->lvl, loggerName);
+	this->ERROR = BaseHandler(_ERROR, this->lvl, loggerName);
 }
 
 Logger::Logger(t_lvl lvl, std::string loggerName): lvl(lvl), loggerName(loggerName)
 {
-	this->DEBUG = BaseHandler(_DEBUG, this->lvl);
-	this->INFO = BaseHandler(_INFO, this->lvl);
-	this->WARN = BaseHandler(_WARN, this->lvl);
-	this->ERROR = BaseHandler(_ERROR, this->lvl);
+	this->DEBUG = BaseHandler(_DEBUG, this->lvl, loggerName);
+	this->INFO = BaseHandler(_INFO, this->lvl, loggerName);
+	this->WARN = BaseHandler(_WARN, this->lvl, loggerName);
+	this->ERROR = BaseHandler(_ERROR, this->lvl, loggerName);
 }
 
 Logger::Logger(const Logger &other)

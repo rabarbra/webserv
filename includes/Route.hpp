@@ -7,14 +7,18 @@
 # include <sys/wait.h>
 // Our headers
 # include "CGI.hpp"
-#include "Request.hpp"
+# include "RequestReceiver.hpp"
+# include "interfaces/IRouter.hpp"
+# include "handlers/CGIHandler.hpp"
+# include "handlers/StaticHandler.hpp"
+# include "handlers/RedirectHandler.hpp"
 typedef enum e_route_type {
 	PATH_,
 	CGI_,
 	REDIRECTION_
 }			RouteType;
 
-class Route
+class Route: public IRouter
 {
 	private:
 		RouteType					type; // Path by default
@@ -31,11 +35,6 @@ class Route
 		Logger						logger;
 		char						**ev;
 		// Private
-		bool						handle_delete(std::string full_path, Response &resp);
-		bool						handle_path(Request req, Response *resp);
-		bool						handle_cgi(Response *resp, Request req);
-		bool						handle_redirection(Request req);
-		bool						handle_dir_listing(Request req, std::string full_path);
 		std::string					build_absolute_path(Request req);
 
 	public:
@@ -70,10 +69,12 @@ class Route
 		std::string					getCGIExt() const;
 		// Public
 		void						printRoute();
-		bool						handle_request(Request req, Response *resp);
 		size_t						match(std::string path);
-		bool 						configureCGI(Request &req, Response *resp, std::string &cgiPath);
 		bool						isCgiEnabled() const;
+		// IRouter impl
+		IHandler					*route(IData &url, StringData &error);
+
+		std::string					getFileExt() const;
 };
 
 std::string							convertSize(size_t size);

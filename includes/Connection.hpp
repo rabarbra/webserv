@@ -2,14 +2,23 @@
 # define CONNECTION_HPP
 # include "Server.hpp"
 # include "Address.hpp"
+# include "Channel.hpp"
+# include "handlers/ErrorHandler.hpp"
+# include "handlers/CGIHandler.hpp"
+# include "CGISender.hpp"
+# include "CGIReceiver.hpp"
+
+class Worker;
+
 class Connection
 {
 	private:
 		std::map<std::string, Server>	servers;
-		std::map<int, Response*>		pending_responses;
+		std::map<int, Channel*>			channels; // Connection channels: key - socket for coordinator endpoint of this channel
 		Address							address;
 		int								sock;
 		Logger							log;
+		Worker							*worker;
 	public:
 		Connection();
 		~Connection();
@@ -17,14 +26,14 @@ class Connection
 		Connection(const Connection &other);
 		Connection 						&operator=(const Connection &other);
 		// Setters
-		void							setResponse(Response *resp);
+		void							setWorker(Worker *worker);
 		// Getters
 		int								getSocket() const;
 		Address							getAddress() const;
-		Response						*getResponse(int fd);
 		// Public
 		void							addServer(Server server);
-		void							handleRequest(Request req);
-		bool							continueResponse(int fd);
+		void							receive(int fd);
+		void							send(int fd);
+		bool							isCGI(int socket);
 };
 #endif

@@ -25,7 +25,6 @@ class Config
 		std::vector<Server>	getServers() const;
 		char				**getEnv() const;
 		void				setEnv(char **env);
-		void				setWorker(Worker *worker);
 		void				parse(std::ifstream &conf);
 };
 #endif

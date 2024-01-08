@@ -39,12 +39,6 @@ void Config::setEnv(char **env)
 	this->env = env;
 }
 
-void Config::setWorker(Worker *worker)
-{
-	for (size_t i = 0; i < this->servers.size(); i++)
-		this->servers[i].setWorker(worker);
-}
-
 // Private
 
 std::string createFile(std::ifstream &conf)
@@ -481,8 +475,6 @@ void Config::parseOption(Route &route, std::string &param)
 				throw std::runtime_error("Invalid cgi_ext\n");
 			checkSemiColon(word, "cgi_ext");
 			route.setCGIExt(word);
-			Logger log;
-			log.INFO << route.getCGIExt();
 		}
 		else
 			throw std::runtime_error("Invalid argument\n");

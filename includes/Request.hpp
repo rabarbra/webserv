@@ -1,38 +1,63 @@
-#ifndef  REQUEST_HPP
-# define  REQUEST_HPP
-# include <iomanip>
-// Our headers
+#ifndef REQUEST_HPP
+# define REQUEST_HPP
+# include <map>
+# include <fstream>
+# include <cstring>
+# include <string>
+# include "../liblogging/Logger.hpp"
+# include "interfaces/IData.hpp"
+# include "better_string.hpp"
 # include "Method.hpp"
-# include "Response.hpp"
+# include "Data.hpp"
 # include "URL.hpp"
-class Request
+
+typedef enum e_chunked_req_state
+{
+	CH_START,
+	CH_SIZE,
+	CH_DATA,
+	CH_TRAILER,
+	CH_COMPLETE,
+	CH_ERROR
+}			ChunkedReqState;
+class Request: virtual public IData
 {
 	private:
-		int									_fd;
 		Method								method;
 		better_string						httpVersion;
 		std::map<std::string, std::string>	headers;
-		better_string						body;
-		better_string						plain;
-		Logger								log;
 		URL									url;
-		void								receive();
-		void								parse();
-		Request();
+		ChunkedReqState						chunked_state;
+		size_t								remaining_chunk_size;
+		std::string							prev_chunk_size;
+		Logger								log;
 	public:
-		Request(int	fd);
+		ssize_t								content_length;
+		size_t								offset;
+		size_t								body_start;
+		static const size_t					buff_size = 8192;
+		char								buff[Request::buff_size];
+		Request();
 		~Request();
 		Request(const Request &other);
-		Request								&operator=(const Request &other);
+		Request	&operator=(const Request &other);
+		// Setters
+		void								setMethod(Method method);
+		void								setVersion(better_string version);
+		void                                setHeader(const std::string& key, const std::string& value);
+		void								setUrl(const URL& url);
+		void								setDomain(const std::string& domain);
+		void								setPort(const std::string& port);
 		// Getters
-		better_string						getBody() const;
 		better_string						getVersion() const;
 		Method								getMethod() const;
-		std::string 						getMethodString() const;
-		int									getFd() const;
 		std::map<std::string, std::string>	getHeaders() const;
 		URL									getUrl() const;
+		ChunkedReqState						getChunkedState() const;
 		// Public
-		std::string							decodeURI(std::string str);
+		std::string							toString() const;
+		void								removeHeader(const std::string& key);
+		StringData							save_chunk(std::string output_file);
+		bool								isBodyReceived();
 };
 #endif

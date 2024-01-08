@@ -11,8 +11,8 @@ class Logger
 		t_lvl	lvl;
 		std::string	loggerName;
 	public:
-		Logger();
-		Logger(t_lvl lvl, std::string loggerName);
+		Logger(std::string loggerName = "");
+		Logger(t_lvl lvl, std::string loggerName = "");
 		Logger(const Logger &other);
 		Logger &operator=(const Logger &other);
 		~Logger();

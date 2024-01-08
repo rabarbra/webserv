@@ -1,6 +1,7 @@
 #ifndef BASE_HANDLER_HPP
 # define BASE_HANDLER_HPP
 # include <iostream>
+# include <iomanip>
 # include "Levels.hpp"
 # include "Colors.hpp"
 class BaseHandler
@@ -9,12 +10,13 @@ class BaseHandler
 		t_lvl		lvl;
 		t_lvl		limit;
 		bool		first;
+		std::string	name;
 		BaseHandler	*copy;
 		bool		filter();
 		std::string	returnLevel();
 	public:
-		BaseHandler();
-		BaseHandler(t_lvl lvl, t_lvl limit);
+		BaseHandler(std::string name = "");
+		BaseHandler(t_lvl lvl, t_lvl limit, std::string name = "");
 		virtual ~BaseHandler();
 		BaseHandler(const BaseHandler &other);
 		BaseHandler &operator=(const BaseHandler &other);

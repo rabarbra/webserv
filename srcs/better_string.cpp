@@ -63,3 +63,13 @@ void better_string::trim()
 	while (this->size() > 0 && std::isspace((*this)[this->size() - 1]))
 		this->erase(this->size() - 1, 1);
 }
+
+bool better_string::all_are(int (*f)(int))
+{
+	for (size_t i = 0; i < this->size(); i++)
+	{
+		if (!(*f)((*this)[i]))
+			return false;
+	}
+	return true;
+}

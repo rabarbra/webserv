@@ -3,8 +3,9 @@
 # include "better_string.hpp"
 # include <sstream>
 # include <iomanip>
-
-class URL {
+# include "interfaces/IData.hpp"
+class URL
+{
 	private:
 		better_string               domain;
 		better_string               port;
@@ -35,6 +36,7 @@ class URL {
 		// Public
 		static better_string		concatPaths(better_string first, better_string second);
 		static better_string		removeFromStart(better_string first, better_string second);
+		static better_string		removeFromEnd(better_string first, better_string second);
 		// better_string				merge();
 		void						addSegment(better_string);
 

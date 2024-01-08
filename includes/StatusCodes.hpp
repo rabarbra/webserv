@@ -3,8 +3,8 @@
 # include <map>
 # include <string>
 
-class StatusCodes {
-
+class StatusCodes
+{
 	public:
 		StatusCodes();
 		~StatusCodes();

@@ -1,29 +1,28 @@
-#include "../includes/Response.hpp"
+#include "../includes/ResponseSender.hpp"
 
-Response::Response():
+ResponseSender::ResponseSender():
 	httpVersion("HTTP/1.1"), statusCode("200"), reason("OK"),
-	sent(0), fd(-1)
-{}
-
-Response::Response(int fd):
-	httpVersion("HTTP/1.1"), statusCode("200"), reason("OK"),
-	sent(0), fd(fd)
-{}
-
-Response::~Response()
+	sent(0), fd(-1), ready(false), _finished(false), cgi(false), plain_sent(false)
 {
-	//if (this->data_fd >= 0)
-	//	close(this->data_fd);
-	//if (this->fd)
-	//	close(this->fd);
+	this->log = Logger("ResponseSender");
 }
 
-Response::Response(const Response &other)
+ResponseSender::ResponseSender(int fd):
+	httpVersion("HTTP/1.1"), statusCode("200"), reason("OK"),
+	sent(0), fd(fd), ready(false), _finished(false), cgi(false), plain_sent(false)
+{
+	this->log = Logger("ResponseSender");
+}
+
+ResponseSender::~ResponseSender()
+{}
+
+ResponseSender::ResponseSender(const ResponseSender &other)
 {
 	*this = other;
 }
 
-Response Response::operator=(const Response &other)
+ResponseSender ResponseSender::operator=(const ResponseSender &other)
 {
 	if (this != &other)
 	{
@@ -36,68 +35,73 @@ Response Response::operator=(const Response &other)
 		this->fd = other.fd;
 		this->error_pages = other.error_pages;
 		this->file = other.file;
+		this->ready = other.ready;
+		this->_finished = other._finished;
+		this->cgi = other.cgi;
+		this->plain_sent = other.plain_sent;
+		this->log = other.log;
 	}
 	return *this;
 }
 
 // Setters
 
-void Response::setBody(std::string body)
+void ResponseSender::setBody(std::string body)
 {
 	this->body = body;
 }
 
-void Response::setStatusCode(std::string code)
+void ResponseSender::setStatusCode(std::string code)
 {
 	this->statusCode = code;
 }
 
-void Response::setReason(std::string reason)
+void ResponseSender::setReason(std::string reason)
 {
 	this->reason = reason;
 }
 
-void Response::setHeader(std::string key, std::string value)
+void ResponseSender::setHeader(std::string key, std::string value)
 {
 	this->headers[key] = value;
 }
 
-void Response::setContentTypes(std::string filename)
+void ResponseSender::setContentTypes(std::string filename)
 {
 	MimeTypes	mime_types;
 	this->setHeader("Content-Type", mime_types.getMimeType(filename));
 }
 
-void Response::setFd(int fd)
+void ResponseSender::setFd(int fd)
 {
 	this->fd = fd;
 }
 
-void Response::setErrorPages(std::map<int, std::string> map)
+void ResponseSender::setErrorPages(std::map<int, std::string> map)
 {
 	this->error_pages = map;
 }
 
-void Response::setFile(std::string file)
+void ResponseSender::setFile(std::string file)
 {
 	this->file = file;
 }
 
 // Getters
 
-std::string Response::getBody() const
+std::string ResponseSender::getBody() const
 {
 	return this->body;
 }
 
-int Response::getFd() const
+int ResponseSender::getFd() const
 {
 	return this->fd;
 }
 
 // Private
 
-void Response::_build()
+void ResponseSender::_build()
 {
 	this->_plain = this->httpVersion + " "
 		+ this->statusCode + " "
@@ -120,42 +124,42 @@ void Response::_build()
 
 // Public
 
-bool Response::_send()
+bool ResponseSender::_send()
 {
 	size_t	left;
 	size_t	chunk_size;
 	ssize_t	chunk;
-
-	chunk_size = 2048;
+	if (this->_plain.empty())
+		this->_build();
+	chunk_size = 8192;
 	left = this->_plain.size() - this->sent;
 	if (left < chunk_size)
 		chunk_size = left;
-	while (this->_plain.size() && this->sent < this->_plain.size())
+	if (!this->_plain.empty() && this->sent < this->_plain.size())
 	{
 		chunk = send(this->fd, this->_plain.c_str() + this->sent, chunk_size, SEND_FLAGS);
 		if (chunk < 0)
-		{
-			std::stringstream sent_s;
-			std::stringstream left_s;
-			sent_s << this->sent;
-			left_s << left;
 			return false;
-		}
 		this->sent += chunk;
 		left -= chunk;
 		if (left < chunk_size)
 			chunk_size = left;
+		if (this->file.empty() && this->sent >= this->_plain.size())
+			return true;
+		return false;
 	}
-	if (this->file.size())
+	if (!this->file.empty())
 	{
 		std::ifstream file_s(this->file.c_str(), std::ios::binary | std::ios::ate);
 		if (!file_s.is_open())
 		{
+			this->log.ERROR << "File is not open: " << this->file;
 			this->build_error("404");
 			return this->run();
 		}
 		if (!file_s.good())
 		{
+			this->log.ERROR << "File is not good: " << this->file;
 			this->build_error("500");
 			return this->run();
 		}
@@ -166,42 +170,33 @@ bool Response::_send()
 				chunk_size = left;
 		file_s.seekg(this->sent - this->_plain.size(), std::ios::beg);
 		char *buffer = new char[chunk_size];
-		chunk = 1;
-		while (file_s.is_open() && chunk && this->sent < this->_plain.size() + size && !file_s.eof())
+		if (file_s.is_open() && this->sent < this->_plain.size() + size && !file_s.eof())
 		{
 			this->log.INFO <<"Sent: " << this->sent << ", left: " << left;
     		file_s.read(buffer, chunk_size);
-			chunk = 0;
-			while (chunk < file_s.gcount())
+			int res = send(this->fd, buffer, file_s.gcount(), SEND_FLAGS);
+			if (res < 0)
 			{
-				int res = send(this->fd, buffer + chunk, file_s.gcount() - chunk, SEND_FLAGS);
-				if (res < 0)
-				{
-					this->sent += chunk;
-					std::stringstream sent_s;
-					std::stringstream left_s;
-					sent_s << this->sent;
-					left_s << left;
-					delete []buffer;
-					file_s.close();
-					return false;
-				}
-				chunk += res;
+				delete []buffer;
+				file_s.close();
+				return false;
 			}
-			this->sent += chunk;
-			left -= chunk;
-			if (left < chunk_size)
-				chunk_size = left;
+			this->sent += res;
+			left -= res;
+			if (this->sent < this->_plain.size() + size && !file_s.eof())
+			{
+				delete []buffer;
+				file_s.close();
+				return false;
+			}
 		}
 		delete []buffer;
 		file_s.close();
 	}
-	if (this->fd > 0)
-		close(this->fd);
 	return true;
 }
 
-bool Response::run()
+bool ResponseSender::run()
 {
 	char	buffer[80];
 
@@ -210,27 +205,22 @@ bool Response::run()
 	std::strftime(buffer, 80, "%a, %d %b %Y %H:%M:%S %Z", timeinfo);
 	this->setHeader("Date", buffer);
 	this->setHeader("Server", "Webserv42");
-	this->_build();
 	return this->_send();
 }
 
-void Response::build_ok(std::string statuscode)
-{
-	StatusCodes		status;
-	this->setStatusCode(statuscode);
-	this->setReason(status.getDescription(statuscode));
-}
-
-void Response::build_file(std::string filename)
+void ResponseSender::build_file(const std::string& filename)
 {
 	this->setContentTypes(filename);
 	this->setFile(filename);
 }
 
-void Response::build_error(std::string status_code)
+void ResponseSender::build_error(const std::string& status_code)
 {
 	StatusCodes		status;
+	this->log.INFO << "status code: " << status_code;
+	this->log.INFO << "status code: " << status_code;
 	this->_plain = "";
+	this->file = "";
 	this->setStatusCode(status_code);
 	this->setReason(status.getDescription(status_code));
 	int statusInt = std::atoi(status_code.c_str());
@@ -264,10 +254,9 @@ void Response::build_error(std::string status_code)
 	}
 }
 
-void Response::build_dir_listing(std::string full_path, std::string content)
+void ResponseSender::build_dir_listing(const std::string& content)
 {
 	StatusCodes		status;
-	(void)full_path;
 	this->setContentTypes("dir_list.html");
 	std::fstream	error_page("static/dir_list.html");
 	if (error_page.is_open())
@@ -292,8 +281,10 @@ void Response::build_dir_listing(std::string full_path, std::string content)
 	}
 }
 
-void Response::build_redirect(std::string location, std::string status_code)
+void ResponseSender::build_redirect(const std::string& redirect)
 {
+	std::string	status_code = redirect.substr(0, 3);
+	std::string	location = redirect.substr(3);
 	StatusCodes		status;
 	this->_plain = "";
 	this->setStatusCode(status_code);
@@ -307,7 +298,7 @@ void Response::build_redirect(std::string location, std::string status_code)
 		+ "</h1></body></html>";
 }
 
-void Response::build_cgi_response(std::string response)
+void ResponseSender::build_cgi_response(const std::string& response)
 {
 	better_string new_response(response);
 	if (!new_response.starts_with("Status:"))
@@ -321,6 +312,71 @@ void Response::build_cgi_response(std::string response)
 	}
 	else
 		new_response.replace(0, 7, this->httpVersion, 0, this->httpVersion.size());
-	this->log.INFO << "CGI RESPONSE: " << new_response;
 	this->_plain = new_response;
+}
+
+// ISender impl
+
+void ResponseSender::setData(IData &data)
+{
+	this->cgi = false;
+	try
+	{
+		StringData &d = dynamic_cast<StringData&>(data);
+		switch (d.getType())
+		{
+			case D_ERROR:
+				this->build_error(d);
+				this->ready = true;
+				break;
+			case D_FILEPATH:
+				this->build_file(d);
+				this->ready = true;
+				break;
+			case D_DIRLISTING:
+				this->build_dir_listing(d);
+				this->ready = true;
+				break;
+			case D_REDIR:
+				this->build_redirect(d);
+				this->ready = true;
+				break;
+			case D_CGI:
+				this->build_cgi_response(d);
+				this->cgi = true;
+				this->ready = true;
+				break;
+			case D_FINISHED:
+				this->_finished = true;
+				break;
+			case D_NOTHING:
+				this->ready = false;
+				break ;
+			default:
+				break;
+		}
+	}
+	catch(const std::bad_cast& e)
+	{
+		this->log.ERROR << e.what();
+	}
+}
+
+bool ResponseSender::readyToSend()
+{
+	return this->ready;
+}
+
+bool ResponseSender::finished()
+{
+	return this->_finished;
+}
+
+void ResponseSender::sendData()
+{
+	bool res = this->run();
+	if (this->statusCode == "100")
+		this->_finished = false;
+	else
+		this->_finished = res;
 }

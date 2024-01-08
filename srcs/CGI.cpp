@@ -7,7 +7,7 @@ CGI::CGI() : handler(), env(NULL), executablePath(), enabled(false)
 {
 }
 
-CGI::CGI(std::vector<std::string> handler, char **env): handler(handler), env(NULL), enabled(true)
+CGI::CGI(const std::vector<std::string>& handler, char **env): handler(handler), env(NULL), enabled(true)
 {
 	char *path = ft_getEnv(env);
 	this->setPaths(path);
@@ -16,9 +16,17 @@ CGI::CGI(std::vector<std::string> handler, char **env): handler(handler), env(NU
 
 CGI::~CGI()
 {
+	if (this->env)
+	{
+		for (int i = 0; this->env[i]; i++)
+		{
+			delete[] this->env[i];
+		}
+		delete[] this->env;
+	}
 }
 
-CGI::CGI(const CGI &other)
+CGI::CGI(const CGI &other) : handler(), env(NULL), executablePath(), enabled(false)
 {
 	*this = other;
 }
@@ -40,6 +48,7 @@ CGI	&CGI::operator=(const CGI &other)
 		this->prevURL = other.prevURL;
 		this->prevExecPath = other.prevExecPath;
 		this->enabled = other.enabled;
+		this->requestURI = other.requestURI;
 	}
 	return (*this);
 }
@@ -63,20 +72,20 @@ URL CGI::getPrevURL() const {
 	return (this->prevURL);
 }
 
-std::string CGI::getExecutablePath(std::string full_path)
+std::string CGI::getExecutablePath(const std::string& full_path)
 {
 	if (this->executablePath.empty())
 		return full_path;
 	return this->executablePath;
 }
 
-char **CGI::getArgs(std::string full_path)
+char **CGI::getArgs(const std::string& full_path)
 {
 	char **args = new char*[this->handler.size() + 1];
 	int i = -1;
 	while (++i < (int)this->handler.size())
 	{
-		if (this->handler[i].compare("$self") == 0) {
+		if (this->handler[i] == "$self") {
 			args[i] = new char[full_path.size() + 1];
 			args[i] = strcpy(args[i], full_path.c_str());
 		}
@@ -84,13 +93,12 @@ char **CGI::getArgs(std::string full_path)
 			args[i] = new char[this->handler[i].size() + 1];
 			args[i] = strcpy(args[i], this->handler[i].c_str());
 		}
-		std::cerr << "args[" << i << "]: " << args[i] << std::endl;
 	}
 	args[i] = NULL;
 	return args;
 }
 
-std::string CGI::getPrevExecPath() const {
+better_string CGI::getPrevExecPath() const {
 	return (this->prevExecPath);
 }
 
@@ -100,14 +108,14 @@ void CGI::setEnv(char ** envp)
 	this->env = envp;
 }
 
-void CGI::setHandler(std::vector<std::string> handler)
+void CGI::setHandler(const std::vector<std::string>& original)
 {
-	this->handler = handler;
+	this->handler = original;
 }
 
-void	CGI::setPaths(char *path)
+void	CGI::setPaths(const char *path)
 {
-	if (path == NULL)
+	if (!path)
 		return ;
 	std::stringstream ss(path);
 	std::string token;
@@ -121,11 +129,8 @@ void	CGI::setPaths(char *path)
 
 void CGI::setExecutablePath()
 {
-	if (this->handler[0].compare("$self") == 0)
-	{
-		std::cout << "Executable path: " << this->handler[0] << std::endl;
+	if (this->handler[0] == "$self")
 		return;
-	}
 	if (this->handler[0][0] != '/')
 	{
 		this->executablePath = findExecutablePath(this->paths, this->handler[0]);
@@ -134,18 +139,16 @@ void CGI::setExecutablePath()
 	}
 	else
 		this->executablePath = handler[0];
-	std::cout << "Executable path: " << this->executablePath << std::endl;
 }
 
-void    CGI::setCgiExt(std::string ext)
+void    CGI::setCgiExt(const std::string& ext)
 {
         this->cgiExt = ext;
 }
 
 // Public
-int CGI::execute(Request &req, Response *resp, int *sv, std::string full_path)
-{
-	(void)req;
+int CGI::execute(Request &req, int *sv, const std::string& full_path) {
+	(void) req;
 	close(sv[0]);
 	dup2(sv[1], 0);
 	dup2(sv[1], 1);
@@ -153,21 +156,13 @@ int CGI::execute(Request &req, Response *resp, int *sv, std::string full_path)
 	int pos = full_path.find_last_of('/');
 	std::string dir = full_path.substr(0, pos);
 	if (chdir(dir.c_str()) == -1)
-		return(sendError(resp, "503", "chdir failed"), -1);
+		return (1);
 	char **args = this->getArgs(full_path);
-	if (execve(args[0], args, this->getEnv()) == -1)
-		return(sendError(resp, "503", "execve failed " + std::string(strerror(errno))), -1);
-	return 0;
+	execve(args[0], args, this->getEnv());
+	return (1);
 }
 
-bool sendError(Response *resp, std::string error, std::string error_message)
-{
-	std::cerr << "[ERROR] "  << error_message << std::endl;
-	resp->build_error(error);
-	return resp->run();
-}
-
-better_string CGI::checkRegFile(better_string cgiPath, Request &req)
+better_string CGI::checkRegFile(const better_string& cgiPath, Request &req)
 {
 	if (this->handler[0] == "$self") 
 	{
@@ -204,12 +199,12 @@ void CGI::createEnv(Request &req)
 {
 		int i = -1;
 		std::vector<std::string> envp;
-        envp.push_back("SCRIPT_FILENAME=" + this->scriptFilename);
+		envp.push_back("SCRIPT_FILENAME=" + this->scriptFilename);
 		envp.push_back("SCRIPT_NAME=" + this->scriptName);
 		if (!this->pathInfo.empty())
 		{
-        	envp.push_back("PATH_INFO=" + this->pathInfo);
-        	envp.push_back("PATH_TRANSLATED=" + this->pathTranslated);
+			envp.push_back("PATH_INFO=" + this->pathInfo);
+			envp.push_back("PATH_TRANSLATED=" + this->pathTranslated);
 		}
 		envp.push_back("DOCUMENT_ROOT=" + this->documentRoot);
         envp.push_back("QUERY_STRING=" + this->prevURL.getQuery());
@@ -220,18 +215,18 @@ void CGI::createEnv(Request &req)
         envp.push_back("SERVER_PORT=" + this->prevURL.getPort());
         envp.push_back("SERVER_PROTOCOL=HTTP/1.1");
         envp.push_back("SERVER_SOFTWARE=webserv 1.0");
-        envp.push_back("REQUEST_METHOD=" + req.getMethodString());
+        envp.push_back("REQUEST_METHOD=" + getMethodString(req.getMethod()));
         envp.push_back("AUTH_TYPE=Basic");
         envp.push_back("GATEWAY_INTERFACE=CGI/1.1");
-        std::stringstream ss;
-        ss << req.getBody().size();
-        std::string result = ss.str();
+        std::string result = req.getHeaders()["Content-Length"];
+		if (result.empty())
+			result = "0";
         envp.push_back("CONTENT_LENGTH=" + result);
         std::map<std::string, std::string> headers = req.getHeaders();
         for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); it++)
         {
                 std::string key = it->first;
-                if (key.compare("Content-Type"))
+                if (key != ("Content-Type"))
                         key = "HTTP_" + key;
                 std::transform(key.begin(), key.end(), key.begin(), ::toupper);
                 std::replace(key.begin(), key.end(), '-', '_');
@@ -248,14 +243,16 @@ void CGI::createEnv(Request &req)
         this->setEnv(ev);
 }
 
-better_string CGI::pathToScript(better_string cgiPath, better_string index, better_string filePath, Request &req)
+better_string CGI::pathToScript(better_string cgiPath, const better_string& index, better_string filePath, Request &req, better_string route_path)
 {
+	better_string route_root = cgiPath; // Route root dir
 	filePath = URL::removeFromStart(filePath, cgiPath);
 	filePath = URL::removeFromStart(filePath, "/");
 	better_string token;
 	std::stringstream ss(filePath);
 	while (std::getline(ss, token, '/')) {
-		cgiPath +=  "/" + token;
+		cgiPath = URL::concatPaths(cgiPath, token);
+		route_path = URL::concatPaths(route_path, token);
 		struct stat st;
 		if (stat(cgiPath.c_str(), &st) == 0)
         {
@@ -266,7 +263,7 @@ better_string CGI::pathToScript(better_string cgiPath, better_string index, bett
 					result.compare("404") && 
 					result.compare("HandlePath")
 					)
-					this->setupCGI(cgiPath, token, filePath); // setup basic variables for the env array
+					this->setupCGI(cgiPath, token, filePath, route_path, route_root); // setup basic variables for the env array
 				return (result);
 			}
 			else if (!S_ISDIR(st.st_mode))
@@ -276,35 +273,37 @@ better_string CGI::pathToScript(better_string cgiPath, better_string index, bett
 			return "404";
 	}
 	cgiPath = URL::concatPaths(cgiPath, index);
+	route_path = URL::concatPaths(route_path, index);
 	better_string result = this->checkRegFile(cgiPath, req);
 	if (
 		result.compare("403") && 
 		result.compare("404") && 
 		result.compare("HandlePath")
 		)
-		this->setupCGI(cgiPath, index, filePath); // setup basic variables for the env array
+		this->setupCGI(cgiPath, index, filePath, route_path, route_root); // setup basic variables for the env array
     return (this->checkRegFile(cgiPath, req));
 }
 
-void CGI::setupCGI(better_string cgiPath, better_string script, better_string filePath)
+void CGI::setupCGI(better_string cgiPath, better_string script, better_string filePath, better_string route_path, better_string route_root)
 {
-	this->pathInfo.clear();
-	this->pathTranslated.clear();
-	this->documentRoot.clear();
+        this->pathInfo.clear();
+        this->pathTranslated.clear();
+        this->documentRoot.clear();
 
-	// Clear previous entries
+        // Clear previous entries
 
-	this->scriptName = "/" + script;
-	this->requestURI = filePath; // from scriptname onwards;
-	unsigned long pos = cgiPath.find_last_of("/");
-	Logger log;
-	log.INFO << "file name:      " << cgiPath;
-	if (pos != std::string::npos)
-		this->documentRoot = cgiPath.substr(0, pos); // Root location of script;
-	this->scriptFilename = cgiPath;
-	this->pathInfo = URL::removeFromStart(filePath, script);
-	if (!this->pathInfo.empty())
-		this->pathTranslated = this->documentRoot + this->pathInfo; 
+        this->scriptName = route_path;
+		this->requestURI = filePath; // from scriptname onwards;
+		this->documentRoot = route_root;
+		this->scriptFilename = cgiPath;
+		size_t pos = filePath.find(script);
+		if (pos != std::string::npos && pos + script.size() != filePath.size())
+			this->pathInfo = filePath.substr(pos + script.size());
+        if (!this->pathInfo.empty())
+		{
+            this->pathTranslated = this->documentRoot + ("/" + URL::removeFromEnd(filePath, script));
+			this->pathTranslated.find_first_and_replace("/" + script, "");
+		}
 }
 
 bool CGI::isEnabled() const

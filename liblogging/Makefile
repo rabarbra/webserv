@@ -6,7 +6,7 @@ else
 endif
 
 CXX =			c++
-CXXFLAGS =		-std=c++98 -Wall -Wextra -Werror
+CXXFLAGS =		-std=c++98 -Wall -Wextra -Werror -g
 
 OBJ_DIR =		build
 

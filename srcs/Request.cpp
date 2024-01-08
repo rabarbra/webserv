@@ -1,16 +1,28 @@
 #include "../includes/Request.hpp"
 
-Request::Request(int fd): _fd(fd)
+Request::Request():
+	chunked_state(CH_START),
+	remaining_chunk_size(0),
+	prev_chunk_size(""),
+	content_length(0),
+	offset(0),
+	body_start(0),
+	buff()
 {
-	this->receive();
-	this->log.INFO << "Received: " << this->plain;
-	this->parse();
+	this->log = Logger("Request");
 }
 
 Request::~Request()
 {}
 
-Request::Request(const Request &other)
+Request::Request(const Request &other):
+	chunked_state(CH_START),
+	remaining_chunk_size(0),
+	prev_chunk_size(""),
+	content_length(0),
+	offset(0),
+	body_start(0),
+	buff()
 {
 	*this = other;
 }
@@ -19,32 +31,60 @@ Request &Request::operator=(const Request &other)
 {
 	if (this != &other)
 	{
-		this->_fd = other._fd;
 		this->method = other.method;
 		this->httpVersion = other.httpVersion;
-		this->headers = other.headers;
-		this->body = other.body;
-		this->plain = other.plain;
 		this->url = other.url;
+		this->chunked_state = other.chunked_state;
+		this->remaining_chunk_size = other.remaining_chunk_size;
+		this->prev_chunk_size = other.prev_chunk_size;
+		this->log = other.log;
+		this->headers = other.headers;
+		this->offset = other.offset;
+		this->body_start = other.body_start;
+		this->content_length = other.content_length;
+		std::memcpy(this->buff, other.buff, this->buff_size);
 	}
+	this->log.INFO << "copy";
 	return *this;
+}
+
+// Setters
+
+void	Request::setMethod(Method method)
+{
+	this->method = method;
+}
+
+void	Request::setVersion(better_string version)
+{
+	this->httpVersion = version;
+}
+
+void	Request::setHeader(const std::string& key, const std::string& value)
+{
+	this->headers[key] = value;
+}
+
+void	Request::setUrl(const URL& url)
+{
+	this->url = url;
+}
+
+void Request::setDomain(const std::string& domain)
+{
+	this->url.setDomain(domain);
+}
+
+void Request::setPort(const std::string& port)
+{
+	this->url.setPort(port);
 }
 
 // Getters
 
-better_string Request::getBody() const
-{
-	return this->body;
-}
-
 better_string Request::getVersion() const
 {
 	return this->httpVersion;
-}
-
-std::map<std::string, std::string> Request::getHeaders() const
-{
-	return this->headers;
 }
 
 Method Request::getMethod() const
@@ -52,115 +92,173 @@ Method Request::getMethod() const
 	return this->method;
 }
 
-int Request::getFd() const
+std::map<std::string, std::string> Request::getHeaders() const
 {
-	return this->_fd;
+	return this->headers;
 }
 
-std::string Request::getMethodString() const
+URL Request::getUrl() const
 {
-	if (this->method == GET)
-		return "GET";
-	else if (this->method == POST)
-		return "POST";
-	else if (this->method == DELETE)
-		return "DELETE";
-	else if (this->method == PUT)
-		return "PUT";
-	else if (this->method == HEAD)
-		return "HEAD";
-	else
-		return "UNKNOWN";
+	return this->url;
 }
 
-URL	Request::getUrl() const
+ChunkedReqState Request::getChunkedState() const
 {
-	return (this->url);
-}
-
-// Private
-
-void Request::receive()
-{
-	int			buf_size = 2048;
-	char		buf[buf_size + 1];
-	int			bytes_read;
-
-	bytes_read = recv(this->_fd, buf, buf_size, 0);
-	if (bytes_read < 0)
-		throw std::runtime_error("Error receiving request: " + std::string(strerror(errno)));
-	buf[bytes_read] = 0;
-	this->plain += std::string(buf);
-	while (bytes_read == buf_size)
-	{
-    	bytes_read = recv(this->_fd, buf, buf_size, 0);
-		if (bytes_read < 0)
-			throw std::runtime_error("Error receiving request: " + std::string(strerror(errno)));
-		buf[bytes_read] = 0;
-		this->plain += std::string(buf);
-	}
-}
-
-void Request::parse()
-{
-	std::stringstream	ss(this->plain);
-	better_string		key;
-	better_string		value;
-	std::string			pathquery;
-	std::string			line;
-
-	ss >> key;
-	this->method = get_method(key);
-	ss >> pathquery;
-	std::stringstream	s_path(pathquery);
-	this->url = URL(pathquery);
-	std::getline(ss, this->httpVersion, '\n');
-	this->httpVersion.trim();
-	std::getline(ss, line, '\n');
-	while (std::find(line.begin(), line.end(), ':') != line.end())
-	{
-		std::stringstream s_line(line);
-		std::getline(s_line, key, ':');
-		key.trim();
-		std::getline(s_line, value);
-		value.trim();
-		this->headers[key] = value;
-		if (key == "Host")
-		{
-			std::stringstream	s_host(value);
-			std::getline(s_host, value, ':');
-			this->url.setDomain(value);
-			std::getline(s_host, value);
-			this->url.setPort(value);
-		}
-		std::getline(ss, line, '\n');
-	}
-	std::getline(ss, this->body);
-	this->body.trim();
-	this->log.INFO << "Parsed request:\n"
-		<< "method: \t" << this->method << "\n"
-		<< "version:\t" << this->httpVersion << "\n"
-		<< "headers size:\t" << this->headers.size() << "\n"
-		<< "body:   \t" << this->body << "\n";
+	return this->chunked_state;
 }
 
 // Public
 
-std::string Request::decodeURI(std::string str)
+std::string Request::toString() const
 {
-	for (size_t i = 0; i < str.length(); i++)
+	std::stringstream ss;
+	ss << "\t" << getMethodString(this->getMethod()) << " ";
+	ss << this->getUrl().getFullPath() << " ";
+	ss << this->getVersion() << "\n";
+	for (
+		std::map<std::string, std::string>::const_iterator it = this->headers.begin();
+		it != this->headers.end();
+		it++
+	)
+		ss << "\t" << std::setw(30) << std::left << it->first + ": " << it->second << "\n";
+	return ss.str();
+}
+
+void Request::removeHeader(const std::string& key)
+{
+	this->headers.erase(key);
+}
+
+StringData Request::save_chunk(std::string output_file)
+{
+	std::ofstream output;
+	output.open(output_file.c_str(), std::ios::out | std::ios::binary | std::ios::app | std::ios::ate);
+	if (this->content_length > 0)
 	{
-		if (str[i] == '%' && i + 2 < str.length())
+		ssize_t to_write = this->offset - this->body_start;
+		if (static_cast<ssize_t>(output.tellp()) + to_write > this->content_length)
+			to_write = this->content_length - output.tellp();
+		output.write(this->buff + this->body_start, to_write);
+		this->log.INFO << output_file << ": saved " << output.tellp() << " from " << this->content_length;
+		if (this->content_length <= output.tellp())
 		{
-			std::stringstream hex;
-			hex << str.substr(i + 1, 2);
-			int val;
-			hex >> std::setbase(16) >> val;
-			char chr = static_cast<char>(val);
-			str.replace(i, 3, &chr, 1);
+			output.close();
+			this->chunked_state = CH_COMPLETE;
+			this->log.INFO << output_file << ": completed";
+			return StringData("", D_FINISHED);
 		}
-		else if (str[i] == '+')
-			str[i] = ' ';
 	}
-	return str;
+	else if (this->content_length)
+	{
+		bool processing = true;
+		size_t curr_pos = this->body_start;
+		while (processing)
+		{
+			switch (this->chunked_state)
+			{
+				case CH_START:
+					this->chunked_state = CH_SIZE;
+					break ;
+				case CH_SIZE:
+				{
+					size_t end;
+					for (end = curr_pos; end < this->offset; end++)
+					{
+						if ((this->buff[end] == '\r' && this->buff[end + 1] == '\n') || this->buff[end] == '\n') // Check this condition
+						{
+							this->chunked_state = CH_DATA;
+							break;
+						}
+					}
+					this->prev_chunk_size += std::string(this->buff + curr_pos, end - curr_pos);
+					if (this->prev_chunk_size.size() > 20)
+					{
+						this->prev_chunk_size = "";
+						this->chunked_state = CH_ERROR;
+						break;
+					}
+					curr_pos = end;
+					if (this->chunked_state == CH_DATA)
+					{
+						std::stringstream ss(this->prev_chunk_size);
+						this->prev_chunk_size = "";
+						this->body_start = end + 2;
+						curr_pos += 2;
+						ss >> std::setbase(16) >> this->remaining_chunk_size;
+					}
+					if (curr_pos >= this->offset)
+						processing = false;
+					break;
+				}
+				case CH_DATA:
+				{
+					size_t ch_size = this->offset - curr_pos;
+					processing = false;
+					if (this->remaining_chunk_size <= ch_size)
+					{
+						ch_size = this->remaining_chunk_size;
+						processing = true;
+						this->chunked_state = CH_TRAILER;
+					}
+					output.write(this->buff + this->body_start, ch_size);
+					this->remaining_chunk_size -= ch_size;						
+					this->log.INFO << output_file << ": saved " << output.tellp() << " from " << this->content_length << ", remaining chunk size: " << this->remaining_chunk_size;
+					if (!this->remaining_chunk_size)
+					{
+						this->chunked_state = CH_TRAILER;
+					}
+					curr_pos += ch_size;
+					if (curr_pos >= this->offset)
+						processing = false;
+					break;
+				}
+				case CH_TRAILER:
+					if (this->buff[curr_pos] == '0')
+					{
+						this->chunked_state = CH_COMPLETE;
+					}
+					else if (curr_pos + 2 > this->offset)
+						processing = false;
+					else if (this->buff[curr_pos + 2] == '0')
+					{
+						this->chunked_state = CH_COMPLETE;
+					}
+					else
+					{
+						curr_pos += 2;
+						this->chunked_state = CH_SIZE;
+					}
+					break;
+				case CH_COMPLETE:
+					//this->chunked_state = CH_START;
+					output.close();
+					this->log.INFO << output_file << ": completed";
+					return StringData("", D_FINISHED);
+					break;
+				case CH_ERROR:
+					//this->chunked_state = CH_START;
+					this->log.INFO << output_file << ": error";
+					return StringData("500");
+					break;
+				default:
+					break;
+			}
+		}
+	}
+	output.close();
+	if (!this->offset && !this->body_start)
+	{
+		this->log.INFO << output_file << ": completed";
+		return StringData("", D_FINISHED);
+	}
+	return StringData("", D_NOTHING);
+}
+
+bool Request::isBodyReceived()
+{
+	if (!this->content_length)
+		return true;
+	if (this->chunked_state == CH_COMPLETE)
+		return true;
+	return false;
 }

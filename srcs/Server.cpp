@@ -1,20 +1,14 @@
 #include "../includes/Server.hpp"
-#include "../includes/Worker.hpp"
 
 Server::Server():
 	routes(), hosts(), server_names(), error_pages(), max_body_size(-1),
-	log(Logger(_INFO, "Server")), worker(NULL)
-{}
-
-Server::Server(Worker *worker):
-	routes(), hosts(), server_names(), error_pages(), max_body_size(-1),
-	log(Logger(_INFO, "Server")), worker(worker)
+	log(Logger(_INFO, "Server"))
 {}
 
 Server::~Server()
 {}
 
-Server::Server(const Server &other): env(NULL), worker(NULL)
+Server::Server(const Server &other): env(NULL)
 {
 	*this = other;
 }
@@ -30,7 +24,6 @@ Server &Server::operator=(const Server &other)
 		this->max_body_size = other.max_body_size;
 		this->log = other.log;
 		this->env = other.env;
-		this->worker = other.worker;
 	}
 	return (*this);
 }
@@ -69,11 +62,6 @@ void Server::setErrorPage(int code, std::string path)
 	this->error_pages[code] = path;
 }
 
-void Server::setWorker(Worker *worker)
-{
-	this->worker = worker;
-}
-
 // Getters
 
 char **Server::getEnv() const
@@ -103,7 +91,7 @@ std::map<int, std::string> Server::getErrorPages() const
 
 // Private
 
-Route &Server::select_route(const Request &req)
+Route &Server::select_route(const URL &url)
 {
 	size_t		max_size = 0;
 	size_t		curr_size;
@@ -114,7 +102,7 @@ Route &Server::select_route(const Request &req)
 		it++
 	)
 	{
-		curr_size = it->match(req.getUrl().getPath());
+		curr_size = it->match(url.getPath());
 		if (curr_size > max_size)
 		{
 			max_size = curr_size;
@@ -123,7 +111,7 @@ Route &Server::select_route(const Request &req)
 	}
 	if (!max_size)
 		throw std::runtime_error("No matching route!");
-	this->log.INFO << "Selected route: " << res->getPath();
+	this->log.INFO << "Selected route: " << res->getPath() << " " << res->getFileExt();
 	return *res;
 }
 
@@ -134,20 +122,8 @@ bool Server::hasListenDup() {
 	return (s.size() != this->hosts.size());
 }
 
-void		Server::printServer() {
-	this->log.INFO << "---------Server-----------";
-	for (std::multimap<std::string, std::string>::iterator i = this->hosts.begin(); i != this->hosts.end(); i++)
-		this->log.INFO << "Host: " << i->first << " Port: " << i->second;
-	this->log.INFO << "Client Max body size : " << this->max_body_size;
-	for (long unsigned int i = 0; i < this->server_names.size(); i++)
-		this->log.INFO << "Server name [" << i  << "]: " << this->server_names[i];
-	for (std::map<int, std::string>::iterator i = this->error_pages.begin(); i != this->error_pages.end(); i++)
-		this->log.INFO << "Error code path["<< i->first << "]: " << i->second;
-	for (std::vector<Route>::iterator i = this->routes.begin(); i != this->routes.end(); i++)
-	{
-		this->log.INFO << "Route path: " << i->getPath();
-		i->printRoute();
-	}
+void Server::printRoutes(std::string name)
+{
 	for (size_t i = 0; i < this->routes.size(); i++)
 	{
 		std::string route_type;
@@ -167,10 +143,28 @@ void		Server::printServer() {
 				route_type = "unkn:\t";
 				break;
 		}
+		if (name.empty())
+			name = this->hosts.begin()->first + ":" + this->hosts.begin()->second;
 		this->log.INFO
 			<< route_type
-			<< "http://" << this->hosts.begin()->first << ":" << this->hosts.begin()->second << this->routes[i].getPath()
+			<< "http://" << name << this->routes[i].getPath()
 			<< (this->routes[i].getRedirectUrl().size() ? "\n\t\t\t\t=> " + this->routes[i].getRedirectUrl() : "");
+	}
+}
+
+void		Server::printServer() {
+	this->log.INFO << "---------Server-----------";
+	for (std::multimap<std::string, std::string>::iterator i = this->hosts.begin(); i != this->hosts.end(); i++)
+		this->log.INFO << "Host: " << i->first << " Port: " << i->second;
+	this->log.INFO << "Client Max body size : " << this->max_body_size;
+	for (long unsigned int i = 0; i < this->server_names.size(); i++)
+		this->log.INFO << "Server name [" << i  << "]: " << this->server_names[i];
+	for (std::map<int, std::string>::iterator i = this->error_pages.begin(); i != this->error_pages.end(); i++)
+		this->log.INFO << "Error code path["<< i->first << "]: " << i->second;
+	for (std::vector<Route>::iterator i = this->routes.begin(); i != this->routes.end(); i++)
+	{
+		this->log.INFO << "Route path: " << i->getPath();
+		i->printRoute();
 	}
 }
 
@@ -191,51 +185,10 @@ std::string Server::printHosts()
 	return res.str();
 }
 
-void Server::handle_request(Request req)
+// IRouter impl
+
+IHandler *Server::route(IData &request, StringData &error)
 {
-	Response	*resp = new Response(req.getFd());
-	resp->setErrorPages(this->getErrorPages());
-	try
-	{
-		if (
-			this->max_body_size >= 0 &&
-			req.getBody().size() > static_cast<size_t>(this->max_body_size)	
-		)
-		{
-			resp->build_error("413");
-			resp->run();
-			delete resp;
-			return ;
-		}
-		else if (req.getUrl().getPath().find("..") != std::string::npos)
-		{
-			resp->build_error("403");
-			resp->run();
-			delete resp;
-			return ;
-		}
-		try
-		{
-			if (this->select_route(req).handle_request(req, resp))
-				delete resp;
-			else if (resp->getFd() > 0)
-				this->worker->sheduleResponse(resp);
-			else
-				delete resp;
-		}
-		catch(const std::exception& e)
-		{
-			resp->build_error("404");
-			resp->run();
-			delete resp;
-			return ;
-		}
-	}
-	catch(const std::exception& e)
-	{
-		resp->build_error("400");
-		resp->run();
-		delete resp;
-		this->log.ERROR << e.what() << '\n';
-	}
+	Request &req = dynamic_cast<Request&>(request);
+	return this->select_route(req.getUrl()).route(request, error);
 }

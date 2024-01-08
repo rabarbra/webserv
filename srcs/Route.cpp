@@ -7,11 +7,12 @@ Route::Route():
 	type(PATH_), allowed_methods(std::vector<Method>()),
 	root_directory(""), redirect_url(""), redirectStatusCode(""), dir_listing(false),
 	index("index.html"), static_dir(), ev(NULL)
-{}
+{
+	this->logger = Logger("Route");
+}
 
 Route::~Route()
-{
-}
+{}
 
 Route::Route(const Route &other): ev(NULL)
 {
@@ -237,204 +238,6 @@ std::string Route::build_absolute_path(Request req)
 	return root + req_path;
 }
 
-bool Route::handle_delete(std::string full_path, Response &resp)
-{
-	if (std::remove(full_path.c_str()) == 0)
-	{
-		resp.build_ok("200");
-		return resp.run();
-	}
-	resp.build_error("403");
-	return resp.run();
-}
-
-bool Route::handle_path(Request req, Response *resp)
-{
-	better_string	req_path(req.getUrl().getPath());
-	std::string full_path = this->build_absolute_path(req);
-	this->logger.INFO << "Trying to send: " << full_path;
-	struct stat st;
-	if (stat(full_path.c_str(), &st) == 0)
-	{
-		if (S_ISDIR(st.st_mode))
-		{
-			if (full_path[full_path.size() - 1] == '/')
-			{
-				if (this->dir_listing)
-					return this->handle_dir_listing(req, full_path);
-				full_path += this->index;
-			}
-			else
-			{
-				URL url = req.getUrl();
-				url.addSegment("/");
-				resp->build_redirect(url.getFullPath(), "302");
-				return resp->run();
-			}
-			if (
-				(req.getMethod() == GET && access(full_path.c_str(), R_OK))
-				|| (req.getMethod() == DELETE && access(full_path.c_str(), W_OK))
-			)
-			{
-				resp->build_error("404");
-				return resp->run();
-			}
-		}
-		else if (!(S_ISREG(st.st_mode)))
-		{
-			resp->build_error("404");
-			return resp->run();
-		}
-		if (req.getMethod() == GET)
-		{
-			resp->build_file(full_path);
-			return (resp->run());
-		}
-		else if (req.getMethod() == DELETE)
-			return (this->handle_delete(full_path, *resp));
-	}
-	resp->build_error("404");
-	return resp->run();
-}
-
-bool Route::handle_cgi(Response *resp, Request req)
-{
-	std::string req_path = this->build_absolute_path(req).erase(0, this->root_directory.size());
-	if (req.getUrl() == this->cgi.getPrevURL())
-	{
-		better_string path = this->cgi.getPrevExecPath();
-		return this->configureCGI(req, resp, path);
-	}
-	better_string path = this->cgi.pathToScript(this->root_directory, this->index, this->build_absolute_path(req), req);
-	if (!path.compare("404") || !path.compare("403"))
-	{
-		resp->build_error(path);
-		return (resp->run());
-	}
-	else if (path == "HandlePath")
-		return this->handle_path(req, resp);
-	return this->configureCGI(req, resp, path);
-}
-
-bool Route::configureCGI(Request &req, Response *resp, std::string &cgiPath)
-{
-	pid_t pid;
-	int sv[2];
-
-	this->cgi.createEnv(req);
-	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == -1)
-		return(sendError(resp, "501", "socketpair failed"));
-	if ((pid = fork()) == -1)
-		return(sendError(resp, "502", "fork failed"));
-	if (pid == 0)
-	{
-		if (this->cgi.execute(req, resp, sv, cgiPath) == -1)
-			return true;
-	}
-	else
-	{
-		if (req.getBody().size())
-			write(sv[0], req.getBody().c_str(), req.getBody().size());
-		close(sv[1]);
-		char buffer[1024];
-		int bytes_read;
-		std::string response;
-		while ((bytes_read = read(sv[0], buffer, 1024)) > 0)
-		{
-			response += std::string(buffer, bytes_read);
-			bzero(buffer, 1024);
-		}
-		close(sv[0]);
-		int status;
-		waitpid(pid, &status, 0);
-		if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
-		{
-			resp->build_cgi_response(response);
-			return resp->_send();
-		}
-		else
-		{
-			this->logger.ERROR << "CGI failed";
-			resp->build_error("500");
-			return resp->run();
-		}
-	}
-	resp->build_error("500");
-	return resp->run();
-}
-
-bool Route::handle_redirection(Request req)
-{
-	Response resp(req.getFd());
-	std::cout << "redirecting to: " << this->redirect_url << "with code " << this->redirectStatusCode << std::endl;
-	if (!this->redirectStatusCode.empty())
-		resp.build_redirect(this->redirect_url, this->redirectStatusCode);
-	else
-		resp.build_redirect(this->redirect_url, "302");
-	return resp.run();
-}
-
-bool Route::handle_dir_listing(Request req, std::string full_path)
-{
-	Response resp(req.getFd());
-	DIR *dir;
-	struct dirent *ent;
-	better_string content;
-	better_string dir_content;
-	struct stat st;
-	dir = opendir(full_path.c_str());
-	if (dir == NULL)
-	{
-		resp.build_error("404");
-		return resp.run();
-	}
-
-	better_string path = req.getUrl().getPath().substr(this->path.size(), req.getUrl().getPath().size());
-	dir_content += ("<script>start(\"" + path + "\");</script>\n");
-	better_string route_path(this->getPath());
-	if (!route_path.ends_with("/"))
-		route_path += "/";
-	if (req.getUrl().getPath() != route_path)
-		dir_content += "<script>onHasParentDirectory();</script>\n";
-	while ((ent = readdir(dir)) != NULL) {
-		content = "<script>addRow(\"{{name}}\",\"{{href}}\",{{is_dir}},{{abs_size}},\"{{size}}\",{{timestamp}},\"{{date}}\");</script>";
-		content.find_and_replace("{{name}}", std::string(ent->d_name));
-		if (req.getUrl().getPath()[req.getUrl().getPath().size() - 1] != '/')
-			content.find_and_replace("{{href}}", "/" + std::string(ent->d_name));
-		else
-			content.find_and_replace("{{href}}", std::string(ent->d_name));
-		if (stat((this->build_absolute_path(req) + ent->d_name).c_str(), &st) != 0)
-			continue;
-		std::stringstream ss;
-		if (ent->d_type == DT_DIR)
-		{
-			content.find_and_replace("{{is_dir}}", "1");
-			content.find_and_replace("{{abs_size}}", "0");
-		}
-		else
-		{
-			content.find_and_replace("{{is_dir}}", "0");
-			ss << st.st_size;
-			content.find_and_replace("{{abs_size}}", ss.str());
-			content.find_and_replace("{{size}}", convertSize(st.st_size));
-		}
-		ss.clear();
-		ss << st.st_mtime;
-		content.find_and_replace("{{timestamp}}",ss.str());
-		time_t timestamp = st.st_mtime;
-		struct tm *timeinfo;
-		timeinfo = std::localtime(&timestamp);
-		char buffer[80];
-		std::strftime(buffer, 80, "%Y-%m-%d %H:%M:%S", timeinfo);
-		content.find_and_replace("{{date}}", std::string(buffer));
-		dir_content += content;
-		dir_content += "\n";
-	}
-	closedir(dir);
-	resp.build_dir_listing(full_path, dir_content);
-	return resp.run();
-}
-
 // Public
 
 size_t Route::match(std::string path)
@@ -454,30 +257,6 @@ size_t Route::match(std::string path)
 			return this->path.size();
 	}
 	return 0;
-}
-
-bool Route::handle_request(Request req, Response *resp)
-{
-	if (
-		this->allowed_methods.size() &&
-		std::find(
-			this->allowed_methods.begin(),
-			this->allowed_methods.end(),
-			req.getMethod()
-		) == this->allowed_methods.end()
-	)
-	{
-		resp->build_error("405");
-		return resp->run();
-	}
-	if (this->type == PATH_)
-		return this->handle_path(req, resp);
-	else if (this->type == CGI_)
-		return this->handle_cgi(resp, req);
-	else if (this->type == REDIRECTION_)
-		return this->handle_redirection(req);
-	resp->build_error("500");
-	return resp->run();
 }
 
 void Route::printRoute()
@@ -500,4 +279,84 @@ void Route::printRoute()
 bool Route::isCgiEnabled() const
 {
 	return (this->cgi.isEnabled());
+}
+
+// IRouter impl
+
+IHandler *Route::route(IData &request, StringData &error)
+{
+	Request &req = dynamic_cast<Request&>(request);
+	if (
+		this->allowed_methods.size() &&
+		std::find(
+			this->allowed_methods.begin(),
+			this->allowed_methods.end(),
+			req.getMethod()
+		) == this->allowed_methods.end()
+	)
+	{
+		error = StringData("405");
+		return NULL;
+	}
+	if (this->type == PATH_)
+		return new StaticHandler(
+			this->path,
+			this->root_directory,
+			this->dir_listing,
+			this->index,
+			this->static_dir
+		);
+	else if (this->type == CGI_)
+	{
+		better_string cgi_path = this->cgi.pathToScript(
+			this->root_directory,
+			this->index,
+			this->build_absolute_path(req),
+			req,
+			this->path
+		);
+		if (cgi_path == "404" || cgi_path == "403")
+		{
+			error = StringData(cgi_path);
+			return NULL;
+		}
+		else if (cgi_path == "HandlePath")
+			return new StaticHandler(
+				this->path,
+				this->root_directory,
+				this->dir_listing,
+				this->index,
+				this->static_dir
+			);
+		return new CGIHandler(
+			this->path,
+			this->allowed_methods,
+			this->root_directory,
+			this->index,
+			cgi_path,
+			this->cgi
+		);
+	}
+	else if (this->type == REDIRECTION_)
+		return new RedirectHandler(
+			this->redirect_url,
+			this->redirectStatusCode
+		);
+	else
+	{
+		this->logger.INFO << "no route found";
+		error = StringData("500");
+	}
+	return NULL;
+}
+
+
+std::string Route::getFileExt() const 
+{
+	std::stringstream result;
+	for (std::vector<std::string>::const_iterator it = this->file_extensions.begin(); it != this->file_extensions.end(); it++)
+	{
+		result << *it << " ";
+	}
+	return result.str();
 }

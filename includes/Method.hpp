@@ -13,4 +13,5 @@ typedef enum e_meth {
 	HEAD
 }			Method;
 Method get_method(std::string method);
+std::string	getMethodString(Method method);
 #endif

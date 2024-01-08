@@ -12,8 +12,8 @@ Worker::~Worker()
 	if (this->queue >= 0)
 		close(this->queue);
 	for (
-		std::map<int, int>::iterator it = this->conn_map.begin();
-		it != this->conn_map.end();
+		std::map<int, Connection>::iterator it = this->connections.begin();
+		it != this->connections.end();
 		it++
 	)
 	{
@@ -35,21 +35,16 @@ Worker::Worker(char *path_to_conf, char **env): queue(-1), ev(env)
 	}
 	this->config.setEnv(this->ev);
 	this->config.parse(conf);
-	this->config.setWorker(this);
 	this->initQueue();
 	this->create_connections();
+	this->log = Logger("Worker");
 }
 
 // Private
 
-int Worker::find_connection(int sock)
+bool Worker::is_socket_accepting_connection(int sock)
 {
-	for (size_t i = 0; i < this->connections.size(); i++)
-	{
-		if (this->connections[i].getSocket() == sock)
-			return i;
-	}
-	return -1;
+	return this->connections[sock].getSocket() == sock;
 }
 
 void Worker::create_connections()
@@ -67,14 +62,14 @@ void Worker::create_connections()
 			Address address(it->first, it->second);
 			bool already_exists = false;
 			for (
-				std::vector<Connection>::iterator it = this->connections.begin();
+				std::map<int, Connection>::iterator it = this->connections.begin();
 				it != this->connections.end();
 				it++
 			)
 			{
-				if (it->getAddress() == address)
+				if (it->second.getAddress() == address)
 				{
-					it->addServer(servers[i]);
+					it->second.addServer(servers[i]);
 					already_exists = true;
 					break ;
 				}
@@ -83,17 +78,21 @@ void Worker::create_connections()
 			{
 				Connection conn(address);
 				conn.addServer(servers[i]);
-				this->connections.push_back(conn);
+				conn.setWorker(this);
+				this->connections[conn.getSocket()] = conn;
 			}
 		}
 	}
 }
 
+void Worker::addConnection(int fd, Connection *conn)
+{
+	this->connections[fd] = *conn;
+}
+
 void Worker::accept_connection(int sock)
 {
 	int	conn_fd;
-
-	this->log.INFO << "Accepting: " << sock;
 	if (listen(sock, SOMAXCONN) < 0)
 		throw std::runtime_error("Not listening: " + std::string(strerror(errno)));
 	while (1)
@@ -120,18 +119,11 @@ void Worker::accept_connection(int sock)
 			setsockopt(conn_fd, SOL_SOCKET, SO_NOSIGPIPE, &nosigpipe, sizeof(nosigpipe));
 		#endif
 		this->addSocketToQueue(conn_fd);
-		this->conn_map[conn_fd] = this->find_connection(sock);
-		this->log.INFO 
-			<< "[" << conn_fd << "]: connected to sock " << sock << " "
-			<< this->find_connection(sock)
-			<< this->connections[this->find_connection(sock)].getAddress().getHost();
+		this->connections[conn_fd] = this->connections[sock];
+		this->log.INFO
+			<< this->connections[sock].getAddress().getHost()
+			<< " (sock " <<  sock << ") accepted client " << conn_fd;
 	}
-}
-
-void Worker::sheduleResponse(Response *resp)
-{
-	this->connections[this->conn_map[resp->getFd()]].setResponse(resp);
-	this->listenWriteAvailable(resp->getFd());
 }
 
 void Worker::run()
@@ -140,46 +132,56 @@ void Worker::run()
 	int	event_sock;
 
 	for (
-		std::vector<Connection>::iterator it = this->connections.begin();
+		std::map<int, Connection>::iterator it = this->connections.begin();
 		it != this->connections.end();
 		it++
 	)
-		this->addSocketToQueue(it->getSocket());
+		if (it->first == it->second.getSocket())
+			this->addConnSocketToQueue(it->first);
 	while (1)
 	{
 		try
 		{
 			num_events = this->getNewEventsCount();
-			this->log.INFO << num_events << " new events";
 			if (num_events < 0)
 				throw std::runtime_error("Queue error: " + std::string(strerror(errno)));
 			for (int i = 0; i < num_events; i++)
 			{
 				event_sock = this->getEventSock(i);
-				this->log.INFO << "Event sock: " << event_sock;
 				switch (this->getEventType(i))
 				{
 					case NEW_CONN:
-						this->log.INFO << "NEW conn";
+						this->log.INFO << "NEW conn " << event_sock;
 						this->accept_connection(event_sock);
 						break;
 					case EOF_CONN:
-						this->log.INFO << "EOF conn";
-						this->deleteSocketFromQueue(i);
-						this->conn_map.erase(event_sock);
-						close(event_sock);
+						this->log.INFO << "EOF conn " << event_sock;
+						if (this->connections[event_sock].isCGI(event_sock))
+							this->connections[event_sock].receive(event_sock);
+						else
+						{
+							//this->deleteSocketFromQueue(event_sock);
+							this->connections.erase(event_sock);
+							close(event_sock);
+						}
 						break;
 					case READ_AVAIL:
-						this->log.INFO << "Read available";
-						this->connections[this->conn_map[event_sock]].handleRequest(Request(event_sock));
+						//this->log.INFO << "Read available " << event_sock;
+						this->connections[event_sock].receive(event_sock);
 						break;
 					case WRITE_AVAIL:
-						this->log.INFO << "Write available";
-						if (this->connections[this->conn_map[event_sock]].continueResponse(event_sock))
-							this->deleteSocketFromQueue(event_sock);
+						//this->log.INFO << "Write available " << event_sock;
+						if (this->connections.find(event_sock) != this->connections.end())
+							this->connections[event_sock].send(event_sock);
+						break;
+					case READWRITE_AVAIL:
+						//this->log.INFO << "ReadWrite available " << event_sock;
+						this->connections[event_sock].receive(event_sock);
+						if (this->connections.find(event_sock) != this->connections.end())
+							this->connections[event_sock].send(event_sock);
 						break;
 					default:
-						this->log.INFO << "Unknown event type!";
+						this->log.INFO << "Unknown event type " << event_sock;
 						break;
 				}
 			}
@@ -189,4 +191,9 @@ void Worker::run()
 			this->log.ERROR << e.what();
 		}
 	}
+}
+
+void Worker::removeConnection(int fd)
+{
+	this->connections.erase(fd);
 }

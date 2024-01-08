@@ -1,8 +1,9 @@
-#ifndef RESPONSE_HPP
-# define RESPONSE_HPP
+#ifndef RESPONSESENDER_HPP
+# define RESPONSESENDER_HPP
 // Cpp libs
 # include <sstream>
 # include <fstream>
+# include <typeinfo>
 // C libs
 # include <cerrno>
 # include <cstdio>
@@ -17,7 +18,10 @@
 # include <sys/socket.h>
 // Our headers
 # include "MimeTypes.hpp"
+# include "Data.hpp"
+# include "interfaces/ISender.hpp"
 # include "StatusCodes.hpp"
+# include "Request.hpp"
 # include "better_string.hpp"
 # include "../liblogging/Logger.hpp"
 
@@ -26,11 +30,11 @@
 # else
 #  define SEND_FLAGS 0
 # endif
-class Response
+class ResponseSender: public ISender
 {
 	private:
 		std::string							httpVersion;
-		std::string							statusCode;
+		StringData							statusCode;
 		std::string							reason;
 		std::map<std::string, std::string>	headers;
 		std::map<int, std::string>			error_pages;
@@ -40,14 +44,18 @@ class Response
 		size_t								sent;
 		std::string							file;
 		int									fd;
+		bool								ready;
+		bool								_finished;
+		bool								cgi;
+		bool								plain_sent;
 		Logger								log;
 		void								_build();
-		Response();
 	public:
-		Response(int fd);
-		~Response();
-		Response(const Response &other);
-		Response	operator=(const Response &other);
+		ResponseSender();
+		ResponseSender(int fd);
+		~ResponseSender();
+		ResponseSender(const ResponseSender &other);
+		ResponseSender	operator=(const ResponseSender &other);
 		// Setters
 		void		setBody(std::string body);
 		void		setHeader(std::string key, std::string value);
@@ -61,13 +69,17 @@ class Response
 		std::string getBody() const;
 		int			getFd() const;
 		// Public
-		void		build_file(std::string filename);
-		void		build_error(std::string status_code);
-		void		build_ok(std::string statuscode);
-		void		build_dir_listing(std::string full_path, std::string content);
-		void		build_redirect(std::string location, std::string status_code);
-		void		build_cgi_response(std::string response);
+		void		build_file(const std::string& filename);
+		void		build_error(const std::string& status_code);
+		void		build_dir_listing(const std::string& content);
+		void		build_redirect(const std::string& redirect);
+		void		build_cgi_response(const std::string& response);
 		bool		run();
 		bool		_send();
+		// ISender impl
+		bool		readyToSend();
+		void		setData(IData &data);
+		bool		finished();
+		void		sendData();
 };
 #endif
