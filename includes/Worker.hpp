@@ -34,10 +34,9 @@ class Worker
 		void						initQueue();
 		int							getNewEventsCount();
 		int							getEventSock(int num_event);
-		void						addResponseToQueue(ResponseSender *resp);
 		EventType					getEventType(int num_event);
-		ResponseSender					*getResponse(int num_event);
 		// Private
+		void						addConnSocketToQueue(int sock);
 		void						create_connections();
 		bool						is_socket_accepting_connection(int sock);
 		void						accept_connection(int sock);
@@ -52,6 +51,7 @@ class Worker
 		void						addSocketToQueue(int sock);
 		void						deleteSocketFromQueue(int sock);
 		void						listenWriteAvailable(int socket);
+		void						listenOnlyRead(int socket);
 		void						addConnection(int fd, Connection *conn);
 		void						removeConnection(int fd);
 };

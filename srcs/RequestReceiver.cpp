@@ -92,6 +92,10 @@ bool RequestReceiver::parse_completed_lines()
 			// No lines processed this time. More data needed.
 			return false;
 		}
+		if (ss.tellg() < 0)
+		{
+			return false;
+		}
 		if (this->req.getVersion().empty())
 		{
 			if (line == "\r")
@@ -191,8 +195,18 @@ bool RequestReceiver::receive_headers()
 	);
 	if (bytes_read < 0)
 	{
-		this->state = R_FINISHED;
+		this->state = R_ERROR;
+		this->log.INFO << "received -1: " << strerror(errno);
+		this->error_code = StringData("500");
 		return false;
+	}
+	if (bytes_read == 0)
+	{
+		this->log.INFO << "received 0 for: " << this->req.getUrl().getPath();
+		this->state = R_FINISHED;
+		if (this->req.getUrl().getPath().empty())
+			this->state = R_CLOSED;
+		return true;
 	}
 	this->req.offset += bytes_read;
 	if (parse_completed_lines())

@@ -163,6 +163,13 @@ better_string URL::removeFromStart(better_string first, better_string second)
 	return first;
 }
 
+better_string URL::removeFromEnd(better_string first, better_string second)
+{
+	if (first.ends_with(second))
+		first.erase(first.size() - second.length() - 1);
+	return first;
+}
+
 void URL::addSegment(better_string segment)
 {
 	this->path = URL::concatPaths(this->path, segment);
