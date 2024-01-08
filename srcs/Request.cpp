@@ -3,7 +3,7 @@
 Request::Request():
 	chunked_state(CH_START),
 	remaining_chunk_size(0),
-	prev_chunk_size(),
+	prev_chunk_size(""),
 	content_length(0),
 	offset(0),
 	body_start(0),
@@ -18,7 +18,7 @@ Request::~Request()
 Request::Request(const Request &other):
 	chunked_state(CH_START),
 	remaining_chunk_size(0),
-	prev_chunk_size(),
+	prev_chunk_size(""),
 	content_length(0),
 	offset(0),
 	body_start(0),
@@ -132,12 +132,15 @@ void Request::removeHeader(const std::string& key)
 StringData Request::save_chunk(std::string output_file)
 {
 	std::ofstream output;
-	output.open(output_file.c_str(), std::ios::out | std::ios::binary | std::ios::app);
+	output.open(output_file.c_str(), std::ios::out | std::ios::binary | std::ios::app | std::ios::ate);
 	if (this->content_length > 0)
 	{
-		output.write(this->buff + this->body_start, this->offset - this->body_start);
+		ssize_t to_write = this->offset - this->body_start;
+		if (static_cast<ssize_t>(output.tellp()) + to_write > this->content_length)
+			to_write = this->content_length - output.tellp();
+		output.write(this->buff + this->body_start, to_write);
 		this->log.INFO << output_file << ": saved " << output.tellp() << " from " << this->content_length;
-		if (this->content_length == output.tellp())
+		if (this->content_length <= output.tellp())
 		{
 			output.close();
 			this->chunked_state = CH_COMPLETE;

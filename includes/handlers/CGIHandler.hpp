@@ -31,6 +31,7 @@ class CGIHandler: public IHandler
 		bool					finished;
 		void 					configureCGI(Request &req);
 		std::string 			build_absolute_path(const better_string& requestPath);
+		int						_rand();
 	public:
 		CGIHandler();
 		CGIHandler(
@@ -52,5 +53,6 @@ class CGIHandler: public IHandler
 		// IHandler impl
 		IData	&produceData();
 		void	acceptData(IData &data);
+		void	removeTmpFile();
 };
 #endif

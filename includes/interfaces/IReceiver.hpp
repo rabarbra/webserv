@@ -8,7 +8,8 @@ typedef enum	e_request_handler_state
 	R_ERROR,
 	R_REQUEST,
 	R_BODY,
-	R_FINISHED
+	R_FINISHED,
+	R_CLOSED
 }				ReceiverState;
 
 class IReceiver

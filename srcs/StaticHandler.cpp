@@ -201,7 +201,7 @@ StringData StaticHandler::findFilePath(Request &req)
 		else if (req.getMethod() == DELETE)
 			return this->handle_delete(full_path);
 		else if (req.getMethod() == POST)
-			return this->state = SH_FINISHED, StringData("405");
+			return this->state = SH_FINISHED, StringData("403");
 		else if (req.getMethod() == PUT)
 			return this->handle_update(req, full_path);
 	}

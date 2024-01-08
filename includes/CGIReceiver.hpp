@@ -2,6 +2,7 @@
 # define  CGIRECEIVER_HPP
 # include <netdb.h>
 # include <unistd.h>
+# include <sstream>
 # include <sys/time.h>
 # include <sys/types.h>
 # include <sys/socket.h>
@@ -19,6 +20,7 @@ class CGIReceiver: public IReceiver
 		StringData				data;
 		Logger					log;
 		std::string				headers;
+
 	public:
 		CGIReceiver();
 		CGIReceiver(int	fd);

@@ -43,22 +43,31 @@ ReceiverState CGIReceiver::getState() const
 	return this->state;
 }
 
+#include <cerrno>
+#include <string.h>
 void CGIReceiver::consume()
 {
 	char buff[4096];
 	ssize_t received = recv(this->fd, buff, 4096, 0);
-	if (received == 0 || received == -1)
+	this->log.INFO << "received: " << received;
+	if (received == -1)
 	{
-		this->data = StringData("500");
-		this->state = R_ERROR;
-		return;
+		this->log.ERROR << "received -1: " << strerror(errno);
+		return ;
+	}
+	if (received == 0)
+	{
+		if (this->headers.empty())
+		{
+			this->state = R_CLOSED;
+			return ;
+		}
+		this->data = StringData(this->headers, D_CGI);
+		this->state = R_BODY;
+		return ;
 	}
 	std::string d(buff, received);
 	this->headers += d;
-	if (this->headers.find("\r\n\r\n") == std::string::npos)
-		return;
-	this->data = StringData(this->headers, D_CGI);
-	this->state = R_BODY;
 }
 
 IData &CGIReceiver::produceData()
@@ -68,9 +77,11 @@ IData &CGIReceiver::produceData()
 		case R_ERROR:
 			break;
 		case R_REQUEST:
+			this->state = R_BODY;
+			return this->data;
 			break;
 		case R_BODY:
-			this->state = R_FINISHED;
+			return this->data;
 			break;
 		case R_FINISHED:
 			this->data = StringData("", D_FINISHED);

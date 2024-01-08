@@ -34,5 +34,6 @@ class Connection
 		void							addServer(Server server);
 		void							receive(int fd);
 		void							send(int fd);
+		bool							isCGI(int socket);
 };
 #endif

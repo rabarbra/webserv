@@ -111,7 +111,7 @@ Route &Server::select_route(const URL &url)
 	}
 	if (!max_size)
 		throw std::runtime_error("No matching route!");
-	this->log.INFO << "Selected route: " << res->getPath();
+	this->log.INFO << "Selected route: " << res->getPath() << " " << res->getFileExt();
 	return *res;
 }
 
@@ -184,44 +184,6 @@ std::string Server::printHosts()
 	res << ">";
 	return res.str();
 }
-
-/*
-bool Server::handle_request(RequestReceiver *req, ResponseSender *resp)
-{
-	resp->setErrorPages(this->getErrorPages());
-	try
-	{
-		if (
-			this->max_body_size >= 0 &&
-			req->getBody().size() > static_cast<size_t>(this->max_body_size)	
-		)
-		{
-			resp->build_error("413");
-			return resp->run();
-		}
-		else if (req->getRequest().getUrl().getPath().find("..") != std::string::npos)
-		{
-			resp->build_error("403");
-			return resp->run();
-		}
-		try
-		{
-			return this->select_route(req->getRequest().getUrl()).handle_request(*req, resp);
-		}
-		catch(const std::exception& e)
-		{
-			resp->build_error("404");
-			return resp->run();
-		}
-	}
-	catch(const std::exception& e)
-	{
-		this->log.ERROR << e.what();
-		resp->build_error("400");
-		return resp->run();
-	}
-}
-*/
 
 // IRouter impl
 
