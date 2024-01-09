@@ -130,7 +130,6 @@ void ResponseSender::_build()
 
 bool ResponseSender::_send()
 {
-	this->log.INFO << "_send()";
 	size_t	left;
 	size_t	chunk_size;
 	ssize_t	chunk;
@@ -149,14 +148,12 @@ bool ResponseSender::_send()
 		left -= chunk;
 		if (left < chunk_size)
 			chunk_size = left;
-		this->log.INFO << "file: " << this->file;
 		if (this->file.empty() && this->sent >= this->_plain.size())
 			return true;
 		return false;
 	}
 	if (!this->file.empty())
 	{
-		this->log.INFO << "sending file";
 		std::ifstream file_s(this->file.c_str(), std::ios::binary | std::ios::ate);
 		if (!file_s.is_open())
 		{
@@ -179,7 +176,6 @@ bool ResponseSender::_send()
 		}
 		else
 			size = file_s.tellg();
-		this->log.INFO << "Size: " << size;
 		left = this->_plain.size() + size - sent;
 		chunk_size = 8192;
 		if (left < chunk_size)
@@ -244,7 +240,6 @@ bool ResponseSender::parse_content_ranges(better_string range)
 			endStream >> this->contentEnd;
 			if (this->contentEnd < 0)
 				this->contentEnd = 0;
-			this->log.INFO << contentStart << " " << contentEnd;
 			if (this->contentStart > this->contentEnd && this->contentEnd != 0)
 			{
 				this->build_error("416");
@@ -266,7 +261,6 @@ void ResponseSender::build_file(const std::string& filename)
 	std::getline(ss, file);
 	range.trim();
 	file.trim();
-	this->log.INFO << range << " " << file;
 	if (!range.empty())
 	{
 		if (!this->parse_content_ranges(range))
