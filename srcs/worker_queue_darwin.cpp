@@ -32,6 +32,15 @@ void Worker::addSocketToQueue(int sock)
 	this->log.INFO << "Added EVFILT_READ for socket " << sock;
 }
 
+void Worker::listenOnlyRead(int socket)
+{
+	struct kevent	evSet;
+	EV_SET(&evSet, socket, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+    if (kevent(this->queue, &evSet, 1, NULL, 0, NULL) < 0)
+		throw std::runtime_error("Kevent error 4: "
+			+ std::string(strerror(errno)));
+}
+
 void Worker::addConnSocketToQueue(int sock)
 {
 	struct kevent	evSet;
