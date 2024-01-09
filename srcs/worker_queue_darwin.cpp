@@ -34,13 +34,11 @@ void Worker::addSocketToQueue(int sock)
 
 void Worker::listenOnlyRead(int socket)
 {
-	struct epoll_event	conn_event;
-
-	conn_event.events = EPOLLIN;
-	conn_event.data.fd = socket;
-	this->log.INFO << "Only EPOLLIN with EPOLL_CTL_MOD: " << socket;
-    if (epoll_ctl(this->queue, EPOLL_CTL_MOD, socket, &conn_event))
-		throw std::runtime_error("Error adding EPOLLIN socket: " + std::string(strerror(errno)));
+	struct kevent	evSet;
+	EV_SET(&evSet, socket, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+    if (kevent(this->queue, &evSet, 1, NULL, 0, NULL) < 0)
+		throw std::runtime_error("Kevent error 4: "
+			+ std::string(strerror(errno)));
 }
 
 void Worker::addConnSocketToQueue(int sock)
