@@ -2,14 +2,16 @@
 
 ResponseSender::ResponseSender():
 	httpVersion("HTTP/1.1"), statusCode("200"), reason("OK"),
-	sent(0), fd(-1), ready(false), _finished(false), cgi(false), plain_sent(false)
+	sent(0), fd(-1), ready(false), _finished(false), cgi(false), plain_sent(false),
+	contentStart(-1), contentEnd(-1)
 {
 	this->log = Logger("ResponseSender");
 }
 
 ResponseSender::ResponseSender(int fd):
 	httpVersion("HTTP/1.1"), statusCode("200"), reason("OK"),
-	sent(0), fd(fd), ready(false), _finished(false), cgi(false), plain_sent(false)
+	sent(0), fd(fd), ready(false), _finished(false), cgi(false), plain_sent(false),
+	contentStart(-1), contentEnd(-1)
 {
 	this->log = Logger("ResponseSender");
 }
@@ -39,6 +41,8 @@ ResponseSender ResponseSender::operator=(const ResponseSender &other)
 		this->_finished = other._finished;
 		this->cgi = other.cgi;
 		this->plain_sent = other.plain_sent;
+		this->contentStart = other.contentStart;
+		this->contentEnd = other.contentEnd;
 		this->log = other.log;
 	}
 	return *this;
@@ -163,12 +167,23 @@ bool ResponseSender::_send()
 			this->build_error("500");
 			return this->run();
 		}
-		std::streamsize size = file_s.tellg();
+		std::streamsize size;
+		if (this->contentEnd >= 0)
+		{
+			if (this->contentEnd == 0)
+				this->contentEnd = file_s.tellg();
+			size = this->contentEnd - this->contentStart;
+		}
+		else
+			size = file_s.tellg();
 		left = this->_plain.size() + size - sent;
 		chunk_size = 8192;
 		if (left < chunk_size)
 				chunk_size = left;
-		file_s.seekg(this->sent - this->_plain.size(), std::ios::beg);
+		if (this->contentStart >= 0)
+			file_s.seekg(this->sent + this->contentStart - this->_plain.size(), std::ios::beg);
+		else
+			file_s.seekg(this->sent - this->_plain.size(), std::ios::beg);
 		char *buffer = new char[chunk_size];
 		if (file_s.is_open() && this->sent < this->_plain.size() + size && !file_s.eof())
 		{
@@ -208,10 +223,59 @@ bool ResponseSender::run()
 	return this->_send();
 }
 
+bool ResponseSender::parse_content_ranges(better_string range)
+{
+	size_t bytesPos = range.find("bytes=");
+	if (bytesPos != std::string::npos)
+	{
+		std::string rangeInfo = range.substr(bytesPos + 6);
+		size_t dashPos = rangeInfo.find('-');
+		if (dashPos != std::string::npos)
+		{
+			std::stringstream startStream(rangeInfo.substr(0, dashPos));
+            std::stringstream endStream(rangeInfo.substr(dashPos + 1));
+			startStream >> this->contentStart;
+			if (this->contentStart < 0)
+				this->contentStart = 0;
+			endStream >> this->contentEnd;
+			if (this->contentEnd < 0)
+				this->contentEnd = 0;
+			if (this->contentStart > this->contentEnd && this->contentEnd != 0)
+			{
+				this->build_error("416");
+				return false;
+			}
+			return true;
+		}
+	}
+	return false;
+}
+
 void ResponseSender::build_file(const std::string& filename)
 {
-	this->setContentTypes(filename);
-	this->setFile(filename);
+	std::stringstream ss(filename);
+	std::stringstream contentRange;
+	better_string range;
+	better_string file;
+	std::getline(ss, range, '|');
+	std::getline(ss, file);
+	range.trim();
+	file.trim();
+	if (!range.empty())
+	{
+		if (!this->parse_content_ranges(range))
+		{
+			return ;
+		}
+		std::ifstream file_s(file.c_str(), std::ios::binary | std::ios::ate);
+		if (this->contentEnd == 0)
+			this->contentEnd = file_s.tellg();
+		this->statusCode = "206";
+		contentRange << "bytes " << this->contentStart << "-" << this->contentEnd - 1 << "/" << file_s.tellg();
+		this->setHeader("Content-Range", contentRange.str());
+	}
+	this->setContentTypes(file);
+	this->setFile(file);
 }
 
 void ResponseSender::build_error(const std::string& status_code)

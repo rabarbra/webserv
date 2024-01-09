@@ -42,6 +42,7 @@ Request &Request::operator=(const Request &other)
 		this->offset = other.offset;
 		this->body_start = other.body_start;
 		this->content_length = other.content_length;
+		this->contentRange = other.contentRange;
 		std::memcpy(this->buff, other.buff, this->buff_size);
 	}
 	this->log.INFO << "copy";
@@ -80,6 +81,11 @@ void Request::setPort(const std::string& port)
 	this->url.setPort(port);
 }
 
+void Request::setContentRange(std::string contentRange)
+{
+	this->contentRange = contentRange;
+}
+
 // Getters
 
 better_string Request::getVersion() const
@@ -105,6 +111,11 @@ URL Request::getUrl() const
 ChunkedReqState Request::getChunkedState() const
 {
 	return this->chunked_state;
+}
+
+std::string Request::getContentRange() const
+{
+	return this->contentRange;
 }
 
 // Public
