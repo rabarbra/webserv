@@ -1,4 +1,5 @@
-#!/usr/bin/python
+#!/usr/local/bin/python3
+#/usr/bin/python
 #/Users/psimonen/.brew/bin/python3
 from wsgiref.handlers import CGIHandler
 from app import app
