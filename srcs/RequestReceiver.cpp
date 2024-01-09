@@ -1,11 +1,11 @@
 #include "../includes/RequestReceiver.hpp"
 
-RequestReceiver::RequestReceiver(int fd): _fd(fd), state(R_WAITING), _header_pos(0), headersOk(false), contentStart(0), ContentEnd(0), ContentTotal(0)
+RequestReceiver::RequestReceiver(int fd): _fd(fd), state(R_WAITING), _header_pos(0), headersOk(false)
 {
 	this->log = Logger("RequestReceiver");
 }
 
-RequestReceiver::RequestReceiver(): _fd(-1), state(R_WAITING), _header_pos(0), headersOk(false), contentStart(0), ContentEnd(0), ContentTotal(0)
+RequestReceiver::RequestReceiver(): _fd(-1), state(R_WAITING), _header_pos(0), headersOk(false)
 {
 	this->log = Logger("RequestReceiver");
 }
@@ -31,9 +31,6 @@ RequestReceiver &RequestReceiver::operator=(const RequestReceiver &other)
 		this->headersOk = other.headersOk;
 		this->error_code = other.error_code;
 		this->log = other.log;
-		this->contentStart = other.contentStart;
-		this->ContentEnd = other.ContentEnd;
-		this->ContentTotal = other.ContentTotal;
 	}
 	return *this;
 }
@@ -166,41 +163,16 @@ bool RequestReceiver::parse_completed_lines()
 					std::getline(s_host, value);
 					this->req.setPort(value);
 				}
-				if (key == "Content-Range")
+				if (key == "Range")
 				{
 					value.trim();
-					if (!this->parse_content_ranges(value))
-						return this->_header_pos = 0, this->finish_request(StringData("400"));  // Wrong request		
+					this->req.setContentRange(value);
 				}
 				// Header line processed	
 				this->_header_pos += line.size() + 1;
 			}
 			else
 				return this->_header_pos = 0, this->finish_request(StringData("400"));  // Wrong request
-		}
-	}
-	return false;
-}
-
-bool RequestReceiver::parse_content_ranges(better_string range)
-{
-	size_t bytesPos = range.find("bytes ");
-	if (bytesPos != std::string::npos)
-	{
-		std::string rangeInfo = range.substr(bytesPos + 6);
-		size_t dashPos = rangeInfo.find('-');
-    	size_t slashPos = rangeInfo.find('/');
-		if (dashPos != std::string::npos && slashPos != std::string::npos)
-		{
-			std::stringstream startStream(rangeInfo.substr(0, dashPos));
-            std::stringstream endStream(rangeInfo.substr(dashPos + 1, slashPos - dashPos - 1));
-            std::stringstream totalStream(rangeInfo.substr(slashPos + 1));
-
-			startStream >> this->contentStart;
-			endStream >> this->ContentEnd;
-			totalStream >> this->ContentTotal;
-			if (startStream && endStream && totalStream)
-				return true;
 		}
 	}
 	return false;

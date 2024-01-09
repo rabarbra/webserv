@@ -30,6 +30,7 @@ class Request: virtual public IData
 		ChunkedReqState						chunked_state;
 		size_t								remaining_chunk_size;
 		std::string							prev_chunk_size;
+		std::string							contentRange;
 		Logger								log;
 	public:
 		ssize_t								content_length;
@@ -48,12 +49,14 @@ class Request: virtual public IData
 		void								setUrl(const URL& url);
 		void								setDomain(const std::string& domain);
 		void								setPort(const std::string& port);
+		void								setContentRange(std::string contentRange);
 		// Getters
 		better_string						getVersion() const;
 		Method								getMethod() const;
 		std::map<std::string, std::string>	getHeaders() const;
 		URL									getUrl() const;
 		ChunkedReqState						getChunkedState() const;
+		std::string							getContentRange() const;
 		// Public
 		std::string							toString() const;
 		void								removeHeader(const std::string& key);

@@ -48,8 +48,11 @@ class ResponseSender: public ISender
 		bool								_finished;
 		bool								cgi;
 		bool								plain_sent;
+		ssize_t								contentStart;
+		ssize_t								contentEnd;
 		Logger								log;
 		void								_build();
+		bool 								parse_content_ranges(better_string range);
 	public:
 		ResponseSender();
 		ResponseSender(int fd);
