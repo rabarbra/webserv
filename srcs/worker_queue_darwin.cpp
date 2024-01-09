@@ -32,6 +32,17 @@ void Worker::addSocketToQueue(int sock)
 	this->log.INFO << "Added EVFILT_READ for socket " << sock;
 }
 
+void Worker::listenOnlyRead(int socket)
+{
+	struct epoll_event	conn_event;
+
+	conn_event.events = EPOLLIN;
+	conn_event.data.fd = socket;
+	this->log.INFO << "Only EPOLLIN with EPOLL_CTL_MOD: " << socket;
+    if (epoll_ctl(this->queue, EPOLL_CTL_MOD, socket, &conn_event))
+		throw std::runtime_error("Error adding EPOLLIN socket: " + std::string(strerror(errno)));
+}
+
 void Worker::addConnSocketToQueue(int sock)
 {
 	struct kevent	evSet;
