@@ -171,8 +171,8 @@ bool ResponseSender::_send()
 		if (this->contentEnd >= 0)
 		{
 			if (this->contentEnd == 0)
-				this->contentEnd = file_s.tellg();
-			size = this->contentEnd - this->contentStart;
+				this->contentEnd = static_cast<ssize_t>(file_s.tellg()) - 1;
+			size = this->contentEnd - this->contentStart + 1;
 		}
 		else
 			size = file_s.tellg();
@@ -254,25 +254,34 @@ bool ResponseSender::parse_content_ranges(better_string range)
 void ResponseSender::build_file(const std::string& filename)
 {
 	std::stringstream ss(filename);
-	std::stringstream contentRange;
+	std::stringstream buff;
 	better_string range;
 	better_string file;
 	std::getline(ss, range, '|');
 	std::getline(ss, file);
 	range.trim();
 	file.trim();
+	std::ifstream file_s(file.c_str(), std::ios::binary | std::ios::ate);
+	buff << file_s.tellg();
+	this->setHeader("Content-Length", buff.str());
+	this->setHeader("Connection", "keep-alive");
+	this->setHeader("Accept-Ranges", "bytes");
+	buff.str("");
 	if (!range.empty())
 	{
 		if (!this->parse_content_ranges(range))
 		{
 			return ;
 		}
-		std::ifstream file_s(file.c_str(), std::ios::binary | std::ios::ate);
 		if (this->contentEnd == 0)
-			this->contentEnd = file_s.tellg();
-		this->statusCode = "206";
-		contentRange << "bytes " << this->contentStart << "-" << this->contentEnd - 1 << "/" << file_s.tellg();
-		this->setHeader("Content-Range", contentRange.str());
+			this->contentEnd = static_cast<ssize_t>(file_s.tellg()) - 1;
+		this->setStatusCode("206");
+		this->setReason("Partial Content");
+		buff << "bytes " << this->contentStart << "-" << this->contentEnd << "/" << file_s.tellg();
+		this->setHeader("Content-Range", buff.str());
+		buff.str("");
+		buff << this->contentEnd - this->contentStart + 1;
+		this->setHeader("Content-Length", buff.str());
 	}
 	this->setContentTypes(file);
 	this->setFile(file);

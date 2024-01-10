@@ -119,7 +119,7 @@ bool RequestReceiver::parse_completed_lines()
 				catch(const std::exception& e)
 				{
 					// Wrong request
-					return this->_header_pos = 0, this->finish_request("400");
+					return this->_header_pos = 0, this->finish_request("405");
 				}
 				first_line >> pathquery;
 				pathquery.trim();
