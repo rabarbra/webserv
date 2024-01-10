@@ -208,7 +208,7 @@ void CGI::createEnv(Request &req)
 		}
 		envp.push_back("DOCUMENT_ROOT=" + this->documentRoot);
         envp.push_back("QUERY_STRING=" + this->prevURL.getQuery());
-        envp.push_back(("REQUEST_URI=/" + this->requestURI));
+        envp.push_back(("REQUEST_URI=" + URL::concatPaths("/", this->requestURI)));
         envp.push_back("GATEWAY_INTERFACE=CGI/1.1");
         envp.push_back("REDIRECT_STATUS=200");
         envp.push_back("SERVER_NAME=" + this->prevURL.getDomain());
@@ -274,6 +274,7 @@ better_string CGI::pathToScript(better_string cgiPath, const better_string& inde
 	}
 	cgiPath = URL::concatPaths(cgiPath, index);
 	route_path = URL::concatPaths(route_path, index);
+	filePath = URL::concatPaths(filePath, index);
 	better_string result = this->checkRegFile(cgiPath, req);
 	if (
 		result.compare("403") && 
