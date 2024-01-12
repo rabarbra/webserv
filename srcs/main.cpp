@@ -19,5 +19,6 @@ int	main(int ac, char **av, char **ev)
 		log.ERROR << e.what();
 		return (1);
 	}
+	log.INFO << "Finishing";
 	return (0);
 }

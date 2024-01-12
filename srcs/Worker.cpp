@@ -1,5 +1,13 @@
 #include "../includes/Worker.hpp"
 
+bool Worker::running = true;
+
+void Worker::sigint_handler(int signum)
+{
+	if (signum == SIGINT)
+		Worker::running = false;
+}
+
 Worker &Worker::operator=(const Worker &other)
 {
 	if (this != &other)
@@ -9,8 +17,6 @@ Worker &Worker::operator=(const Worker &other)
 
 Worker::~Worker()
 {
-	if (this->queue >= 0)
-		close(this->queue);
 	for (
 		std::map<int, Connection*>::iterator it = this->connections.begin();
 		it != this->connections.end();
@@ -18,7 +24,23 @@ Worker::~Worker()
 	)
 	{
 		if (it->first >= 0)
+		{
 			close(it->first);
+		}
+		if (it->first == it->second->getSocket())
+		{
+			Connection *ptr = it->second;
+			this->connections[it->first] = NULL;
+			if (ptr)
+			{
+				delete ptr;
+				ptr = NULL;
+			}
+		}
+	}
+	if (this->queue >= 0)
+	{
+		close(this->queue);
 	}
 }
 
@@ -138,7 +160,9 @@ void Worker::run()
 	)
 		if (it->first == it->second->getSocket())
 			this->addConnSocketToQueue(it->first);
-	while (1)
+	signal(SIGINT, &Worker::sigint_handler);
+	int counter = 0;
+	while (Worker::running && counter++ < 1000000)
 	{
 		try
 		{
@@ -202,6 +226,7 @@ void Worker::run()
 			this->log.ERROR << e.what();
 		}
 	}
+	this->log.INFO << "Webserv stopping...";
 }
 
 void Worker::removeConnection(int socket)

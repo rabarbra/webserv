@@ -45,6 +45,8 @@ class Worker
 		Worker(const Worker &other);
 		Worker						&operator=(const Worker &other);
 	public:
+		static bool					running;
+		static void					sigint_handler(int signum);
 		~Worker();
 		Worker(char *path_to_conf, char **ev);
 		void						run();

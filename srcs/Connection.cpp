@@ -8,26 +8,8 @@ Connection::Connection(): sock(-1), servers(), worker(NULL)
 
 Connection::~Connection()
 {
-	//this->log.INFO << "DESTRUCTOR";
-	//for (std::map<int, Channel *>::iterator it = this->channels.begin(); it != this->channels.end(); it++)
-	//{
-	//	if (it->second->getHandler())
-	//	{
-	//		for (std::map<int, Channel *>::iterator nxt = it; nxt != this->channels.end(); nxt++)
-	//		{
-	//			if (nxt != it && nxt->second->getHandler() == it->second->getHandler())
-	//				nxt->second->setHandler(NULL);
-	//		}
-	//	}
-	//	this->log.INFO << it->first << " " << it->second << " handler: ";
-		//if (it->second)
-		//	delete it->second;
-		//if (dynamic_cast<RequestReceiver *>(it->second->getReceiver()))
-		//{
-		//	this->channels[it->first] = NULL;
-		//	//this->channels.erase(it->first);
-		//}
-	//}
+	for (std::map<int, Channel *>::iterator it = this->channels.begin(); it != this->channels.end(); it++)
+		delete it->second;
 }
 
 Connection::Connection(const Connection &other):
