@@ -1,25 +1,43 @@
 #include "../includes/Connection.hpp"
 #include "../includes/Worker.hpp"
 
-Connection::Connection(): servers(), sock(-1), worker(NULL)
+Connection::Connection(): sock(-1), servers(), worker(NULL)
 {
 	this->log = Logger("Connection");
 }
 
 Connection::~Connection()
 {
-	//if (this->sock >= 0)
-	//	close(this->sock);
+	//this->log.INFO << "DESTRUCTOR";
+	//for (std::map<int, Channel *>::iterator it = this->channels.begin(); it != this->channels.end(); it++)
+	//{
+	//	if (it->second->getHandler())
+	//	{
+	//		for (std::map<int, Channel *>::iterator nxt = it; nxt != this->channels.end(); nxt++)
+	//		{
+	//			if (nxt != it && nxt->second->getHandler() == it->second->getHandler())
+	//				nxt->second->setHandler(NULL);
+	//		}
+	//	}
+	//	this->log.INFO << it->first << " " << it->second << " handler: ";
+		//if (it->second)
+		//	delete it->second;
+		//if (dynamic_cast<RequestReceiver *>(it->second->getReceiver()))
+		//{
+		//	this->channels[it->first] = NULL;
+		//	//this->channels.erase(it->first);
+		//}
+	//}
 }
 
 Connection::Connection(const Connection &other):
-	servers(), sock(-1), worker(NULL)
+	sock(-1), servers(), worker(NULL)
 {
 	*this = other;
 }
 
 Connection::Connection(Address &addr):
-	servers(), address(addr), sock(-1), worker(NULL)
+	sock(-1), servers(), address(addr), worker(NULL)
 {
 	this->log = Logger("Connection");
 	this->sock = socket(
@@ -64,6 +82,7 @@ Connection::Connection(Address &addr):
 
 Connection &Connection::operator=(const Connection &other)
 {
+	this->log.INFO << "copy for " << this->sock;
 	if (this != &other)
 	{
 		this->servers = other.servers;
@@ -147,10 +166,7 @@ void Connection::receive(int fd)
 			//this->log.INFO << "receiving: R_ERROR";
 			this->channels[fd]->getSender()->setData(this->channels[fd]->getReceiver()->produceData());
 			this->channels[fd]->send();
-			delete this->channels[fd];
-			this->channels.erase(fd);
-			close(fd);
-			//this->worker->deleteSocketFromQueue(fd);
+			this->deleteChannel(fd);
 			return ;
 			break;
 		case R_REQUEST:
@@ -159,9 +175,17 @@ void Connection::receive(int fd)
 			StringData error("");
 			Request &req = dynamic_cast<RequestReceiver *>(this->channels[fd]->getReceiver())->getRequest();
 			if (this->servers.find(req.getUrl().getDomain()) != this->servers.end())
+			{
 				this->channels[fd]->setHandler(this->servers[req.getUrl().getDomain()].route(req, error));
+				dynamic_cast<ResponseSender *>(this->channels[fd]->getSender())->setErrorPages(this->servers[req.getUrl().getDomain()].getErrorPages());
+				dynamic_cast<RequestReceiver *>(this->channels[fd]->getReceiver())->setMaxBodySize(this->servers[req.getUrl().getDomain()].getMaxBodySize());
+			}
 			else
+			{
 				this->channels[fd]->setHandler(this->servers["default"].route(req, error));
+				dynamic_cast<ResponseSender *>(this->channels[fd]->getSender())->setErrorPages(this->servers["default"].getErrorPages());
+				dynamic_cast<RequestReceiver *>(this->channels[fd]->getReceiver())->setMaxBodySize(this->servers["default"].getMaxBodySize());
+			}
 			if (!error.empty())
 				this->channels[fd]->getHandler()->acceptData(error);
 			else
@@ -242,28 +266,15 @@ void Connection::send(int fd)
 		if (this->channels[fd]->senderFinished())
 		{
 			this->log.INFO << this << " sender finished";
-			CGISender *cgiSender = dynamic_cast<CGISender *>(this->channels[fd]->getSender());
-			CGIHandler *cgiHandler = dynamic_cast<CGIHandler *>(this->channels[fd]->getHandler());
-			if (cgiSender)
+			if (dynamic_cast<CGISender *>(this->channels[fd]->getSender()))
 			{
+				CGIHandler *cgiHandler = dynamic_cast<CGIHandler *>(this->channels[fd]->getHandler());
 				cgiHandler->removeTmpFile();
 				this->worker->listenOnlyRead(cgiHandler->getFd());
 				return ;
 			}
 			this->log.INFO << "Removing channel";
-			if (cgiHandler)
-			{
-				int cgiFd = cgiHandler->getFd();
-				this->worker->deleteSocketFromQueue(cgiFd);
-				close(cgiFd);
-				delete this->channels[cgiFd];
-				this->channels.erase(cgiFd);
-				this->worker->removeConnection(cgiFd);
-			}
-			delete this->channels[fd];
-			this->channels.erase(fd);
-			this->worker->deleteSocketFromQueue(fd);
-			close (fd);
+			this->deleteChannel(fd);
 		}
 	}
 }
@@ -276,5 +287,28 @@ bool Connection::isCGI(int socket)
 		dynamic_cast<RequestReceiver *>(
 			this->channels[socket]->getReceiver()
 		) == NULL
-	); 
+	);
+}
+
+void Connection::deleteChannel(int fd)
+{
+	this->worker->deleteSocketFromQueue(fd);
+	this->log.INFO << "Removing socket " << fd << " from conn with sock " << this->sock;
+	close(fd);
+	this->worker->removeConnection(fd);
+	if (this->channels.find(fd) == this->channels.end())
+		return ;
+	if (dynamic_cast<RequestReceiver *>(this->channels[fd]->getReceiver()))
+	{
+		IHandler *handler = this->channels[fd]->getHandler();
+		if (handler && dynamic_cast<CGIHandler *>(handler))
+		{
+			int cgiFd = dynamic_cast<CGIHandler *>(handler)->getFd();
+			this->log.INFO << "Removing CGI socket " << cgiFd;
+			if (cgiFd >= 0)
+				this->deleteChannel(cgiFd);
+		}
+	}
+	delete this->channels[fd];
+	this->channels.erase(fd);
 }

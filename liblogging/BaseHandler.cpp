@@ -9,7 +9,10 @@ BaseHandler::BaseHandler(t_lvl lvl, t_lvl limit, std::string name): lvl(lvl), li
 BaseHandler::~BaseHandler()
 {
 	if (this->copy)
+	{
 		delete this->copy;
+		this->copy = NULL;	
+	}
 }
 
 BaseHandler::BaseHandler(const BaseHandler &other): lvl(_INFO), limit(_INFO), first(true), copy(NULL)

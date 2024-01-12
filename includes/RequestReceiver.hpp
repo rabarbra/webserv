@@ -19,18 +19,21 @@ class RequestReceiver: public IReceiver
 		bool								headersOk;
 		StringData							error_code;
 		Request								req;
+		ssize_t								max_body_size;
+		ssize_t								received;
 		Logger								log;
 		std::string							tmp_file;
 		bool								finish_request(const std::string& code);
 		bool								receive_body();
 		bool								parse_completed_lines();
-		bool								parse_content_ranges(const better_string range);
 	public:
 		RequestReceiver();
 		RequestReceiver(int	fd);
 		~RequestReceiver();
 		RequestReceiver(const RequestReceiver &other);
 		RequestReceiver						&operator=(const RequestReceiver &other);
+		// Setters
+		void								setMaxBodySize(ssize_t maxBodySize);
 		// Getters
 		better_string						getBody() const;
 		std::string							getTempFile() const;
@@ -40,7 +43,6 @@ class RequestReceiver: public IReceiver
 		bool								receive_headers();
 		// IReceiver impl
 		void								consume();
-		bool								ready();
 		ReceiverState						getState() const;
 		IData								&produceData();
 };

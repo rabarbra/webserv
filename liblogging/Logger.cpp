@@ -27,10 +27,10 @@ Logger &Logger::operator=(const Logger &other)
 	{
 		this->lvl = other.lvl;
 		this->loggerName = other.loggerName;
-		this->DEBUG = other.DEBUG;
-		this->INFO = other.INFO;
-		this->WARN = other.WARN;
-		this->ERROR = other.ERROR;
+		this->DEBUG = BaseHandler(_DEBUG, this->lvl, this->loggerName);
+		this->INFO = BaseHandler(_INFO, this->lvl, this->loggerName);
+		this->WARN = BaseHandler(_WARN, this->lvl, this->loggerName);
+		this->ERROR = BaseHandler(_ERROR, this->lvl, this->loggerName);
 	}
 	return *this;
 }

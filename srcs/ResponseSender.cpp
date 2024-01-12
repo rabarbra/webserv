@@ -253,6 +253,7 @@ bool ResponseSender::parse_content_ranges(better_string range)
 
 void ResponseSender::build_file(const std::string& filename)
 {
+	this->log.INFO << "file: " << filename;
 	std::stringstream ss(filename);
 	std::stringstream buff;
 	better_string range;
@@ -299,7 +300,7 @@ void ResponseSender::build_error(const std::string& status_code)
 	int statusInt = std::atoi(status_code.c_str());
 	std::map<int , std::string>::iterator it = this->error_pages.find(statusInt);
 	if (it != this->error_pages.end())
-		return (this->build_file(this->error_pages[statusInt]));
+		return (this->build_file("|" + this->error_pages[statusInt]));
 	this->setContentTypes("error.html");
 	std::fstream	error_page("static/error.html");
 	if (error_page.is_open())
