@@ -20,7 +20,7 @@ class Worker
 {
 	private:
 		Config						config;
-		std::map<int, Connection>	connections;
+		std::map<int, Connection*>	connections;
 		Logger						log;
 		int							queue;
     	char						**ev;
@@ -36,24 +36,26 @@ class Worker
 		int							getEventSock(int num_event);
 		EventType					getEventType(int num_event);
 		// Private
-		void						addConnSocketToQueue(int sock);
+		void						addConnSocketToQueue(int socket);
 		void						create_connections();
-		bool						is_socket_accepting_connection(int sock);
-		void						accept_connection(int sock);
+		bool						is_socket_accepting_connection(int socket);
+		void						accept_connection(int socket);
 		// Canonical form
 		Worker();
 		Worker(const Worker &other);
 		Worker						&operator=(const Worker &other);
 	public:
+		static bool					running;
+		static void					sigint_handler(int signum);
 		~Worker();
 		Worker(char *path_to_conf, char **ev);
 		void						run();
-		void						addSocketToQueue(int sock);
-		void						deleteSocketFromQueue(int sock);
+		void						addSocketToQueue(int socket);
+		void						deleteSocketFromQueue(int socket);
 		void						listenWriteAvailable(int socket);
 		void						listenOnlyRead(int socket);
-		void						addConnection(int fd, Connection *conn);
-		void						removeConnection(int fd);
+		void						addConnection(int socket, Connection *conn);
+		void						removeConnection(int socket);
 };
 
 #endif

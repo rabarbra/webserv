@@ -13,10 +13,10 @@ class Worker;
 class Connection
 {
 	private:
+		int								sock;
 		std::map<std::string, Server>	servers;
 		std::map<int, Channel*>			channels; // Connection channels: key - socket for coordinator endpoint of this channel
 		Address							address;
-		int								sock;
 		Logger							log;
 		Worker							*worker;
 	public:
@@ -35,5 +35,6 @@ class Connection
 		void							receive(int fd);
 		void							send(int fd);
 		bool							isCGI(int socket);
+		void							deleteChannel(int fd);
 };
 #endif

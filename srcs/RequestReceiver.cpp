@@ -1,11 +1,11 @@
 #include "../includes/RequestReceiver.hpp"
 
-RequestReceiver::RequestReceiver(int fd): _fd(fd), state(R_WAITING), _header_pos(0), headersOk(false)
+RequestReceiver::RequestReceiver(int fd): _fd(fd), state(R_WAITING), _header_pos(0), headersOk(false), max_body_size(-1), received(0)
 {
 	this->log = Logger("RequestReceiver");
 }
 
-RequestReceiver::RequestReceiver(): _fd(-1), state(R_WAITING), _header_pos(0), headersOk(false)
+RequestReceiver::RequestReceiver(): _fd(-1), state(R_WAITING), _header_pos(0), headersOk(false), max_body_size(-1), received(0)
 {
 	this->log = Logger("RequestReceiver");
 }
@@ -30,9 +30,18 @@ RequestReceiver &RequestReceiver::operator=(const RequestReceiver &other)
 		this->req = other.req;
 		this->headersOk = other.headersOk;
 		this->error_code = other.error_code;
+		this->max_body_size = other.max_body_size;
+		this->received = other.received;
 		this->log = other.log;
 	}
 	return *this;
+}
+
+// Setters
+
+void RequestReceiver::setMaxBodySize(ssize_t maxBodySize)
+{
+	this->max_body_size = maxBodySize;
 }
 
 // Getters
@@ -67,6 +76,10 @@ int RequestReceiver::getFd() const
 bool RequestReceiver::receive_body()
 {
 	ssize_t bytes_read = recv(this->_fd, this->req.buff, this->req.buff_size, 0);
+	this->received += bytes_read;
+	this->log.INFO << "received: " << this->received << ", body size: " << this->max_body_size;
+	if (this->max_body_size >= 0 && this->received > this->max_body_size)
+		return this->finish_request("413");
 	if (bytes_read < 0)
 		throw std::runtime_error("Error receiving request: " + std::string(strerror(errno)));
 	this->req.body_start = 0;
@@ -128,7 +141,7 @@ bool RequestReceiver::parse_completed_lines()
 				this->req.setUrl(URL(pathquery));
 				first_line >> key;
 				key.trim();
-				if (key.empty())
+				if (key.empty() || key != "HTTP/1.1")
 					return this->_header_pos = 0, this->finish_request(StringData("400")); // Wrong request
 				this->req.setVersion(key);
 				// First line of request processed
@@ -239,6 +252,7 @@ bool RequestReceiver::receive_headers()
 		}
 		this->headersOk = true;
 		this->req.body_start = this->_header_pos;
+		this->received = this->req.offset - this->req.body_start;
 		return true;
 	}
 	if (this->req.offset == Request::buff_size && !this->headersOk)
@@ -265,6 +279,13 @@ void RequestReceiver::consume()
 
 IData &RequestReceiver::produceData()
 {
+	this->log.INFO << "body size: " << this->max_body_size << ", received: " << this->received;
+	if (this->max_body_size >= 0 && this->received > this->max_body_size)
+	{
+		this->finish_request("413");
+		this->state = R_FINISHED;
+		return this->error_code;
+	}
 	switch (this->state)
 	{
 		case R_ERROR:

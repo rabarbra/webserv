@@ -184,7 +184,7 @@ bool ResponseSender::_send()
 			file_s.seekg(this->sent + this->contentStart - this->_plain.size(), std::ios::beg);
 		else
 			file_s.seekg(this->sent - this->_plain.size(), std::ios::beg);
-		char *buffer = new char[chunk_size];
+		char buffer[chunk_size];
 		if (file_s.is_open() && this->sent < this->_plain.size() + size && !file_s.eof())
 		{
 			this->log.INFO <<"Sent: " << this->sent << ", left: " << left;
@@ -192,7 +192,7 @@ bool ResponseSender::_send()
 			int res = send(this->fd, buffer, file_s.gcount(), SEND_FLAGS);
 			if (res < 0)
 			{
-				delete []buffer;
+				//delete []buffer;
 				file_s.close();
 				return false;
 			}
@@ -200,12 +200,12 @@ bool ResponseSender::_send()
 			left -= res;
 			if (this->sent < this->_plain.size() + size && !file_s.eof())
 			{
-				delete []buffer;
+				//delete []buffer;
 				file_s.close();
 				return false;
 			}
 		}
-		delete []buffer;
+		//delete []buffer;
 		file_s.close();
 	}
 	return true;
@@ -253,6 +253,7 @@ bool ResponseSender::parse_content_ranges(better_string range)
 
 void ResponseSender::build_file(const std::string& filename)
 {
+	this->log.INFO << "file: " << filename;
 	std::stringstream ss(filename);
 	std::stringstream buff;
 	better_string range;
@@ -299,7 +300,7 @@ void ResponseSender::build_error(const std::string& status_code)
 	int statusInt = std::atoi(status_code.c_str());
 	std::map<int , std::string>::iterator it = this->error_pages.find(statusInt);
 	if (it != this->error_pages.end())
-		return (this->build_file(this->error_pages[statusInt]));
+		return (this->build_file("|" + this->error_pages[statusInt]));
 	this->setContentTypes("error.html");
 	std::fstream	error_page("static/error.html");
 	if (error_page.is_open())

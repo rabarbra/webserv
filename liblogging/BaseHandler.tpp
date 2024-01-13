@@ -28,8 +28,9 @@ BaseHandler &BaseHandler::operator<<(T msg)
 		return *this;
 	if (!this->copy)
 	{
-		this->copy = new BaseHandler(*this);
+		this->copy = new BaseHandler(this->lvl, this->limit, this->name);
 		this->copy->first = false;
+		this->copy->copy = NULL;
 	}
 	return *copy;
 }
