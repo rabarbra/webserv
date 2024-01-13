@@ -7,10 +7,8 @@ Channel::Channel(): sender(NULL), receiver(NULL), handler(NULL)
 
 Channel::~Channel()
 {
-	this->log.INFO << "destructor " << this << " handler: " << this->handler;
 	if (this->receiver && (dynamic_cast<RequestReceiver *>(this->receiver)) && this->handler)
 	{
-		this->log.INFO << "removing handler"; 
 		delete this->handler;
 		this->handler = NULL;
 	}

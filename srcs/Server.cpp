@@ -91,7 +91,7 @@ std::map<int, std::string> Server::getErrorPages() const
 
 // Private
 
-Route &Server::select_route(const URL &url)
+Route &Server::select_route(const Request &req)
 {
 	size_t		max_size = 0;
 	size_t		curr_size;
@@ -102,7 +102,7 @@ Route &Server::select_route(const URL &url)
 		it++
 	)
 	{
-		curr_size = it->match(url.getPath());
+		curr_size = it->match(req.getUrl().getPath());
 		if (curr_size > max_size)
 		{
 			max_size = curr_size;
@@ -110,8 +110,11 @@ Route &Server::select_route(const URL &url)
 		}
 	}
 	if (!max_size)
-		throw std::runtime_error("No matching route!");
-	this->log.INFO << "Selected route: " << res->getPath() << " " << res->getFileExt();
+		throw std::runtime_error(req.getUrl().getFullPath() + ": no matching route!");
+	this->log.INFO
+		<< CYAN << getMethodString(req.getMethod()) << RESET
+		<< " " << req.getUrl().getDomain() << ":" << req.getUrl().getPort() << req.getUrl().getFullPath()
+		<< "\t=> " MAGENTA << res->getPath() << " " << res->getFileExt() << RESET;
 	return *res;
 }
 
@@ -131,7 +134,7 @@ void Server::printRoutes(std::string name)
 		switch (r)
 		{
 			case PATH_:
-				route_type = "path:\t";
+				route_type = "static:\t";
 				break;
 			case REDIRECTION_:
 				route_type = "redir:\t";
@@ -147,8 +150,9 @@ void Server::printRoutes(std::string name)
 			name = this->hosts.begin()->first + ":" + this->hosts.begin()->second;
 		this->log.INFO
 			<< route_type
-			<< "http://" << name << this->routes[i].getPath()
-			<< (this->routes[i].getRedirectUrl().size() ? "\n\t\t\t\t=> " + this->routes[i].getRedirectUrl() : "");
+			<< MAGENTA << "http://" << name << this->routes[i].getPath() << " " << this->routes[i].getFileExt() << RESET
+			<< (this->routes[i].getRedirectUrl().size() ? "\t=> " + this->routes[i].getRedirectUrl() : "")
+			<< (this->routes[i].getType() == CGI_ ? " " + this->routes[i].getCGIExt() : "");
 	}
 }
 
@@ -190,5 +194,5 @@ std::string Server::printHosts()
 IHandler *Server::route(IData &request, StringData &error)
 {
 	Request &req = dynamic_cast<Request&>(request);
-	return this->select_route(req.getUrl()).route(request, error);
+	return this->select_route(req).route(request, error);
 }

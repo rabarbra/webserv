@@ -27,7 +27,7 @@ Worker::~Worker()
 		{
 			close(it->first);
 		}
-		if (it->first == it->second->getSocket())
+		if (it->second && it->first == it->second->getSocket())
 		{
 			Connection *ptr = it->second;
 			this->connections[it->first] = NULL;
@@ -142,9 +142,9 @@ void Worker::accept_connection(int socket)
 		#endif
 		this->addSocketToQueue(conn_fd);
 		this->connections[conn_fd] = this->connections[socket];
-		this->log.INFO
-			<< this->connections[socket]->getAddress().getHost()
-			<< " (sock " <<  socket << ") accepted client " << conn_fd;
+		//this->log.INFO
+		//	<< this->connections[socket]->getAddress().getHost()
+		//	<< " (sock " <<  socket << ") accepted client " << conn_fd;
 	}
 }
 
@@ -161,8 +161,7 @@ void Worker::run()
 		if (it->first == it->second->getSocket())
 			this->addConnSocketToQueue(it->first);
 	signal(SIGINT, &Worker::sigint_handler);
-	int counter = 0;
-	while (Worker::running && counter++ < 1000000)
+	while (Worker::running)
 	{
 		try
 		{
@@ -174,7 +173,7 @@ void Worker::run()
 				event_sock = this->getEventSock(i);
 				if (this->connections.find(event_sock) == this->connections.end())
 				{
-					this->log.INFO << "Trash socket: " << event_sock;
+					//this->log.INFO << "Trash socket: " << event_sock;
 					//this->deleteSocketFromQueue(event_sock);
 					//this->log.INFO << close(event_sock);
 					continue ;
@@ -182,14 +181,14 @@ void Worker::run()
 				switch (this->getEventType(i))
 				{
 					case NEW_CONN:
-						this->log.INFO << "NEW conn " << event_sock;
+						//this->log.INFO << "NEW conn " << event_sock;
 						this->accept_connection(event_sock);
 						break;
 					case EOF_CONN:
-						this->log.INFO << "EOF conn " << event_sock;
+						//this->log.INFO << "EOF conn " << event_sock;
 						if (this->connections.find(event_sock) != this->connections.end() && this->connections[event_sock] && this->connections[event_sock]->isCGI(event_sock))
 						{
-							this->log.INFO << "IS CGI: " << event_sock;
+							//this->log.INFO << "IS CGI: " << event_sock;
 							this->connections[event_sock]->receive(event_sock);
 						}
 						else
@@ -226,7 +225,6 @@ void Worker::run()
 			this->log.ERROR << e.what();
 		}
 	}
-	this->log.INFO << "Webserv stopping...";
 }
 
 void Worker::removeConnection(int socket)

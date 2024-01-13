@@ -14,7 +14,7 @@ void Worker::addSocketToQueue(int socket)
 
 	conn_event.events =  EPOLLIN;
 	conn_event.data.fd = socket;
-	this->log.INFO << "Adding EPOLLIN with EPOLL_CTL_ADD: " << socket;
+	//this->log.INFO << "Adding EPOLLIN with EPOLL_CTL_ADD: " << socket;
     if (epoll_ctl(this->queue, EPOLL_CTL_ADD, socket, &conn_event))
 		throw std::runtime_error("Error adding EPOLLIN socket: " + std::string(strerror(errno)));
 }
@@ -25,7 +25,7 @@ void Worker::addConnSocketToQueue(int socket)
 
 	conn_event.events =  EPOLLIN | EPOLLET;
 	conn_event.data.fd = socket;
-	this->log.INFO << "Adding EPOLLIN | EPOLLET with EPOLL_CTL_ADD: " << socket;
+	//this->log.INFO << "Adding EPOLLIN | EPOLLET with EPOLL_CTL_ADD: " << socket;
     if (epoll_ctl(this->queue, EPOLL_CTL_ADD, socket, &conn_event))
 		throw std::runtime_error("Error adding EPOLLIN socket: " + std::string(strerror(errno)));
 }
@@ -36,7 +36,7 @@ void Worker::listenWriteAvailable(int socket)
 
 	conn_event.events = EPOLLIN | EPOLLOUT;
 	conn_event.data.fd = socket;
-	this->log.INFO << "Adding EPOLLOUT with EPOLL_CTL_MOD: " << socket;
+	//this->log.INFO << "Adding EPOLLOUT with EPOLL_CTL_MOD: " << socket;
     if (epoll_ctl(this->queue, EPOLL_CTL_MOD, socket, &conn_event))
 		throw std::runtime_error("Error adding EPOLLOUT socket: " + std::string(strerror(errno)));
 }
@@ -47,14 +47,14 @@ void Worker::listenOnlyRead(int socket)
 
 	conn_event.events = EPOLLIN;
 	conn_event.data.fd = socket;
-	this->log.INFO << "Only EPOLLIN with EPOLL_CTL_MOD: " << socket;
+	//this->log.INFO << "Only EPOLLIN with EPOLL_CTL_MOD: " << socket;
     if (epoll_ctl(this->queue, EPOLL_CTL_MOD, socket, &conn_event))
 		throw std::runtime_error("Error adding EPOLLIN socket: " + std::string(strerror(errno)));
 }
 
 void Worker::deleteSocketFromQueue(int socket)
 {
-	this->log.INFO << "Removing with EPOLL_CTL_DEL: " << socket;
+	//this->log.INFO << "Removing with EPOLL_CTL_DEL: " << socket;
 	if (epoll_ctl(this->queue, EPOLL_CTL_DEL, socket, NULL))
 		throw std::runtime_error("Error with EPOLL_CTL_DEL: " + std::string(strerror(errno)));
 }
@@ -73,10 +73,7 @@ EventType Worker::getEventType(int num_event)
 {
 	if ((evList[num_event].events & EPOLLERR)
 		|| (evList[num_event].events & EPOLLHUP))
-	{
-		this->log.INFO << "EOF " << std::boolalpha << (evList[num_event].events & EPOLLIN);
 		return EOF_CONN;
-	}
 	if (this->is_socket_accepting_connection(this->getEventSock(num_event)))
 		return NEW_CONN;
 	if ((evList[num_event].events & EPOLLOUT) && (evList[num_event].events & EPOLLIN))
