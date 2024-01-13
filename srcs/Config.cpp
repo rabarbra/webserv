@@ -296,6 +296,7 @@ void	Config::parseErrorPage(Server &server, std::stringstream &ss)
 {
 	std::string word;
 	std::string path;
+	struct stat st;
 	std::vector<int> status_codes;
 
 	while (ss >> word)
@@ -315,7 +316,11 @@ void	Config::parseErrorPage(Server &server, std::stringstream &ss)
 		}
 	}
 	for (long unsigned int i = 0; i < status_codes.size(); i++)
+	{
+		if (stat(path.c_str(), &st) != 0)
+			throw std::runtime_error("Wrong error page: " + path);
 		server.setErrorPage(status_codes[i], path);
+	}
 }
 
 
@@ -411,7 +416,7 @@ void Config::parseOption(Route &route, std::string &param)
 						&& word.compare("307") 
 						&& word.compare("308"))
 					throw std::runtime_error("invalid redirection code\n");
-				route.setRedirectUrl(word);
+				route.setRedirectStatusCode(word);
 				ss >> word;
 			}
 			checkSemiColon(word, "redirect url");

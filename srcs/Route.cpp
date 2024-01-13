@@ -65,6 +65,11 @@ void Route::setRedirectUrl(std::string redirect_url)
 	this->redirect_url = redirect_url;
 }
 
+void Route::setRedirectStatusCode(std::string code)
+{
+	this->redirectStatusCode = code;
+}
+
 void Route::setDirListing(bool dir_listing)
 {
 	this->dir_listing = dir_listing;
