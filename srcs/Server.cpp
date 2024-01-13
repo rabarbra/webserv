@@ -113,7 +113,7 @@ Route &Server::select_route(const Request &req)
 		throw std::runtime_error(req.getUrl().getFullPath() + ": no matching route!");
 	this->log.INFO
 		<< CYAN << getMethodString(req.getMethod()) << RESET
-		<< " " << req.getUrl().getDomain() << ":" << req.getUrl().getPort() << req.getUrl().getFullPath()
+		<< " " << req.getUrl().getDomain() << ":" << req.getUrl().getPort() << req.getUrl().getPath()
 		<< "\t=> " MAGENTA << res->getPath() << " " << res->getFileExt() << RESET;
 	return *res;
 }

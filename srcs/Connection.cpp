@@ -121,7 +121,7 @@ void Connection::addServer(Server server)
 				<< " added as " << MAGENTA << names[i] << RESET
 				<< " to " << this->address.getHost();
 			this->servers[names[i]] = server;
-			server.printRoutes(names[i]);
+			server.printRoutes(names[i] + ":" + this->getAddress().getPort());
 		}
 	}
 }
