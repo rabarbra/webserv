@@ -59,10 +59,7 @@ Connection::Connection(Address &addr):
 			+ std::string(strerror(errno))
 		);
 	}
-	this->log.INFO
-		<< "created "
-		CYAN << addr.getHost() << RESET
-		<< ", socket: " << sock;
+	this->log.INFO << "listening " << CYAN << addr.getHost() << RESET;
 }
 
 Connection &Connection::operator=(const Connection &other)
