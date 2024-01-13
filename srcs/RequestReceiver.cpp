@@ -77,7 +77,7 @@ bool RequestReceiver::receive_body()
 {
 	ssize_t bytes_read = recv(this->_fd, this->req.buff, this->req.buff_size, 0);
 	this->received += bytes_read;
-	this->log.INFO << "received: " << this->received << ", body size: " << this->max_body_size;
+	//this->log.INFO << "received: " << this->received;
 	if (this->max_body_size >= 0 && this->received > this->max_body_size)
 		return this->finish_request("413");
 	if (bytes_read < 0)
@@ -132,17 +132,24 @@ bool RequestReceiver::parse_completed_lines()
 				catch(const std::exception& e)
 				{
 					// Wrong request
+					this->log.INFO << RED << key << RESET << " unknown method";
 					return this->_header_pos = 0, this->finish_request("405");
 				}
 				first_line >> pathquery;
 				pathquery.trim();
 				if (pathquery.empty())
+				{
+					this->log.INFO << RED << getMethodString(this->req.getMethod()) << RESET << " request path is missing";
 					return this->_header_pos = 0, this->finish_request(StringData("400")); // Wrong request
+				}
 				this->req.setUrl(URL(pathquery));
 				first_line >> key;
 				key.trim();
 				if (key.empty() || key != "HTTP/1.1")
+				{
+					this->log.INFO << RED << getMethodString(this->req.getMethod()) << RESET << " unsupportet HTTP version: " << key;
 					return this->_header_pos = 0, this->finish_request(StringData("400")); // Wrong request
+				}
 				this->req.setVersion(key);
 				// First line of request processed
 				this->_header_pos += line.size() + 1;
@@ -164,7 +171,10 @@ bool RequestReceiver::parse_completed_lines()
 				std::getline(s_line, key, ':');
 				key.trim();
 				if (key.empty())
+				{
+					this->log.INFO << RED << getMethodString(this->req.getMethod()) << RESET << " wrong header string: no key";
 					return this->_header_pos = 0, this->finish_request("400"); // Wrong request
+				}
 				std::getline(s_line, value);
 				value.trim();
 				this->req.setHeader(key, value);
@@ -185,7 +195,10 @@ bool RequestReceiver::parse_completed_lines()
 				this->_header_pos += line.size() + 1;
 			}
 			else
+			{
+				this->log.INFO << RED << getMethodString(this->req.getMethod()) << RESET << " wrong header string";
 				return this->_header_pos = 0, this->finish_request(StringData("400"));  // Wrong request
+			}
 		}
 	}
 	return false;
@@ -214,13 +227,13 @@ bool RequestReceiver::receive_headers()
 	if (bytes_read < 0)
 	{
 		this->state = R_ERROR;
-		this->log.INFO << "received -1: " << strerror(errno);
+		this->log.ERROR << "received -1 for " << req.getUrl().getFullPath() << ": " << strerror(errno);
 		this->error_code = StringData("500");
 		return false;
 	}
 	if (bytes_read == 0)
 	{
-		this->log.INFO << "received 0 for: " << this->req.getUrl().getPath();
+		//this->log.INFO << "received 0 for: " << this->req.getUrl().getPath();
 		this->state = R_FINISHED;
 		if (this->req.getUrl().getPath().empty())
 			this->state = R_CLOSED;
@@ -241,13 +254,25 @@ bool RequestReceiver::receive_headers()
 		if (headers.find("Transfer-Encoding") != headers.end())
 		{
 			if (!better_string(headers["Transfer-Encoding"]).ends_with("chunked"))
+			{
+				this->log.INFO
+					<< RED << getMethodString(this->req.getMethod()) << RESET
+					<< " " << req.getUrl().getDomain() << ":" << req.getUrl().getPort() << req.getUrl().getFullPath()
+					<< " unsupported Transfer-Encoding: " << headers["Transfer-Encoding"];
 				return this->finish_request("400");
+			}
 			this->req.content_length = -1;
 		}
 		else if (headers.find("Content-Length") != headers.end())
 		{
 			if (!better_string(headers["Content-Length"]).all_are(&(std::isdigit)))
+			{
+				this->log.INFO
+					<< RED << getMethodString(this->req.getMethod()) << RESET
+					<< " " << req.getUrl().getDomain() << ":" << req.getUrl().getPort() << req.getUrl().getFullPath()
+					<< " wrong Content-Length value: " << headers["Content-Length"];
 				return this->finish_request("400");
+			}
 			std::stringstream(headers["Content-Length"]) >> this->req.content_length;
 		}
 		this->headersOk = true;
@@ -256,7 +281,13 @@ bool RequestReceiver::receive_headers()
 		return true;
 	}
 	if (this->req.offset == Request::buff_size && !this->headersOk)
+	{
+		this->log.INFO
+			<< RED << getMethodString(this->req.getMethod()) << RESET
+			<< " " << req.getUrl().getDomain() << ":" << req.getUrl().getPort() << req.getUrl().getFullPath()
+			<< " entity too large";
 		return this->finish_request("413");
+	}
 	return false;
 }
 
@@ -279,9 +310,12 @@ void RequestReceiver::consume()
 
 IData &RequestReceiver::produceData()
 {
-	this->log.INFO << "body size: " << this->max_body_size << ", received: " << this->received;
 	if (this->max_body_size >= 0 && this->received > this->max_body_size)
 	{
+		this->log.INFO
+			<< RED << getMethodString(this->req.getMethod()) << RESET
+			<< " " << req.getUrl().getDomain() << ":" << req.getUrl().getPort() << req.getUrl().getFullPath()
+			<< " maximum body size of " << this->max_body_size << " exceeded";
 		this->finish_request("413");
 		this->state = R_FINISHED;
 		return this->error_code;

@@ -344,7 +344,7 @@ IHandler *Route::route(IData &request, StringData &error)
 		);
 	else
 	{
-		this->logger.INFO << "no route found";
+		//this->logger.INFO << "no route found";
 		error = StringData("500");
 	}
 	return NULL;

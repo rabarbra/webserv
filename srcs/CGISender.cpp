@@ -43,7 +43,6 @@ int CGISender::getFd() const
 
 void CGISender::setData(IData &data)
 {
-	this->log.INFO << "accepting data"; 
 	try
 	{
 		StringData &d = dynamic_cast<StringData&>(data);
@@ -85,7 +84,7 @@ bool CGISender::finished()
 
 void CGISender::sendData()
 {
-	this->log.INFO << "TMP FILE: " << this->tmp_file;
+	//this->log.INFO << "TMP FILE: " << this->tmp_file;
 	if (!this->tmp_file.empty())
 	{
 		std::ifstream	tmp(this->tmp_file.c_str(), std::ifstream::binary | std::ifstream::ate);
@@ -100,10 +99,9 @@ void CGISender::sendData()
 		ssize_t sent = send(this->fd, buff, to_sent, SEND_FLAGS);
 		if (sent > 0)
 			this->pos += sent;
-		this->log.INFO << this << " SENT TO CGI: " << sent << ", pos: " << this->pos << "/" << file_size << ", file: " << this->tmp_file;
+		//this->log.INFO << this << " SENT TO CGI: " << sent << ", pos: " << this->pos << "/" << file_size << ", file: " << this->tmp_file;
 		if (this->pos >= file_size)
 		{
-			this->log.INFO << this << " SENT EVERYTHING";
 			this->tmp_file.clear();
 			this->ready = false;
 			this->_finished = true;

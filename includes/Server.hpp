@@ -19,7 +19,7 @@ class Server: public IRouter
 		std::map<int, std::string>				error_pages; // Key - status code, value - path to error page file for this status code
 		long long								max_body_size;
 		Logger									log;                  
-		Route									&select_route(const URL &url);
+		Route									&select_route(const Request &req);
 		char									**env;
 	public:
 		Server();

@@ -37,8 +37,6 @@ CGIHandler::~CGIHandler()
 {
 	if (!this->tmp_file.empty())
 		std::remove(this->tmp_file.c_str());
-	//if (this->fd > 0)
-	//	close(this->fd);
 }
 
 CGIHandler::CGIHandler(const CGIHandler &other) : fd(-1), pid(-1)
@@ -109,7 +107,7 @@ void CGIHandler::configureCGI(Request &req)
 		this->dataForResponse = StringData("501");
 		return ;
 	}
-	this->log.INFO << "CGI SOCKET: " << sv[0];
+	//this->log.INFO << "CGI SOCKET: " << sv[0];
 	this->fd = sv[0];
 	fcntl(this->fd, F_SETFL, O_NONBLOCK, FD_CLOEXEC);
 	#ifdef __APPLE__
@@ -135,7 +133,7 @@ void CGIHandler::configureCGI(Request &req)
 
 void CGIHandler::removeTmpFile()
 {
-	this->log.INFO << this << " removing " << this->tmp_file;
+	//this->log.INFO << this << " removing " << this->tmp_file;
 	this->dataForResponse = StringData("", D_NOTHING);
 	if (!this->tmp_file.empty())
 		std::remove(this->tmp_file.c_str());
@@ -170,7 +168,7 @@ IData &CGIHandler::produceData()
 		waitpid(this->pid, &status, WNOHANG);
 		if (WIFEXITED(status) && WEXITSTATUS(status))
 		{
-			this->log.INFO << "cgi finished with status code: " << WEXITSTATUS(status);
+			//this->log.INFO << "cgi finished with status code: " << WEXITSTATUS(status);
 			this->dataForResponse = StringData("500");
 		}
 		else if (!this->tmp_file.empty())
@@ -184,7 +182,6 @@ void CGIHandler::acceptData(IData &data)
 	try
 	{
 		Request &req = dynamic_cast<Request &>(data);
-		this->log.INFO << "accepting Request " << req.getUrl().getFullPath();
 		if (req.content_length && !req.isBodyReceived())
 		{
 			if (this->tmp_file.empty())
@@ -203,7 +200,6 @@ void CGIHandler::acceptData(IData &data)
 		try
 		{
 			StringData rsp = dynamic_cast<StringData &>(data);
-			this->log.INFO << "accepting StringData of type " << rsp.getType();
 			this->dataForResponse = rsp;
 			//kill(this->pid, SIGINT);
 			//this->pid = -1;
