@@ -175,17 +175,30 @@ void		Server::printServer() {
 std::string Server::printHosts()
 {
 	std::stringstream res;
-	res << "<";
-	for (std::multimap<std::string, std::string>::iterator it = this->hosts.begin(); it != this->hosts.end(); it++)
+	res << "{ ";
+	for (
+		std::multimap<std::string, std::string>::iterator it = this->hosts.begin();
+		it != this->hosts.end();
+		it++
+	)
 	{
-		res << (it->first + ":" + it->second + " ");
+		res << (it->first + ":" + it->second);
 	}
-	res << "| ";
-	for(std::vector<std::string>::iterator it = this->server_names.begin(); it != this->server_names.end(); it++)
+	if (this->server_names.size())
 	{
-		res << (*it + " ");
+		res << " | ";
+		for(
+			std::vector<std::string>::iterator it = this->server_names.begin();
+			it != this->server_names.end();
+			it++
+		)
+		{
+			res << *it;
+			if (it + 1 != this->server_names.end())
+				res << " ";
+		}
 	}
-	res << ">";
+	res << " }";
 	return res.str();
 }
 

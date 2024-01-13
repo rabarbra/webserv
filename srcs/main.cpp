@@ -1,6 +1,5 @@
 #include "../includes/Worker.hpp"
 
-#include <stdio.h>
 int	main(int ac, char **av, char **ev)
 {
 	Logger log("main");
