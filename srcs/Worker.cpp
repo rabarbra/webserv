@@ -167,7 +167,10 @@ void Worker::run()
 		{
 			num_events = this->getNewEventsCount();
 			if (num_events < 0)
-				throw std::runtime_error("Queue error: " + std::string(strerror(errno)));
+			{
+				if (errno != 4)
+					throw std::runtime_error("Queue error: " + std::string(strerror(errno)));
+			}
 			for (int i = 0; i < num_events; i++)
 			{
 				event_sock = this->getEventSock(i);
