@@ -48,6 +48,7 @@ class Route: public IRouter
 		void						setDirListing(bool dir_listing);
 		void						setType(RouteType type);
 		void						setRedirectUrl(std::string redirect_url);
+		void						setRedirectStatusCode(std::string code);
 		void						setIndex(std::string index);
 		void						setPath(std::string path);
 		void						setStaticDir(std::string static_dir);
