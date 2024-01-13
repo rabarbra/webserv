@@ -43,13 +43,11 @@ ReceiverState CGIReceiver::getState() const
 	return this->state;
 }
 
-#include <cerrno>
-#include <string.h>
 void CGIReceiver::consume()
 {
 	char buff[4096];
 	ssize_t received = recv(this->fd, buff, 4096, 0);
-	this->log.INFO << "received: " << received;
+	//this->log.INFO << "received: " << received;
 	if (received == -1)
 	{
 		this->log.ERROR << "received -1: " << strerror(errno);

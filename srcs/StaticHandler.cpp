@@ -163,6 +163,20 @@ StringData StaticHandler::handle_update(Request &req, std::string full_path)
 
 StringData StaticHandler::findFilePath(Request &req)
 {
+	if (
+		!this->static_dir.empty()
+		&& (
+			req.getMethod() == POST
+			|| req.getMethod() == PUT
+			|| req.getMethod() == DELETE
+		)
+	)
+	{
+		if (this->static_dir[0] == '/')
+			this->root_directory = this->static_dir;
+		else
+			this->root_directory = URL::concatPaths(this->root_directory, this->static_dir);
+	}
 	std::string full_path = this->build_absolute_path(req.getUrl().getPath());
 	struct stat st;
 	if (stat(full_path.c_str(), &st) == 0)
@@ -222,7 +236,7 @@ void StaticHandler::acceptData(IData &data)
 	try
 	{
 		Request	&req = dynamic_cast<Request&>(data);
-		this->log.INFO << "accepting: " << req.getUrl().getFullPath() << " state: " << this->state << ", req chunked_state: " << req.getChunkedState();
+		//this->log.INFO << "accepting: " << req.getUrl().getFullPath() << " state: " << this->state << ", req chunked_state: " << req.getChunkedState();
 		if (this->state == SH_START)
 			this->data = this->findFilePath(req);
 		else if (this->state == SH_UPLOADING)
@@ -244,7 +258,6 @@ void StaticHandler::acceptData(IData &data)
 			StringData &str = dynamic_cast<StringData&>(data);
 			if (str.getType() == D_ERROR)
 				this->data = str;
-			this->log.INFO << "accepting: " << str << " state: " << this->state;
 		}
 		catch(const std::exception& e) {
 			this->log.ERROR << "error accepting data: " << e.what();

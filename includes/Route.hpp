@@ -31,7 +31,7 @@ class Route: public IRouter
 		bool						dir_listing; // false by default
 		std::string					index; // index.html by default
 		std::string					static_dir; // Empty string by default (don't accept files)
-		CGI							cgi; // NULL by default
+		CGI							cgi;
 		Logger						logger;
 		char						**ev;
 		// Private

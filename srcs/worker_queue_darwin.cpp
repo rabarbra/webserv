@@ -29,7 +29,7 @@ void Worker::addSocketToQueue(int socket)
 			std::string(strerror(errno))
 		);
 	}
-	this->log.INFO << "Added EVFILT_READ for socket " << socket;
+	//this->log.INFO << "Added EVFILT_READ for socket " << socket;
 }
 
 void Worker::listenOnlyRead(int socket)
@@ -56,7 +56,7 @@ void Worker::addConnSocketToQueue(int socket)
 			std::string(strerror(errno))
 		);
 	}
-	this->log.INFO << "Added EVFILT_READ for socket " << socket;
+	//this->log.INFO << "Added EVFILT_READ for socket " << socket;
 }
 
 void Worker::listenWriteAvailable(int socket)
@@ -75,7 +75,7 @@ void Worker::listenWriteAvailable(int socket)
 			std::string(strerror(errno))
 		);
 	}
-	this->log.INFO << "Added EVFILT_WRITE for socket " << socket;
+	//this->log.INFO << "Added EVFILT_WRITE for socket " << socket;
 }
 
 void Worker::deleteSocketFromQueue(int socket)

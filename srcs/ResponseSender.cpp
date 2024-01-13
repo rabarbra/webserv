@@ -187,12 +187,11 @@ bool ResponseSender::_send()
 		char buffer[chunk_size];
 		if (file_s.is_open() && this->sent < this->_plain.size() + size && !file_s.eof())
 		{
-			this->log.INFO <<"Sent: " << this->sent << ", left: " << left;
+			//this->log.INFO <<"Sent: " << this->sent << ", left: " << left << " from " << this->file;
     		file_s.read(buffer, chunk_size);
 			int res = send(this->fd, buffer, file_s.gcount(), SEND_FLAGS);
 			if (res < 0)
 			{
-				//delete []buffer;
 				file_s.close();
 				return false;
 			}
@@ -200,12 +199,10 @@ bool ResponseSender::_send()
 			left -= res;
 			if (this->sent < this->_plain.size() + size && !file_s.eof())
 			{
-				//delete []buffer;
 				file_s.close();
 				return false;
 			}
 		}
-		//delete []buffer;
 		file_s.close();
 	}
 	return true;
@@ -253,7 +250,6 @@ bool ResponseSender::parse_content_ranges(better_string range)
 
 void ResponseSender::build_file(const std::string& filename)
 {
-	this->log.INFO << "file: " << filename;
 	std::stringstream ss(filename);
 	std::stringstream buff;
 	better_string range;
@@ -291,8 +287,6 @@ void ResponseSender::build_file(const std::string& filename)
 void ResponseSender::build_error(const std::string& status_code)
 {
 	StatusCodes		status;
-	this->log.INFO << "status code: " << status_code;
-	this->log.INFO << "status code: " << status_code;
 	this->_plain = "";
 	this->file = "";
 	this->setStatusCode(status_code);

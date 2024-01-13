@@ -45,7 +45,6 @@ Request &Request::operator=(const Request &other)
 		this->contentRange = other.contentRange;
 		std::memcpy(this->buff, other.buff, this->buff_size);
 	}
-	this->log.INFO << "copy";
 	return *this;
 }
 
@@ -150,7 +149,7 @@ StringData Request::save_chunk(std::string output_file)
 		if (static_cast<ssize_t>(output.tellp()) + to_write > this->content_length)
 			to_write = this->content_length - output.tellp();
 		output.write(this->buff + this->body_start, to_write);
-		this->log.INFO << output_file << ": saved " << output.tellp() << " from " << this->content_length;
+		//this->log.INFO << output_file << ": saved " << output.tellp() << " from " << this->content_length;
 		if (this->content_length <= output.tellp())
 		{
 			output.close();
@@ -213,7 +212,7 @@ StringData Request::save_chunk(std::string output_file)
 					}
 					output.write(this->buff + this->body_start, ch_size);
 					this->remaining_chunk_size -= ch_size;						
-					this->log.INFO << output_file << ": saved " << output.tellp() << " from " << this->content_length << ", remaining chunk size: " << this->remaining_chunk_size;
+					//this->log.INFO << output_file << ": saved " << output.tellp() << " from " << this->content_length << ", remaining chunk size: " << this->remaining_chunk_size;
 					if (!this->remaining_chunk_size)
 					{
 						this->chunked_state = CH_TRAILER;
