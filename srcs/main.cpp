@@ -6,7 +6,7 @@ int	main(int ac, char **av, char **ev)
 	Logger log("main");
 	if (ac != 2)
 	{
-		log.ERROR << "2 args required!\n";
+		log.ERROR << "path to .conf required!\n";
 		return (1);
 	}
 	try
@@ -16,9 +16,9 @@ int	main(int ac, char **av, char **ev)
 	}
 	catch(const std::exception& e)
 	{
-		log.ERROR << e.what();
+		log.ERROR << e.what() << "\n";
 		return (1);
 	}
-	log.INFO << "Finishing\n";
+	log.INFO << BLUE << "shutdown\n" << RESET;
 	return (0);
 }
