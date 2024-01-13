@@ -242,6 +242,8 @@ void StaticHandler::acceptData(IData &data)
 	{
 		try {
 			StringData &str = dynamic_cast<StringData&>(data);
+			if (str.getType() == D_ERROR)
+				this->data = str;
 			this->log.INFO << "accepting: " << str << " state: " << this->state;
 		}
 		catch(const std::exception& e) {

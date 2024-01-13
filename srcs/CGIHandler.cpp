@@ -37,6 +37,8 @@ CGIHandler::~CGIHandler()
 {
 	if (!this->tmp_file.empty())
 		std::remove(this->tmp_file.c_str());
+	//if (this->fd > 0)
+	//	close(this->fd);
 }
 
 CGIHandler::CGIHandler(const CGIHandler &other) : fd(-1), pid(-1)
@@ -162,7 +164,7 @@ int CGIHandler::_rand()
 
 IData &CGIHandler::produceData()
 {
-	int	status;
+	int	status = 0;
 	if (this->pid >= 0)
 	{
 		waitpid(this->pid, &status, WNOHANG);
