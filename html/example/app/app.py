@@ -16,7 +16,9 @@ def index():
         if request.method == 'GET':
             return render_template('index.html', name=session["username"], dict=dict)
         else:
-            file = request.files['file']
+            file = request.files.get('file', None)
+            if not file:
+                return render_template('index.html', name=session["username"], dict=dict)
             file.save(file.filename);
             return render_template(
                 'index.html',
