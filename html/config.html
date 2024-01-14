@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Webserv</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f7fafc;
+            color: #2d3748;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #2d3748;
+        }
+
+        code {
+            background-color: #edf2f7;
+            padding: 4px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
+        pre {
+            background-color: #edf2f7;
+            padding: 10px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Configuring Webserv</h1>
+
+        <p>
+            To configure webserv, use the provided configuration file. Below is an example configuration:
+        </p>
+
+        <pre>
+            <code>
+server {
+	listen				127.0.0.1:8000;
+	location / {
+		index			index.html;
+		autoindex		on;
+	}
+	location /test {
+		allowed_methods		"GET|PUT";
+		root			example;
+		index			index.html;
+		autoindex		on;
+	}
+	location /cgi {
+		root			example;
+		index			index.html;
+		cgi			$self;
+		cgi_ext			.cgi;
+	}
+	location /py {
+		root			example;
+		index			index.html;
+		cgi			python3 $self;
+		cgi_ext			.py;
+	}
+	location /redir {
+		redirect_url		https://42wolfsburg.de;
+	}
+	location /307 {
+		redirect_url		307 https://42.fr;
+	}
+}
+server {
+	listen				localhost:8000;
+	server_names			1.localhost 2.localhost;
+	location / {
+		root			example/pages;
+		index			index.html;
+		autoindex		on;
+	}
+}
+server {
+	listen				localhost:8000;
+	server_names			1.localhost 3.localhost;
+	location / {
+		root			example;
+		index			index.html;
+		autoindex		on;
+	}
+}
+server {
+	listen				localhost:8001;
+	error_page			400 406 example/index.html;
+	error_page			405 html/index.html;
+	error_page			404 html/config.html;
+	client_max_body_size		10;
+	location / {
+		root			example;
+		index			index.html;
+		static_dir		pages;
+		autoindex		off;
+	}
+	location /test \.(txt|sh)$ {
+		root			example;
+		index			index.html;
+		static_dir		pages;
+		autoindex		off;
+	}
+}</code>
+        </pre>
+
+        <p>
+            This configuration defines multiple servers and their respective locations. Customize the settings based on your requirements.
+        </p>
+
+        <p>
+            Remember to restart your web server after modifying the configuration for changes to take effect.
+        </p>
+    </div>
+
+</body>
+</html>

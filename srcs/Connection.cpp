@@ -134,6 +134,7 @@ void Connection::receive(int fd)
 		this->channels[fd] = new Channel();
 		this->channels[fd]->setReceiver(new RequestReceiver(fd));
 		this->channels[fd]->setSender(new ResponseSender(fd));
+		dynamic_cast<ResponseSender *>(this->channels[fd]->getSender())->setErrorPages(this->servers["default"].getErrorPages());
 		this->channels[fd]->setHandler(new ErrorHandler());
 		this->channels[fd]->receive();
 	}
@@ -145,9 +146,8 @@ void Connection::receive(int fd)
 			break;
 		case R_ERROR:
 			//this->log.INFO << "receiving: R_ERROR";
-			this->channels[fd]->getSender()->setData(this->channels[fd]->getReceiver()->produceData());
-			this->channels[fd]->send();
-			this->deleteChannel(fd);
+			this->channels[fd]->getHandler()->acceptData(this->channels[fd]->getReceiver()->produceData());
+			this->worker->listenWriteAvailable(fd);
 			return ;
 			break;
 		case R_REQUEST:
@@ -164,7 +164,6 @@ void Connection::receive(int fd)
 			else
 			{
 				this->channels[fd]->setHandler(this->servers["default"].route(req, error));
-				dynamic_cast<ResponseSender *>(this->channels[fd]->getSender())->setErrorPages(this->servers["default"].getErrorPages());
 				dynamic_cast<RequestReceiver *>(this->channels[fd]->getReceiver())->setMaxBodySize(this->servers["default"].getMaxBodySize());
 			}
 			if (!error.empty())

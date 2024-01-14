@@ -298,11 +298,14 @@ void	Config::parseErrorPage(Server &server, std::stringstream &ss)
 	std::string path;
 	struct stat st;
 	std::vector<int> status_codes;
+	bool file = false;
 
 	while (ss >> word)
 	{
 		if (isNumber(word))
 		{
+			if (file)
+				throw std::runtime_error("No semicolon after" + ss.str());
 			int status_code = atoi(word.c_str());
 			if (status_code < 400 || status_code > 505)
 				throw std::runtime_error("Invalid Error Code");
@@ -310,8 +313,11 @@ void	Config::parseErrorPage(Server &server, std::stringstream &ss)
 		}
 		else
 		{
+			if (file)
+				throw std::runtime_error("No semicolon after" + ss.str());
 			if (status_codes.empty())
 				throw std::runtime_error("No .html file provided");
+			file = true;
 			path = word;
 		}
 	}

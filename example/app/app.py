@@ -3,23 +3,35 @@ from flask import Flask, render_template, request, session, redirect, url_for
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 
-@app.route('/')
+@app.route('/', methods=['GET','POST'])
 def index():
     if 'username' in session:
-        return f'Logged in as {session["username"]}'
-    return 'You are not logged in'
+        dict = {
+            "Directory Listing" : "/",
+            "Redirection" : "/redir",
+            "Video" : "/pages/video.mp4",
+            "Perl CGI" : "/cgi/perl.cgi"
+        }
+        if request.method == 'GET':
+            return render_template('index.html', name=session["username"], dict=dict)
+        else:
+            file = request.files['file']
+            file.save(file.filename);
+            return render_template(
+                'index.html',
+                name=session["username"],
+                dict=dict,
+                result="OK",
+                filename=file.filename
+            )
+    return render_template('index.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         session['username'] = request.form['username']
         return redirect(url_for('index'))
-    return '''
-        <form method="post">
-            <p><input type=text name=username>
-            <p><input type=submit value=Login>
-        </form>
-    '''
+    return render_template("login.html")
 
 @app.route('/logout')
 def logout():
@@ -30,13 +42,13 @@ def logout():
 # Route for the GET method
 @app.route('/test')
 def test():
-    return render_template('index.html')
+    return render_template('big.html')
 
 @app.route('/upload/<name>', methods=['GET','POST'])
 def submit(name: str):
     with open(name, "wb") as f:
         f.write(request.data)
-    return render_template('index.html')
+    return render_template('big.html')
 
 @app.route('/form_upload', methods=['GET','POST'])
 def form():
