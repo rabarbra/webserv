@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-100 dark:bg-slate-800">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="{{ url_for('static', filename='output.css') }}" rel="stylesheet">
+    <title>42 Webserv</title>
+</head>
+<body class="h-full">
+	<div class="container mx-auto">
+		<div class="min-h-full">		  
+			<header class="bg-white dark:bg-slate-800 shadow dark:shadow-purple-700 dark:shadow-lg rounded-lg">
+			  <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 flex flex-row items-baseline">
+				<a href="{{ url_for('index') }}">
+					<h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-purple-500">42 Webserv</h1>
+				</a>
+				{% if name %}
+					<p class="ml-auto text-gray-900 dark:text-gray-400">Hello <span class="text-purple-500">{{ name }}</span> ! |</h1>
+					<a href="logout">Logout</a>
+				{% else %}
+					<a href="{{ url_for('login') }}" class="ml-auto text-gray-900 dark:text-gray-400">LOGIN</a>
+				{% endif %}
+			  </div>
+			</header>
+			<main>
+				<div class="mx-auto max-w-7xl mt-36 py-6 sm:px-6 lg:px-8">
+					<video controls autoplay muted>
+						<source type="video/mp4" src="/html/example/42.mp4" />
+					</video>
+				</div>
+			</main>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
