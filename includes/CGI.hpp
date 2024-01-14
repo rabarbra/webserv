@@ -15,6 +15,7 @@ class CGI
 		better_string					executablePath;
 		better_string		    		cgiExt;
 		bool							enabled;
+		Logger							log;
 
 		// ENV vars
 		better_string					scriptName;
@@ -49,7 +50,7 @@ class CGI
 		better_string getPrevExecPath() const;
 		// Public
 		void							configure(Request &req, std::string root, std::string index);
-		int								execute(Request &req, int *sv, const std::string& full_path);
+		int								execute(Request &req, int *sv, std::string& full_path);
 		better_string					pathToScript(better_string cgiPath, const better_string& index, better_string filePath, Request &req, better_string route_path);
 		bool							isEnabled() const;
 		void							setupCGI(better_string cgiPath, better_string script, better_string filePath, better_string route_path, better_string route_root);

@@ -233,7 +233,6 @@ std::string Route::build_absolute_path(Request req)
 {
 	better_string	root(this->root_directory);
 	better_string	req_path(req.getUrl().getPath());
-
 	if (root.ends_with("/"))
 		root.erase(root.size() - 1);
 	if (!root.size())
