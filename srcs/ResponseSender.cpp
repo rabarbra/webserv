@@ -149,11 +149,7 @@ bool ResponseSender::_send()
 		if (left < chunk_size)
 			chunk_size = left;
 		if (this->file.empty() && this->sent >= this->_plain.size())
-		{
-			this->log.INFO << "file empty";
 			return true;
-		}
-		this->log.INFO << "file not empty: " << this->file;
 		return false;
 	}
 	if (!this->file.empty())
