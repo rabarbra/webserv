@@ -312,6 +312,8 @@ IHandler *Route::route(IData &request, StringData &error)
 		);
 	else if (this->type == CGI_)
 	{
+		if (this->root_directory.empty())
+			this->root_directory = "html";
 		better_string cgi_path = this->cgi.pathToScript(
 			this->root_directory,
 			this->index,
