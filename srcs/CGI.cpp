@@ -5,6 +5,7 @@
  
 CGI::CGI() : handler(), env(NULL), executablePath(), enabled(false)
 {
+	this->log = Logger("CGI");
 }
 
 CGI::CGI(const std::vector<std::string>& handler, char **env): handler(handler), env(NULL), enabled(true)
@@ -12,6 +13,7 @@ CGI::CGI(const std::vector<std::string>& handler, char **env): handler(handler),
 	char *path = ft_getEnv(env);
 	this->setPaths(path);
 	this->setExecutablePath();
+	this->log = Logger("CGI");
 }
 
 CGI::~CGI()
@@ -147,7 +149,7 @@ void    CGI::setCgiExt(const std::string& ext)
 }
 
 // Public
-int CGI::execute(Request &req, int *sv, const std::string& full_path) {
+int CGI::execute(Request &req, int *sv, std::string& full_path) {
 	(void) req;
 	close(sv[0]);
 	dup2(sv[1], 0);
@@ -155,6 +157,10 @@ int CGI::execute(Request &req, int *sv, const std::string& full_path) {
 	close(sv[1]);
 	int pos = full_path.find_last_of('/');
 	std::string dir = full_path.substr(0, pos);
+	if (!full_path.empty() && full_path[0] != '/')
+	{
+		full_path = full_path.substr(pos + 1);
+	}
 	if (chdir(dir.c_str()) == -1)
 		return (1);
 	char **args = this->getArgs(full_path);
@@ -293,10 +299,13 @@ void CGI::setupCGI(better_string cgiPath, better_string script, better_string fi
 
         // Clear previous entries
 
-        this->scriptName = route_path;
+		this->scriptName = route_path;
+		if (!route_root.starts_with("/"))
+			this->scriptFilename = script;
+		else
+			this->scriptFilename = cgiPath;
 		this->requestURI = filePath; // from scriptname onwards;
 		this->documentRoot = route_root;
-		this->scriptFilename = cgiPath;
 		size_t pos = filePath.find(script);
 		if (pos != std::string::npos && pos + script.size() != filePath.size())
 			this->pathInfo = filePath.substr(pos + script.size());

@@ -107,7 +107,6 @@ void CGIHandler::configureCGI(Request &req)
 		this->dataForResponse = StringData("501");
 		return ;
 	}
-	//this->log.INFO << "CGI SOCKET: " << sv[0];
 	this->fd = sv[0];
 	fcntl(this->fd, F_SETFL, O_NONBLOCK, FD_CLOEXEC);
 	#ifdef __APPLE__
