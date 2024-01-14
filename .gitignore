@@ -18,3 +18,5 @@ example/venv/
 __pycache__
 .DS_Store
 adminer
+package-lock.json
+node_modules
