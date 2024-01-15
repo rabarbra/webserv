@@ -145,7 +145,7 @@ StringData StaticHandler::handle_create(Request &req, std::string full_path)
 
 StringData StaticHandler::handle_update(Request &req, std::string full_path)
 {
-	std::ofstream output;
+	std::ofstream output;	
 	output.open(full_path.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
 	this->full_path = full_path;
 	if (!output.is_open() || !output.good())
@@ -172,10 +172,10 @@ StringData StaticHandler::findFilePath(Request &req)
 		)
 	)
 	{
-		if (this->static_dir[0] == '/')
+		//if (this->static_dir[0] == '/')
 			this->root_directory = this->static_dir;
-		else
-			this->root_directory = URL::concatPaths(this->root_directory, this->static_dir);
+		//else
+		//	this->root_directory = URL::concatPaths(this->root_directory, this->static_dir);
 	}
 	std::string full_path = this->build_absolute_path(req.getUrl().getPath());
 	struct stat st;
@@ -219,7 +219,11 @@ StringData StaticHandler::findFilePath(Request &req)
 		else if (req.getMethod() == PUT)
 			return this->handle_update(req, full_path);
 	}
-	else if (req.getMethod() == PUT || req.getMethod() == POST)
+	else if (
+		(req.getMethod() == PUT || req.getMethod() == POST) &&
+		full_path.find('/') != std::string::npos &&
+		stat(full_path.substr(0, full_path.find_last_of('/')).c_str(), &st) == 0
+	)
 		return this->handle_create(req, full_path);
 	return this->state = SH_FINISHED, StringData("404");
 }
