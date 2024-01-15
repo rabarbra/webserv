@@ -57,11 +57,11 @@
 						</div>
 					</div>
 					{% if result %}
-						<p class="text-gray-900 dark:text-gray-400">File <span class="text-purple-500">{{ filename }}</span> uploaded successfully!</h1>
+						<p class="text-gray-900 dark:text-gray-400">File <a href="/cgi/{{filename}}"> <span class="text-purple-500">{{ filename }}</span></a> uploaded successfully!</h1>
 					{% endif %}
 					<div class="mt-6 flex items-center justify-center gap-x-6">
-							<button type="submit" value="Upload" class="rounded-md bg-purple-600 px-10 py-2 text-sm font-semibold text-gray-800 dark:text-gray-200 shadow-sm hover:bg-purple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600">Upload</button>
-						</div>
+						<button type="submit" value="Upload" class="rounded-md bg-purple-600 px-10 py-2 text-sm font-semibold text-gray-800 dark:text-gray-200 shadow-sm hover:bg-purple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600">Upload</button>
+					</div>
 					</form>
 				</main>
 			</div>
