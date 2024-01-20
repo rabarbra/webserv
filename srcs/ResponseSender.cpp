@@ -305,6 +305,13 @@ void ResponseSender::build_error(const std::string& status_code, bool custom_err
 	StatusCodes		status;
 	this->_plain = "";
 	this->file = "";
+	if (this->file_stream)
+	{
+		if (this->file_stream->is_open())
+			this->file_stream->close();
+		delete this->file_stream;
+		this->file_stream = NULL;
+	}
 	this->setStatusCode(status_code);
 	this->setReason(status.getDescription(status_code));
 	int statusInt = std::atoi(status_code.c_str());

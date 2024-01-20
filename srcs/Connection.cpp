@@ -99,6 +99,7 @@ Address Connection::getAddress() const
 
 void Connection::addServer(Server server)
 {
+	bool added = false;
 	std::vector<std::string>	names = server.getServerNames();
 	if (!this->servers.size())
 	{
@@ -108,6 +109,7 @@ void Connection::addServer(Server server)
 			<< " to " << this->address.getHost();
 		this->servers["default"] = server;
 		server.printRoutes();
+		added = true;
 	}
 	for (size_t i = 0; i < names.size(); i++)
 	{
@@ -119,8 +121,17 @@ void Connection::addServer(Server server)
 				<< " to " << this->address.getHost();
 			this->servers[names[i]] = server;
 			server.printRoutes(names[i] + ":" + this->getAddress().getPort());
+			added = true;
 		}
+		else
+			this->log.WARN
+				<< "server name "
+				<< MAGENTA << names[i] << RESET
+				<< " is not used for "
+				<< server.printHosts();
 	}
+	if (!added)
+		this->log.WARN << "server " << server.printHosts() << " not used!";
 }
 
 void Connection::receive(int fd)
