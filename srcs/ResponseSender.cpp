@@ -267,14 +267,20 @@ void ResponseSender::build_file(const std::string& filename, bool custom_error)
 	if (!this->file_stream->is_open())
 	{
 		this->log.ERROR << "File is not open: " << this->file;
-		this->build_error("403", custom_error);
+		if (custom_error)
+			this->build_error(this->statusCode, custom_error);
+		else
+			this->build_error("403", custom_error);
 		return ;
 	}
 	if (!this->file_stream->good())
 	{
 		this->log.ERROR << "File is not good: " << this->file;
 		this->file_stream->close();
-		this->build_error("500", custom_error);
+		if (custom_error)
+			this->build_error(this->statusCode, custom_error);
+		else
+			this->build_error("500", custom_error);
 		return ;
 	}
 	buff << this->file_stream->tellg();
@@ -305,6 +311,13 @@ void ResponseSender::build_error(const std::string& status_code, bool custom_err
 	StatusCodes		status;
 	this->_plain = "";
 	this->file = "";
+	if (this->file_stream)
+	{
+		if (this->file_stream->is_open())
+			this->file_stream->close();
+		delete this->file_stream;
+		this->file_stream = NULL;
+	}
 	this->setStatusCode(status_code);
 	this->setReason(status.getDescription(status_code));
 	int statusInt = std::atoi(status_code.c_str());
