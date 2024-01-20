@@ -51,6 +51,7 @@ void CGIReceiver::consume()
 	if (received == -1)
 	{
 		this->log.ERROR << "received -1: " << strerror(errno);
+		this->state = R_CLOSED;
 		return ;
 	}
 	if (received == 0)

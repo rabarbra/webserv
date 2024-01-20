@@ -254,7 +254,7 @@ bool Connection::isCGI(int socket)
 
 void Connection::deleteChannel(int fd)
 {
-	this->worker->deleteSocketFromQueue(fd);
+	// this->worker->deleteSocketFromQueue(fd);
 	close(fd);
 	this->worker->removeConnection(fd);
 	if (this->channels.find(fd) == this->channels.end())
