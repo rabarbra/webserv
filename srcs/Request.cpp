@@ -143,6 +143,11 @@ StringData Request::save_chunk(std::string output_file)
 {
 	std::ofstream output;
 	output.open(output_file.c_str(), std::ios::out | std::ios::binary | std::ios::app | std::ios::ate);
+	if (!output.is_open() || !output.good())
+	{
+		this->chunked_state = CH_COMPLETE;
+		return StringData("500");
+	}
 	if (this->content_length > 0)
 	{
 		ssize_t to_write = this->offset - this->body_start;

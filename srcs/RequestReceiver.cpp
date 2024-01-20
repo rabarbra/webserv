@@ -148,7 +148,7 @@ bool RequestReceiver::parse_completed_lines()
 				if (key.empty() || (key != "HTTP/1.1" && key != "HTTP/1.0"))
 				{
 					this->log.INFO << RED << getMethodString(this->req.getMethod()) << RESET << " unsupportet HTTP version: " << key;
-					return this->_header_pos = 0, this->finish_request(StringData("400")); // Wrong request
+					return this->_header_pos = 0, this->finish_request(StringData("505")); // Wrong request
 				}
 				this->req.setVersion(key);
 				// First line of request processed

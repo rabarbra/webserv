@@ -43,6 +43,7 @@ class ResponseSender: public ISender
 		size_t								body_size;
 		size_t								sent;
 		std::string							file;
+		std::ifstream						*file_stream;
 		int									fd;
 		bool								ready;
 		bool								_finished;
@@ -72,8 +73,8 @@ class ResponseSender: public ISender
 		std::string getBody() const;
 		int			getFd() const;
 		// Public
-		void		build_file(const std::string& filename);
-		void		build_error(const std::string& status_code);
+		void		build_file(const std::string& filename, bool custom_error=false);
+		void		build_error(const std::string& status_code, bool custom_error=false);
 		void		build_dir_listing(const std::string& content);
 		void		build_redirect(const std::string& redirect);
 		void		build_cgi_response(const std::string& response);

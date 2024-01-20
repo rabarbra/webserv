@@ -88,6 +88,12 @@ void CGISender::sendData()
 	if (!this->tmp_file.empty())
 	{
 		std::ifstream	tmp(this->tmp_file.c_str(), std::ifstream::binary | std::ifstream::ate);
+		if (!tmp.is_open() || !tmp.good())
+		{
+			this->tmp_file.clear();
+			this->ready = false;
+			this->_finished = true;
+		}
 		size_t file_size = tmp.tellg();
 		tmp.seekg(this->pos, std::ios::beg);
 		size_t	buff_size = 4096;

@@ -95,6 +95,11 @@ void CGIHandler::configureCGI(Request &req)
 			this->tmp_file.c_str(),
 			std::ifstream::ate | std::ifstream::binary
 		);
+		if (!tmp.is_open() || !tmp.good())
+		{
+			this->dataForResponse = StringData("500");
+			return ;
+		}
 		std::stringstream ss;
 		ss << tmp.tellg();
 		req.removeHeader("Transfer-Encoding");

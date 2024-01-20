@@ -2,7 +2,7 @@
 
 ResponseSender::ResponseSender():
 	httpVersion("HTTP/1.1"), statusCode("200"), reason("OK"),
-	sent(0), fd(-1), ready(false), _finished(false), cgi(false), plain_sent(false),
+	sent(0), file_stream(NULL), fd(-1), ready(false), _finished(false), cgi(false), plain_sent(false),
 	contentStart(-1), contentEnd(-1)
 {
 	this->log = Logger("ResponseSender");
@@ -10,14 +10,21 @@ ResponseSender::ResponseSender():
 
 ResponseSender::ResponseSender(int fd):
 	httpVersion("HTTP/1.1"), statusCode("200"), reason("OK"),
-	sent(0), fd(fd), ready(false), _finished(false), cgi(false), plain_sent(false),
+	sent(0), file_stream(NULL), fd(fd), ready(false), _finished(false), cgi(false), plain_sent(false),
 	contentStart(-1), contentEnd(-1)
 {
 	this->log = Logger("ResponseSender");
 }
 
 ResponseSender::~ResponseSender()
-{}
+{
+	if (this->file_stream)
+	{
+		if (this->file_stream->is_open())
+			this->file_stream->close();
+		delete this->file_stream;
+	}
+}
 
 ResponseSender::ResponseSender(const ResponseSender &other)
 {
@@ -37,6 +44,7 @@ ResponseSender ResponseSender::operator=(const ResponseSender &other)
 		this->fd = other.fd;
 		this->error_pages = other.error_pages;
 		this->file = other.file;
+		this->file_stream = other.file_stream;
 		this->ready = other.ready;
 		this->_finished = other._finished;
 		this->cgi = other.cgi;
@@ -152,58 +160,53 @@ bool ResponseSender::_send()
 			return true;
 		return false;
 	}
-	if (!this->file.empty())
+	if (!this->file.empty() && this->file_stream)
 	{
-		std::ifstream file_s(this->file.c_str(), std::ios::binary | std::ios::ate);
-		if (!file_s.is_open())
+		if (!this->file_stream->is_open())
 		{
 			this->log.ERROR << "File is not open: " << this->file;
-			this->build_error("404");
-			return this->run();
+			return true;
 		}
-		if (!file_s.good())
+		if (!this->file_stream->good())
 		{
 			this->log.ERROR << "File is not good: " << this->file;
-			this->build_error("500");
-			return this->run();
+			this->file_stream->close();
+			return true;
 		}
 		std::streamsize size;
+		this->file_stream->seekg(0, std::ios::end);
 		if (this->contentEnd >= 0)
 		{
 			if (this->contentEnd == 0)
-				this->contentEnd = static_cast<ssize_t>(file_s.tellg()) - 1;
+				this->contentEnd = static_cast<ssize_t>(this->file_stream->tellg()) - 1;
 			size = this->contentEnd - this->contentStart + 1;
 		}
 		else
-			size = file_s.tellg();
+			size = this->file_stream->tellg();
 		left = this->_plain.size() + size - sent;
 		chunk_size = 8192;
 		if (left < chunk_size)
 				chunk_size = left;
 		if (this->contentStart >= 0)
-			file_s.seekg(this->sent + this->contentStart - this->_plain.size(), std::ios::beg);
+			this->file_stream->seekg(this->sent + this->contentStart - this->_plain.size(), std::ios::beg);
 		else
-			file_s.seekg(this->sent - this->_plain.size(), std::ios::beg);
+			this->file_stream->seekg(this->sent - this->_plain.size(), std::ios::beg);
 		char buffer[chunk_size];
-		if (file_s.is_open() && this->sent < this->_plain.size() + size && !file_s.eof())
+		if (this->file_stream->is_open() && this->sent < this->_plain.size() + size && !this->file_stream->eof())
 		{
 			//this->log.INFO <<"Sent: " << this->sent << ", left: " << left << " from " << this->file;
-    		file_s.read(buffer, chunk_size);
-			int res = send(this->fd, buffer, file_s.gcount(), SEND_FLAGS);
+    		this->file_stream->read(buffer, chunk_size);
+			int res = send(this->fd, buffer, this->file_stream->gcount(), SEND_FLAGS);
 			if (res < 0)
-			{
-				file_s.close();
 				return false;
-			}
 			this->sent += res;
 			left -= res;
-			if (this->sent < this->_plain.size() + size && !file_s.eof())
-			{
-				file_s.close();
+			if (this->sent < this->_plain.size() + size && !this->file_stream->eof())
 				return false;
-			}
 		}
-		file_s.close();
+		this->file_stream->close();
+		delete this->file_stream;
+		this->file_stream = NULL;
 	}
 	return true;
 }
@@ -248,7 +251,7 @@ bool ResponseSender::parse_content_ranges(better_string range)
 	return false;
 }
 
-void ResponseSender::build_file(const std::string& filename)
+void ResponseSender::build_file(const std::string& filename, bool custom_error)
 {
 	std::stringstream ss(filename);
 	std::stringstream buff;
@@ -258,8 +261,23 @@ void ResponseSender::build_file(const std::string& filename)
 	std::getline(ss, file);
 	range.trim();
 	file.trim();
-	std::ifstream file_s(file.c_str(), std::ios::binary | std::ios::ate);
-	buff << file_s.tellg();
+	if (this->file_stream && this->file_stream->is_open())
+		return ;
+	this->file_stream = new std::ifstream(file.c_str(), std::ios::binary | std::ios::ate);
+	if (!this->file_stream->is_open())
+	{
+		this->log.ERROR << "File is not open: " << this->file;
+		this->build_error("403", custom_error);
+		return ;
+	}
+	if (!this->file_stream->good())
+	{
+		this->log.ERROR << "File is not good: " << this->file;
+		this->file_stream->close();
+		this->build_error("500", custom_error);
+		return ;
+	}
+	buff << this->file_stream->tellg();
 	this->setHeader("Content-Length", buff.str());
 	this->setHeader("Connection", "keep-alive");
 	this->setHeader("Accept-Ranges", "bytes");
@@ -267,14 +285,12 @@ void ResponseSender::build_file(const std::string& filename)
 	if (!range.empty())
 	{
 		if (!this->parse_content_ranges(range))
-		{
 			return ;
-		}
 		if (this->contentEnd == 0)
-			this->contentEnd = static_cast<ssize_t>(file_s.tellg()) - 1;
+			this->contentEnd = static_cast<ssize_t>(this->file_stream->tellg()) - 1;
 		this->setStatusCode("206");
 		this->setReason("Partial Content");
-		buff << "bytes " << this->contentStart << "-" << this->contentEnd << "/" << file_s.tellg();
+		buff << "bytes " << this->contentStart << "-" << this->contentEnd << "/" << this->file_stream->tellg();
 		this->setHeader("Content-Range", buff.str());
 		buff.str("");
 		buff << this->contentEnd - this->contentStart + 1;
@@ -284,7 +300,7 @@ void ResponseSender::build_file(const std::string& filename)
 	this->setFile(file);
 }
 
-void ResponseSender::build_error(const std::string& status_code)
+void ResponseSender::build_error(const std::string& status_code, bool custom_error)
 {
 	StatusCodes		status;
 	this->_plain = "";
@@ -293,8 +309,8 @@ void ResponseSender::build_error(const std::string& status_code)
 	this->setReason(status.getDescription(status_code));
 	int statusInt = std::atoi(status_code.c_str());
 	std::map<int , std::string>::iterator it = this->error_pages.find(statusInt);
-	if (it != this->error_pages.end())
-		return (this->build_file("|" + this->error_pages[statusInt]));
+	if (it != this->error_pages.end() && !custom_error)
+		return (this->build_file("|" + this->error_pages[statusInt], true));
 	this->setContentTypes("error.html");
 	std::fstream	error_page("static/error.html");
 	if (error_page.is_open())
