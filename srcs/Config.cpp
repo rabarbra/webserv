@@ -258,34 +258,34 @@ void Config::parseBodySize(Server &server, std::stringstream &ss) {
 	{
 		unit = size.substr(size.find_first_not_of("0123456789"), size.length());
 		size = size.substr(0, size.find_last_of("0123456789") + 1);
-		if (size.compare("18446744073709551615") > 0)
-			throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
+		if (size.compare("18446744073709551615") > 0 && size.size() >= 21)
+			throw std::runtime_error("1 Please provide a valid Client_Max_Body_Size!");
 		if (unit.compare("k") && unit.compare("m") && 
 				unit.compare("g") && unit.compare("K") && 
 				unit.compare("M") && unit.compare("G") && 
 				unit.compare("Kb") && unit.compare("Mb") && 
 				unit.compare("Gb") && unit.compare("KB") && 
 				unit.compare("MB") && unit.compare("GB"))
-			throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
+			throw std::runtime_error("2 Please provide a valid Client_Max_Body_Size!");
 		number = atoi(size.c_str());
 		if (number < 0)
-			throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
+			throw std::runtime_error("3 Please provide a valid Client_Max_Body_Size!");
 		if (!unit.compare("k") || !unit.compare("K") || !unit.compare("Kb") || !unit.compare("KB"))
 		{
-			if (size.compare("18446744073709551615") > 0)
-				throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
+			if (size.compare("18446744073709551615") > 0  && size.size() >= 21)
+				throw std::runtime_error("4 Please provide a valid Client_Max_Body_Size!");
 			number *= 1024;
 		}
 		else if (!unit.compare("m") || !unit.compare("M") || !unit.compare("Mb") || !unit.compare("MB"))
 		{
-			if (size.compare("17592186044416") > 0)
-				throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
+			if (size.compare("17592186044416") > 0  && size.size() >= 15)
+				throw std::runtime_error("5 Please provide a valid Client_Max_Body_Size!");
 			number *= 1024 * 1024;
 		}
 		else if (!unit.compare("g") || !unit.compare("G") || !unit.compare("Gb") || !unit.compare("GB"))
 		{
-			if (size.compare("17179869184") > 0)
-				throw std::runtime_error("Please provide a valid Client_Max_Body_Size!");
+			if (size.compare("17179869184") > 0  && size.size() >= 12)
+				throw std::runtime_error("6 Please provide a valid Client_Max_Body_Size!");
 			number *= 1024 * 1024 * 1024;
 		}
 	}

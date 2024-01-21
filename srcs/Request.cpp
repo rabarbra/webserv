@@ -240,7 +240,10 @@ StringData Request::save_chunk(std::string output_file)
 					}
 					else
 					{
-						curr_pos += 2;
+						if (this->buff[curr_pos] == '\n')
+							curr_pos += 1;
+						else
+							curr_pos += 2;
 						this->chunked_state = CH_SIZE;
 					}
 					break;

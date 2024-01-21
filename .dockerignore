@@ -3,7 +3,5 @@
 *.dSYM
 build
 diagrams
-example
-html
 test*
 webserv
