@@ -18,4 +18,4 @@ jobs:
     - name: install valgrind
       run:  sudo apt update && sudo apt install valgrind
     - name: init worker
-      run: valgrind ./webserv conf/webserv.conf &
+      run: valgrind ./webserv webserv.conf &
