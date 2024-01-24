@@ -310,7 +310,13 @@ void RequestReceiver::consume()
 
 IData &RequestReceiver::produceData()
 {
-	if (this->max_body_size >= 0 && this->received > this->max_body_size)
+	if (
+		this->max_body_size >= 0
+		&& (
+			this->received > this->max_body_size ||
+			this->req.content_length > this->max_body_size
+		)
+	)
 	{
 		this->log.INFO
 			<< RED << getMethodString(this->req.getMethod()) << RESET

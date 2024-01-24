@@ -1,0 +1,63 @@
+<mxfile host="65bd71144e">
+    <diagram id="GxCH73pilg4Xz38NH5GM" name="Page-1">
+        <mxGraphModel dx="1754" dy="772" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2000" pageHeight="2000" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="4" value="" style="edgeStyle=none;html=1;" edge="1" parent="1" source="2" target="3">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="2" value="socket()&lt;br&gt;&lt;div style=&quot;color: rgb(216, 222, 233); background-color: rgb(39, 44, 54); font-family: Menlo, Monaco, &amp;quot;Courier New&amp;quot;, monospace; line-height: 18px;&quot;&gt;&lt;span style=&quot;color: #88c0d0;&quot;&gt;AF_INET&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;color: rgb(216, 222, 233); background-color: rgb(39, 44, 54); font-family: Menlo, Monaco, &amp;quot;Courier New&amp;quot;, monospace; line-height: 18px;&quot;&gt;&lt;div style=&quot;line-height: 18px;&quot;&gt;&lt;span style=&quot;color: #88c0d0;&quot;&gt;SOCK_STREAM&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="950" y="30" width="100" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="6" value="" style="edgeStyle=none;html=1;" edge="1" parent="1" source="3" target="5">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="bind()" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="950" y="110" width="100" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="8" value="" style="edgeStyle=none;html=1;" edge="1" parent="1" source="5" target="7">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="listen()&lt;br&gt;&lt;div style=&quot;color: rgb(216, 222, 233); background-color: rgb(39, 44, 54); font-family: Menlo, Monaco, &amp;quot;Courier New&amp;quot;, monospace; line-height: 18px;&quot;&gt;&lt;span style=&quot;color: #88c0d0;&quot;&gt;SOMAXCONN&lt;/span&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="950" y="150" width="100" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="11" value="Macos" style="edgeStyle=none;html=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="7">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="880" y="360" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="7" value="setckopt()&lt;br&gt;&lt;div style=&quot;color: rgb(216, 222, 233); background-color: rgb(39, 44, 54); font-family: Menlo, Monaco, &amp;quot;Courier New&amp;quot;, monospace; line-height: 18px;&quot;&gt;&lt;span style=&quot;color: #88c0d0;&quot;&gt;O_NONBLOCK&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;color: rgb(216, 222, 233); background-color: rgb(39, 44, 54); font-family: Menlo, Monaco, &amp;quot;Courier New&amp;quot;, monospace; line-height: 18px;&quot;&gt;&lt;div style=&quot;line-height: 18px;&quot;&gt;&lt;span style=&quot;color: #88c0d0;&quot;&gt;FD_CLOEXEC&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;line-height: 18px;&quot;&gt;&lt;div style=&quot;line-height: 18px;&quot;&gt;&lt;span style=&quot;color: #88c0d0;&quot;&gt;SO_KEEPALIVE&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;line-height: 18px;&quot;&gt;&lt;div style=&quot;line-height: 18px;&quot;&gt;&lt;span style=&quot;color: #88c0d0;&quot;&gt;SO_REUSEADDR&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="950" y="210" width="100" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="16" value="" style="edgeStyle=none;html=1;" edge="1" parent="1" source="12" target="15">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="12" value="kevent()&lt;br&gt;&lt;div style=&quot;color: rgb(216, 222, 233); background-color: rgb(39, 44, 54); font-family: Menlo, Monaco, &amp;quot;Courier New&amp;quot;, monospace; line-height: 18px;&quot;&gt;&lt;span style=&quot;color: #88c0d0;&quot;&gt;EVFILT_READ&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;color: rgb(216, 222, 233); background-color: rgb(39, 44, 54); font-family: Menlo, Monaco, &amp;quot;Courier New&amp;quot;, monospace; line-height: 18px;&quot;&gt;&lt;div style=&quot;line-height: 18px;&quot;&gt;&lt;span style=&quot;color: #88c0d0;&quot;&gt;EV_ADD&lt;/span&gt;&lt;span style=&quot;color: #81a1c1;&quot;&gt;|&lt;/span&gt;&lt;span style=&quot;color: #88c0d0;&quot;&gt;EV_CLEAR&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="825" y="360" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="20" value="" style="edgeStyle=none;html=1;" edge="1" parent="1" source="13" target="19">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="13" value="&lt;span style=&quot;background-color: rgb(42, 37, 47);&quot;&gt;accept()&lt;br&gt;&lt;/span&gt;&lt;span style=&quot;color: rgb(136, 192, 208); font-family: Menlo, Monaco, &amp;quot;Courier New&amp;quot;, monospace; background-color: rgb(39, 44, 54);&quot;&gt;SOMAXCONN&lt;/span&gt;&lt;span style=&quot;color: rgb(136, 192, 208); background-color: rgb(39, 44, 54); font-family: Menlo, Monaco, &amp;quot;Courier New&amp;quot;, monospace;&quot;&gt;&lt;br&gt;&lt;/span&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="825" y="490" width="120" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="18" value="" style="edgeStyle=none;html=1;" edge="1" parent="1" source="15" target="13">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="15" value="kevent()" style="whiteSpace=wrap;html=1;rounded=0;" vertex="1" parent="1">
+                    <mxGeometry x="825" y="440" width="120" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="22" value="" style="edgeStyle=none;html=1;" edge="1" parent="1" source="19" target="21">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="19" value="setsockopt()&lt;br&gt;&lt;div style=&quot;color: rgb(216, 222, 233); background-color: rgb(39, 44, 54); font-family: Menlo, Monaco, &amp;quot;Courier New&amp;quot;, monospace; line-height: 18px;&quot;&gt;&lt;span style=&quot;color: #88c0d0;&quot;&gt;O_NONBLOCK&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;color: rgb(216, 222, 233); background-color: rgb(39, 44, 54); font-family: Menlo, Monaco, &amp;quot;Courier New&amp;quot;, monospace; line-height: 18px;&quot;&gt;&lt;div style=&quot;line-height: 18px;&quot;&gt;&lt;span style=&quot;color: #88c0d0;&quot;&gt;FD_CLOEXEC&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;line-height: 18px;&quot;&gt;&lt;div style=&quot;line-height: 18px;&quot;&gt;&lt;span style=&quot;color: #88c0d0;&quot;&gt;SO_NOSIGPIPE&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;" style="whiteSpace=wrap;html=1;rounded=0;" vertex="1" parent="1">
+                    <mxGeometry x="680" y="475" width="120" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="21" value="kevent()&lt;br&gt;&lt;div style=&quot;color: rgb(216, 222, 233); background-color: rgb(39, 44, 54); font-family: Menlo, Monaco, &amp;quot;Courier New&amp;quot;, monospace; line-height: 18px;&quot;&gt;&lt;span style=&quot;color: #88c0d0;&quot;&gt;EVFILT_READ&lt;/span&gt;&lt;/div&gt;&lt;div style=&quot;color: rgb(216, 222, 233); background-color: rgb(39, 44, 54); font-family: Menlo, Monaco, &amp;quot;Courier New&amp;quot;, monospace; line-height: 18px;&quot;&gt;&lt;div style=&quot;line-height: 18px;&quot;&gt;&lt;span style=&quot;color: #88c0d0;&quot;&gt;EV_ADD&lt;/span&gt;&lt;span style=&quot;color: #81a1c1;&quot;&gt;|&lt;/span&gt;&lt;span style=&quot;color: #88c0d0;&quot;&gt;EV_CLEAR&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="680" y="580" width="120" height="60" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
